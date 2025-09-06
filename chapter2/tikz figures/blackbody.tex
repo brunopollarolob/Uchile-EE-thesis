@@ -1,0 +1,156 @@
+% Author: Izaak Neutelings (March 2019)
+\documentclass[border=3pt,tikz]{standalone}
+\tikzset{>=latex} % for LaTeX arrow head
+\usepackage{pgfplots} % for the axis environment
+\pgfplotsset{
+  compat=1.13, % TikZ coordinates <-> axes coordinates
+  /pgf/number format/1000 sep={},
+  legend image code/.code={
+    \draw[mark repeat=2,mark phase=2]
+    plot coordinates {(0cm,0cm) (0.22cm,0cm) (0.44cm,0cm)};%
+  }
+} 
+\usepackage{siunitx}
+% set lmodern as font
+\usepackage{lmodern}
+
+% redraw axis on top
+\makeatletter \newcommand{\pgfplotsdrawaxis}{\pgfplots@draw@axis} \makeatother
+\pgfplotsset{axis line on top/.style={after end axis/.append code={\pgfplotsdrawaxis}}
+}
+
+% CUSTOM COLORS
+% See https://tikz.net/blackbody_color/
+\definecolor{1000K}{rgb}{1,0.0337,0}
+\definecolor{2000K}{rgb}{1,0.2647,0.0033}
+\definecolor{3000K}{rgb}{1,0.4870,0.1411}
+\definecolor{4000K}{rgb}{1,0.6636,0.3583}
+\definecolor{5000K}{rgb}{1,0.7992,0.6045}
+\definecolor{6000K}{rgb}{1,0.9019,0.8473}
+\definecolor{8000K}{rgb}{0.7874,0.8187,1}
+\definecolor{10000K}{rgb}{0.6268,0.7039,1}
+\pgfdeclareverticalshading{rainbow}{100bp}{
+  color(0bp)=(red); color(25bp)=(red); color(35bp)=(yellow);
+  color(45bp)=(green); color(55bp)=(cyan); color(65bp)=(blue);
+  color(75bp)=(violet); color(100bp)=(violet)
+}
+\colorlet{myred}{red!70!black}
+\colorlet{mygreen}{green!70!black}
+\colorlet{mydarkgreen}{green!55!black}
+
+% PLANCK & RAYLEIGH-JEANS
+% 2hc^2/lambda^5 = 2 * 6.62607015e-34 * 299792458^2
+%                = 1.191042972e-16
+% hc/k lambda T = 6.62607015e-34*299792458/(1.38064852e-23)
+%                = 0.01438777378
+% 2ckT/lambda^4  = 2 * 299792458 * 1.38064852e-23
+%                = 8.278160269e-15
+\pgfmathdeclarefunction{planck}{2}{%
+    \pgfmathparse{1.191042972e-16/(#1^5)/(exp(0.01438777378/(#1*#2))-1)}%
+}
+\pgfmathdeclarefunction{rayleighjeans}{2}{%
+    \pgfmathparse{8.278160269e-15*#2/(#1^4)}%
+}
+\pgfmathdeclarefunction{wien}{2}{%
+    \pgfmathparse{1.191042972e-16/(#1^5)*exp(-0.01438777378/(#1*#2))}%
+}
+\pgfmathdeclarefunction{lampeak}{1}{% % Wien's displacement law
+    \pgfmathparse{2.898e-3/#1}%
+}
+
+\begin{document}
+
+
+
+% BLACK BODY LOG-LOG - Rayleigh-Jeans / Wien, 3000K
+\begin{tikzpicture}
+  \message{^^JRayleigh-Jeans / Wien, 3000K}
+  \def\N{40}
+  \def\xmin{5e-8}
+  \def\xmax{2e-3}
+  \def\ymin{5e2}
+  \def\ymax{4e15}
+  \begin{loglogaxis}[
+      every axis plot/.style={
+        very thick,mark=none,domain=\xmin:\xmax,samples=\N,smooth},
+      xmin=\xmin, xmax=(1.01*\xmax),
+      ymin=\ymin, ymax=\ymax,
+      restrict y to domain=0.1*\ymin:\ymax,
+      log basis y=10,
+      axis line style=thick,
+      tick style={black,thick},
+      ticklabel style={scale=0.8},
+      %ticks=none,
+      max space between ticks=23,
+      yminorticks=false,
+      xlabel={Wavelength $\lambda$ [m]},
+      ylabel={Spectral brightness $B_\lambda$ [W/sr\,m$^3$]},
+      xlabel style={at={(rel axis cs:0.5,0)},below=8pt},
+      ylabel style={above=-2pt},
+      width=8cm, height=6cm,
+      legend style={at={(0.14,0.15)},anchor=south west,draw=none,fill=none,font=\small},
+      legend cell align={left},
+      axis line on top
+    ]
+    
+    % RAINBOW
+    \shade[shading=rainbow,shading angle=90,opacity=0.1] (380e-9,\ymin) rectangle (740e-9,\ymax);
+
+    % PLANCK
+    \addplot[dashed,black]      {planck(x,5500)};
+    \addplot[dashed,blue] {rayleighjeans(x,5500)};
+    \addplot[dashed,red]  {wien(x,5500)};
+    
+    % LEGENDS
+    \addlegendentry{Planck}
+    \addlegendentry{Rayleigh-Jeans}
+    \addlegendentry{Wien}
+    \node[scale=1] at (0.17*\xmax,0.01*\ymax) {$T=\SI{5500}{K}$};
+    
+  \end{loglogaxis}
+\end{tikzpicture}
+
+
+% \begin{tikzpicture}
+%   \message{^^JRayleigh-Jeans / Wien, 3000K}
+%   \def\N{200}
+%   \def\xmin{1e-2}
+%   \def\xmax{1}
+%   \def\ymin{5e-10}
+%   \def\ymax{1e-4}
+%   \begin{loglogaxis}[
+%       every axis plot/.style={
+%         very thick,mark=none,domain=\xmin:\xmax,samples=\N,smooth},
+%       xmin=\xmin, xmax=(1.01*\xmax),
+%       ymin=\ymin, ymax=\ymax,
+%       restrict y to domain=0.1*\ymin:\ymax,
+%       log basis y=10,
+%       axis line style=thick,
+%       tick style={black,thick},
+%       ticklabel style={scale=0.8},
+%       %ticks=none,
+%       max space between ticks=23,
+%       yminorticks=false,
+%       xlabel={Wavelength $\lambda$ [m]},
+%       ylabel={Specific Intensity $I_\lambda$ [W/sr\,m$^2$\,m]},
+%       xlabel style={at={(rel axis cs:0.5,0)},below=8pt},
+%       ylabel style={above=-2pt},
+%       width=8cm, height=6cm,
+%       legend style={at={(0.14,0.15)},anchor=south west,draw=none,fill=none,font=\small},
+%       legend cell align={left},
+%       axis line on top
+%     ]
+    
+%     % PLANCK
+%     \addplot[black]      {planck(x,5500)};
+%     \addplot[thick,blue] {rayleighjeans(x,5500)};
+    
+%     % LEGENDS
+%     \addlegendentry{Planck}
+%     \addlegendentry{Rayleigh-Jeans}
+%     \node[scale=1] at (0.17*\xmax,0.01*\ymax) {$T=\SI{5500}{K}$};
+    
+%   \end{loglogaxis}
+% \end{tikzpicture}
+
+\end{document}

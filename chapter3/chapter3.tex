@@ -1,0 +1,42 @@
+
+\chapter{CHARTS overview}
+CHARTS is a compact, wide-field interferometer designed to explore the transient radio sky in the 300--500\,MHz. Its architecture prioritizes the number of elements and instantaneous field of view over raw bandwidth, aiming to maximize the detection rate of FRBs and other millisecond-duration transients.
+
+The system consists of 256 single-polarized antennas, a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation.
+
+Key operational and performance aspects include:
+\begin{itemize}
+  \item Operating band: 300--500\,MHz, optimized for FRB detection with strong flux at low frequencies.
+  \item Wide instantaneous field of view, designed for high-cadence surveys and coverage of the southern hemisphere.
+  \item Digital backend: FDM $\rightarrow$ ADC $\rightarrow$ PFB/FFT (RFSoC) $\rightarrow$ corner-turn $\rightarrow$ GPU (correlation / beamforming / search).
+  \item Target sensitivity: $T_{\text{sys}} \lesssim 50\,$K, with an expected detection rate of $\sim$100 FRBs per year under nominal survey configurations.
+  \item RFI strategy: site shielding, analog front-end filtering, and software rejection during GPU-based processing.
+  \item Science output: detection and localization of low-DM FRBs, population studies, and coordinated multi-wavelength follow-up.
+\end{itemize}
+
+CHARTS also serves as a testbed for digital instrumentation techniques (e.g., extensive use of RFSoCs, FDM, and Ethernet/UDP-based corner-turn) and as a strategic complement to northern-hemisphere facilities, providing coverage, localizations, and statistics essential for extragalactic transient science. 
+
+In the following subsections, we will discuss the analog system, digital backend, and processing pipeline in more detail.
+
+
+\subsection{Analog system}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\textwidth]{../figures/CHARTS_signal_chain.pdf}
+    \caption[CHARTS signal chain]{Signal path for the 8 single polarization antennas (1 tile digitizes 32 antennas). The RFSoC separates the frontend and backend of the
+    system (where ADCs are located). The complete CHARTS array is composed of 256 (A000–A255) single polarization antennas, 32 FDM boards, 8 RFSoC digitizers, a 16-port switch, a 4-port switch, 4 processing nodes (with CPU, GPU, and 512 GB of DDR4 RAM), and 1
+    search node. The entire system will process 8 $\times$ 51.2 \si{\giga\bit\per\second} = 409.6 \si{\giga\bit\per\second} of voltage data in the processing nodes, and 65 \si{\giga\bit\per\second}
+    in the
+    search node. Data output from processing nodes will scale depending on number of channels, number of beams, bits resolution, and sampling
+    time. In this case, 16k, $n_b$ = 103
+    , 4 bit (since we only keep intensity), and $t_s$ = 1 ms, therefore 16.25 \si{\giga\bit\per\second}
+    . The acronym NIC stands for network
+    interface controller, and it allows a full network protocol stack at a high speed rate. The basic configuration for 8 antennas has been drawn where
+    the signal gets multiplexed (300–500 MHz to 300–2366 MHz) and then fed to the RFSoC. From each RFSoC board 51.2 \si{\giga\bit\per\second}
+    are generated
+    and then distributed to a switch to feed then the 4 processing nodes (each of them processing 1/4 of the band). Each processing node will calibrate,
+    beamform beams, upchannelize, downsample, square, and sum (I-Stokes) the dataset. Then the search node will efficiently dedisperse a set of DM
+    values and perform a peak-find algorithm for potential candidates. Site communication will be done through a satellite remote connection, and
+    remote monitoring will be done to system. Thick lines are analog connections and thin lines are digitized signals.}
+  \end{figure}
