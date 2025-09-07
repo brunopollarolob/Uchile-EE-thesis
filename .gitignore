@@ -23,6 +23,8 @@
 **.idx
 **.ilg
 **.ind
+**.nav
+**.snm
 
 # glossaries
 **.slg
@@ -173,3 +175,6 @@ Thumbs.db
 *.swp
 *.swo
 *#
+
+# csv files
+*.csv

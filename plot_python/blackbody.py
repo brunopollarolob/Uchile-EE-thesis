@@ -48,8 +48,8 @@ for i in range(len(visible_frequencies)-1):
     color = plt.cm.jet(1 - (visible_frequencies[i] - visible_min) / (visible_max - visible_min))
     plt.axvspan(visible_frequencies[i], visible_frequencies[i+1], alpha=0.3, color=color, ec=None)
 
-plt.xlabel('Frequency $\\nu$ [Hz]')
-plt.ylabel('Spectral brightness $B_{\\nu}$ [W m$^{-2}$ Hz$^{-1}$]')
+plt.xlabel('Frequency $\\nu$ (Hz)')
+plt.ylabel('Spectral brightness $B_{\\nu}$ (W m$^{-2}$ Hz$^{-1}$)')
 plt.title(f'$T$ = {T} K')
 plt.grid(True, which="both", ls="-", alpha=0.2)
 
