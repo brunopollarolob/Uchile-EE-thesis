@@ -20,7 +20,7 @@ font.size           : 9
 axes.labelsize      : 8.5
 axes.linewidth      : 0.4
 axes.titlesize      : 9
-axes.grid           : True
+axes.grid           : False
 
 # CHIME, LC, FF, ARO10m
 axes.prop_cycle     : cycler('color', ['1f2db4', 'b41f2d', '1fb4a6', 'b4a61f'])

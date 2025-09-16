@@ -1,3 +1,32 @@
-
 \chapter{Introduction}
 
+\section{Motivation}
+The last decade has established time-domain radio astronomy as one of the most dynamic frontiers of astrophysics. At its center are \glspl{frb}, enigmatic millisecond-duration flashes whose extreme luminosities and cosmological distances make them both a profound mystery and a powerful tool. Beyond their astrophysical origins, which remain unresolved, FRBs offer a new way to probe the ionized Universe, tracing baryons, magnetic fields, and the history of cosmic reionization \citep{Macquart_2020, Zhang2023physics}.  
+
+Despite thousands of detections, the majority of FRBs lack precise localization. Without host associations and redshift information, their cosmological potential cannot be fully realized. This challenge is particularly acute in the Southern Hemisphere, where the sky has been less systematically surveyed compared to the north. Expanding observational capabilities in this region is therefore critical for both completing the global FRB census and enabling their use as precision cosmological probes.  
+
+The \gls{charts} has been conceived in this context. By deploying a low-frequency interferometer (300–500~MHz) in the Southern Hemisphere, CHARTS aims to combine wide-field coverage with the sensitivity needed to detect (and even localize with the help of other facilities) a large amount of FRBs. Its design integrates scalable analog front-ends with a flexible digital backend tailored for transient searches. 
+
+Within this digital backend, the F-engine plays a central role. It is responsible for digitizing and channelizing the signals from the antennas, preparing the data for cross-correlation and transient search pipelines. The development of an efficient, high-throughput F-engine is thus a key step toward enabling CHARTS to achieve its scientific goals.
+
+\section{Objectives}
+The main objective of this work is to design and implement a spectrometer capable of demultiplexing multiple antenna signals over a \SI{200}{\mega\hertz} bandwidth, using the \glspl{adc} of the Xilinx AMD RFSoC 4x2 platform. This constitutes a fundamental component of the CHARTS digital backend, as it allows a single RFSoC board to digitize and compute the Fourier transform (hence the F in F-engine) for up to 32 analog signals from the array of 256 antennas.  
+
+In addition to this overarching goal, the specific objectives are:
+\begin{itemize}
+    \item Implement a digitization chain capable of operating over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the entire set of bands allocated through \gls{fdm}.
+    \item Quantize the spectral outputs into a compact 4+4~bit format, representing the real and imaginary parts of each frequency channel.
+    \item Internally generate the local oscillators required for the FDM mixers, using the DAC ports of the RFSoC.
+    \item Integrate the output system with a QSFP28 optical module, enabling data transmission at \SI{100}{\giga\bit\per\second} via optical fiber.
+    \item Implement spectral reordering logic to automatically discard unused channels, such as those below \SI{300}{\mega\hertz} or between active FDM bands.
+\end{itemize}
+
+\section{Thesis outline}
+This thesis is structured as follows:
+\begin{itemize}
+    \item Chapter 2 covers the theoretical background on radio astronomy, digital signal processing, and radio interferometry.
+    \item Chapter 3 presents the CHARTS instrument overview, including scientific goals and system architecture.
+    \item Chapter 4 details the F-engine design, hardware components, and RFSoC integration.
+    \item Chapter 5 discusses testing, validation, and performance results.
+    \item Chapter 6 summarizes findings and concludes the thesis.
+\end{itemize}

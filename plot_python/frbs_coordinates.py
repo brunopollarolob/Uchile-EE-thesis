@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Thesis style
-plt.style.use("thesis_sty.mplstyle")
+plt.style.use("pres_sty.mplstyle")
 
 # Load the CSV
 df = pd.read_csv('FRB_SOURCE_1757202878644.csv')
@@ -34,7 +34,7 @@ dec_rad = np.radians(dec_deg)
 # Shift RA to [-180, 180] degrees for Mollweide
 ra_rad = np.pi - ra_rad
 
-plt.figure(figsize=(6, 5))
+plt.figure(figsize=(6, 3))
 ax = plt.subplot(111, projection='mollweide')
 
 # Separate repeaters and non-repeaters
@@ -72,5 +72,5 @@ ax.legend(loc='upper right')
 ax.set_xticklabels([])
 
 plt.tight_layout()
-plt.savefig('../figures/frb_sky_distribution.pdf')
+plt.savefig('../figures/frb_sky_distribution_pres.pdf')
 plt.show()
