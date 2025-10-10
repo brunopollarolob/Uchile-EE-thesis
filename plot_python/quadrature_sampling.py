@@ -54,15 +54,9 @@ for ax, (title, shift, alias, xticks) in zip(axes, configs):
     ax.set_xlim(-2.6, 5.1)
     ax.set_ylim(0, 1.3)
 
-    # Fondo Nyquist zones
-    nyquist_edges = np.arange(-2.45, 4.91, 2.45)
-    for i in range(len(nyquist_edges)-1):
-        ax.axvspan(nyquist_edges[i], nyquist_edges[i+1],
-                   color="lightgray" if i % 2 == 0 else "white", alpha=0.1)
 
     draw_trapezoids(ax, bands, shift=shift, alias=alias)
 
-    # Líneas de Nyquist
     for x in xticks:
         ax.axvline(x=x, color="black", linestyle="--", linewidth=1)
 

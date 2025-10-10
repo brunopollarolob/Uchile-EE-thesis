@@ -1,4 +1,3 @@
-
 \chapter{CHARTS overview}
 CHARTS is a compact, wide-field interferometer designed to explore the transient radio sky in the 300--500\,MHz. Its architecture prioritizes the number of elements and instantaneous field of view over raw bandwidth, aiming to maximize the detection rate of FRBs and other millisecond-duration transients.
 
@@ -9,7 +8,7 @@ Key operational and performance aspects include:
   \item Operating band: 300--500\,MHz, optimized for FRB detection with strong flux at low frequencies.
   \item Wide instantaneous field of view, designed for high-cadence surveys and coverage of the southern hemisphere.
   \item Differential analog architecture for antennas, LNAs, and FDM, minimizing costs through the use of ethernet cables for signal transmission.
-  \item Digital backend: FDM $\rightarrow$ ADC $\rightarrow$ PFB/FFT (RFSoC) $\rightarrow$ corner-turn $\rightarrow$ GPU (correlation / beamforming / search).
+  \item Signal processing: FDM $\rightarrow$ ADC $\rightarrow$ PFB/FFT (RFSoC) $\rightarrow$ corner-turn $\rightarrow$ GPU (correlation / beamforming / search).
   \item Target sensitivity: $T_{\text{sys}} \lesssim 50\,$K, with an expected detection rate of $\sim$100 FRBs per year under nominal survey configurations.
   \item RFI strategy: site shielding, analog front-end filtering, and software rejection during GPU-based processing.
   \item Science output: detection of low-DM FRBs, population studies, and coordinated multi-wavelength follow-up.
@@ -29,16 +28,16 @@ The selection of the CHARTS site began in 2023 with measurements at several cand
   \label{fig:caren_site}
 \end{figure}
 
-The site offers sufficient space for a \numproduct{16x16} antenna array within an area larger than \qtyproduct{50x50}{\m}. Its natural shielding against external interference, provided by Cerro Lo Aguirre to the south and Cerro Bustamante to the west, makes it particularly well suited for radio astronomy. Figure~\ref{fig:charts_location} illustrates the designated location, where the array will be installed and the receiver hut positioned between the antennas and the nearby power line.  
+The site offers sufficient space for a \numproduct{16x16} antenna array within an area larger than \qtyproduct{50x50}{\m}. Its natural shielding against external interference, provided by Cerro Lo Aguirre to the south and Cerro Bustamante to the west, makes it particularly well suited for radio astronomy. Figure~\ref{fig:charts_location} illustrates the designated location, where the receiver hut (a modified shipping container to host the electronics) has already been installed, along with the power supply and network infrastructure. The array will be situated approximately \qty{25}{\m} from the power grid to minimize potential interference, with the receiver hut positioned between the power line and the array itself.
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{charts_location.pdf}
-  \caption[Site layout and infrastructure]{\textbf{A}: Front view of the CHARTS future location (seeing towards Northwest). \textbf{B}: Aerial view Laguna Carén. The CHARTS circle location corresponds to an area of \qty{\sim35}{\m} diameter. At a distance of \qty{\sim25}{\m} a power grid is located and capable enough to provide power for all machine and systems. The receiver hut (container) it's placed  between the power line and the location of the array.}
+  \caption[Site layout and infrastructure]{A: Front view of the CHARTS future location (seeing towards Northwest). B: Aerial view Laguna Carén. The CHARTS circle location corresponds to an area of \qty{\sim35}{\m} diameter. At a distance of \qty{\sim25}{\m} a power grid is located and capable enough to provide power for all machine and systems. The receiver hut (container) it's placed  between the power line and the location of the array.}
   \label{fig:charts_location}
 \end{figure}
 
 
-Laguna Carén also hosts a limited number of research projects from public and private institutions, most of them concentrated near the park entrance and away from the CHARTS site. The park’s mission emphasizes the promotion of interdisciplinary research (as its motto says: \textit{fomento de la investigación transdisciplinaria}), which aligns closely with the scientific goals of CHARTS.
+Laguna Carén also hosts a limited number of research projects from public and private institutions, most of them concentrated near the park entrance and away from the CHARTS site. The park’s mission emphasizes the promotion of interdisciplinary research (as its first strategic objective declares: \textit{fomento de la investigación transdisciplinaria}), which aligns closely with the scientific goals of CHARTS.
 
 
 The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. On August 28, 2025, a specialized measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies. For this analysis, the CHORD feed (an ultra-wideband antenna with $S11 < -10$ dB in the 0 to \SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC 4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range.
@@ -48,17 +47,16 @@ The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}. While most of the
 \begin{figure}[h!]
   \centering
   \includegraphics{../figures/sky_temperature.pdf}
-  \caption[Sky temperature at Laguna Carén site]{Sky temperature at Laguna Carén site. The system used to measure the RFI environment at the CHARTS site is shown in the inset. The plot shows the measured sky brightness temperature as a function of frequency over the 0--2457.6 MHz band. The data was collected using the feed of CHORD, an amplification box with known system temperature and the RFSoC 4x2. For the sky measurements 15 minutes of data were collected and averaged.}
+  \caption[Sky temperature at Laguna Carén site]{Sky temperature at Laguna Carén site. The plot shows the measured sky brightness temperature as a function of frequency over the 0--2457.6 MHz band. The data was collected using the feed of CHORD, an amplification box with known system temperature and the RFSoC 4x2. For the sky measurements 15 minutes of data were collected and averaged.}
   \label{fig:rfi_caren}
 \end{figure}
 
 
 \section{Analog system}
-The CHARTS analog system consists of three main components: the antenna, the LNAs, and the FDM board. The antenna is a dual-polarized patch differential array designed to cover the \SI{300}{\mega\hertz} to \SI{500}{\mega\hertz} band with a wide field of view (HPBW$\sim90^\circ$) and a impedance of \SI{100}{\ohm}. Each antenna element is connected to a ULNA located within the antenna itself.
+The CHARTS analog system consists of three main components: the antenna, the LNAs, and the FDM board. The antenna is a dual-polarized patch differential designed to cover the \SI{300}{\mega\hertz} to \SI{500}{\mega\hertz} band with a wide field of view (HPBW$\sim90^\circ$) and a impedance of \SI{100}{\ohm}. Each antenna element has a ULNA located within the antenna itself. 
 
 \section{Digital backend and processing pipeline}
 \label{sec:charts_digital_backend}
-
 
 
 \begin{figure}

@@ -2,56 +2,109 @@
 \label{chap:fengine}
 
 The F-engine firmware development for this project was carried out using the graphical Simulink environment, leveraging blocks from the \gls{casper}\footnote{\url{https://casper.berkeley.edu/wiki/Main_Page}} framework. CASPER offers a library of pre-built modules for common DSP operations, such as FFTs, PFBs, and filtering, that can be easily combined to implement complex signal processing pipelines for radio astronomy applications.  
-This methodology enables the design of digital architectures through functional blocks and visual connections, simplifying development compared to traditional hardware description languages such as VHDL or Verilog. The CASPER toolflow also includes a compilation process that translates the Simulink designs into synthesizable HDL code, which can then be implemented on \glspl{fpga}. Nevertheless, some custom HDL coding was necessary to implement specific functionalities not covered by existing CASPER blocks. 
+This methodology enables the design of digital architectures through functional blocks and visual connections, simplifying development compared to traditional hardware description languages such as VHDL or Verilog. The CASPER toolflow also includes a simulation and compilation process that translates the Simulink designs into synthesizable \gls{hdl} code, which can then be implemented on \glspl{fpga}. Nevertheless, some custom \gls{hdl} coding was necessary to implement specific functionalities not covered by existing CASPER blocks. 
 
 This chapter details the design of the F-engine for the \gls{charts} telescope, covering the overall architecture, the digitization and channelization chain, spectral reordering, data transmission to the X-engine and generation of local oscillators for the mixers in the FDM stage. 
 
 \section{F-engine requirements}
 \label{sec:f_engine_architecture}
 
-As described in \S\ref{sec:charts_digital_backend}, the CHARTS digital backend employs an FX correlator architecture, where the F-engine performs initial channelization of the digitized antenna signals multiplexed by the \gls{fdm} boards.  
+As described in \S\ref{sec:charts_digital_backend}, the CHARTS digital backend employs an FX correlator architecture, where the F-engine performs initial channelization of the digitized antenna signals multiplexed by the \gls{fdm} boards. A general block diagram of the F-engine architecture is shown in Figure~\ref{fig:f_engine_block_diagram}. The design processes 32 antenna signals, each sampled at \SI{4.9152}{\giga\hertz} in quadrature mode I/Q by the RFSoC ADCs. The digitized data is first channelized using a biplex \gls{pfb} with 4 taps, producing 8192 frequency channels per stream. The outputs are then fed into a 4-stream FFT block, which computes the Fourier transform for each stream in parallel. The resulting spectra are re-quantized to a compact 4+4 bit format before being transmitted via a QSFP28 optical interface at \SI{51.2}{\giga\bit\per\second}. The design also includes custom blocks for spectral reordering which performs the corner turn and data formatting to ensure compatibility with the X-engine.
 
 The design specifications (as stated in the objectives) for the F-engine were established as follows:
 
 \begin{itemize}
-    \item Operate over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the full band delivered by the FDM stage.  
+    \item Operate over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the full band delivered by the FDM stage. 
+    \item Internally generate local oscillators for the FDM mixers, using the \gls{rfsoc} DAC ports. 
     \item Quantize spectral outputs into a compact 4+4 bit format, representing the real and imaginary components of each frequency channel.  
-    \item Internally generate local oscillators for the FDM mixers, using the \gls{rfsoc} DAC ports.  
     \item Provide high-throughput data transmission using a QSFP28 optical interface, supporting \SI{100}{\giga\bit\per\second} links.  
     \item Implement spectral reordering logic to discard non-useful channels (e.g., below \SI{300}{\mega\hertz} or in the guard regions between FDM sub-bands).  
 \end{itemize}
 
-These requirements shaped the architecture, and each design decision is discussed in the following sections.  
+These requirements shaped the architecture, and each design decision is discussed in the following sections. 
 
-\newpage
-\section{Digitization}
-\label{sec:digitization}
 
-\begin{figure}[h!]
-\centering
-\begin{minipage}{0.5\textwidth}
-The digitization stage is implemented using the \gls{rfdc} block of the RFSoC4x2, configured to achieve the required bandwidth while enabling complex sampling. The ADC sampling frequency was set to \SI{4.9152}{\giga\hertz}, sufficient to cover the target \SI{2366}{\mega\hertz} bandwidth. A decimation factor of 2 reduces the data rate for subsequent stages while preserving the spectral content of interest, and an internal NCO at \SI{-1.2288}{\giga\hertz} shifts the band of interest to baseband, generating complex I/Q samples centered at 0 Hz.
-
-The choice of complex I/Q sampling was motivated by hardware constraints. For real sampling, the RFDC could not provide a power-of-two number of parallel samples at the required rate (greater than twice the target bandwidth, i.e. \SI{4732}{\mega\hertz}). By using quadrature sampling, the effective processed bandwidth equals the sampling rate $\nu_s$, which was fixed at \SI{4915.2}{\mega\hertz}. After decimation by 2, the usable baseband bandwidth becomes $\nu_s/2=\SI{2457.6}{\mega\hertz}$, matching the CHARTS requirements. Figure \ref{fig:quadrature_sampling_rfdc} illustrates the frequency-domain behavior of the signal from the analog input to the output of the RFDC.
-
-Since the system must simultaneously digitize 32 antennas, with 8 signals multiplexed per ADC, all converters available in the RFSoC4x2 are used. In particular, the dual tiles 224 and 226 were enabled and configured for quadrature sampling (see Figure \ref{fig:rfsoc_tiles}). Table \ref{tab:rfdc_config} summarizes the configuration parameters for each ADC.
-\end{minipage}
-\hfill
-\begin{minipage}{0.45\textwidth}
-\centering
-\includegraphics[width=0.9\textwidth]{rfsoc_tiles.png}
-\caption[RFSoC4x2 ADC and DAC tiles]{RFSoC4x2 ADC and DAC tiles. The RFSoC4x2 contains 2 ADC and 2 DAC tiles. In this project, the dual ADC tiles 224 and 226 are used to digitize 8 antennas each, while the single DAC tile 228 generates the local oscillators for the FDM mixers.}
-\label{fig:rfsoc_tiles}
-\end{minipage}
+\begin{figure}[htbp]
+	\centering
+	\begin{tikzpicture}
+	% Paths, nodes and wires:
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.298cm, minimum height=1.798cm] at (7.167, 5.5){} node[anchor=center, align=center, text width=1.91cm, inner sep=6pt] at (7.167, 5.5){\small 4-tap \\ Biplex PFB};
+	\draw (3.167, 6) to[adc] (4.167, 6);
+	\draw (4.167, 6) to[multiwire] (6, 6);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (5, 6.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (5, 6.5){\scriptsize 32x8};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.131cm, minimum height=3.798cm] at (11.083, 4.5){} node[anchor=center, align=center, text width=1.743cm, inner sep=6pt] at (11.083, 4.5){\small FFT\\4 streams $N=8192$};
+	\draw (4.167, 5) to[multiwire] (6, 5);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (5, 5.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (5, 5.5){\scriptsize 32x8};
+	\draw (4.167, 4) to[multiwire] (6, 4);
+	\draw (4.167, 3) to[multiwire] (6, 3);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (5, 4.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (5, 4.5){\scriptsize 32x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (5, 3.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (5, 3.5){\scriptsize 32x8};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.298cm, minimum height=1.798cm] at (7.167, 3.5){} node[anchor=center, align=center, text width=1.91cm, inner sep=6pt] at (7.167, 3.5){\small4-tap \\ Biplex PFB};
+	\draw (8.333, 6) to[multiwire] (10, 6);
+	\draw (8.333, 5) to[multiwire] (10, 5);
+	\draw (8.333, 4) to[multiwire] (10, 4);
+	\draw (8.333, 3) to[multiwire] (10, 3);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (9.083, 6.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (9.083, 6.5){\scriptsize 36x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (9.083, 5.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (9.083, 5.5){\scriptsize 36x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (9.083, 4.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (9.083, 4.5){\scriptsize 36x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (9.083, 3.5){} node[anchor=center, align=center, text width=0.41cm, inner sep=6pt] at (9.083, 3.5){\scriptsize 36x8};
+	\draw (12.167, 6) to[multiwire] (13.5, 6);
+	\node[shape=rectangle, draw, line width=1pt, minimum width=1.965cm, minimum height=0.798cm] at (14.5, 6){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (14.5, 6){\footnotesize Re-quant.};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=1.965cm, minimum height=0.798cm] at (14.5, 5){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (14.5, 5){\footnotesize Re-quant.};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=1.965cm, minimum height=0.798cm] at (14.5, 4){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (14.5, 4){\footnotesize Re-quant.};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=1.965cm, minimum height=0.798cm] at (14.5, 3){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (14.5, 3){\footnotesize Re-quant.};
+	\draw (12.167, 5) to[multiwire] (13.5, 5);
+	\draw (12.167, 4) to[multiwire] (13.5, 4);
+	\draw (12.167, 3) to[multiwire] (13.5, 3);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (12.667, 6.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (12.25, 6.75){\scriptsize 62x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (12.667, 5.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (12.25, 5.75){\scriptsize 62x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (12.667, 4.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (12.25, 4.75){\scriptsize 62x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (12.667, 3.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (12.25, 3.75){\scriptsize 62x8};
+	\draw (3.167, 5) to[adc] (4.167, 5);
+	\draw (3.167, 4) to[adc] (4.167, 4);
+	\draw (3.167, 3) to[adc] (4.167, 3);
+	\node[shape=rectangle, draw, line width=1pt, dash pattern={on 4pt off 4pt}, minimum width=1.298cm, minimum height=2.131cm] at (3.667, 5.583){};
+	\node[shape=rectangle, draw, line width=1pt, dash pattern={on 4pt off 4pt}, minimum width=1.298cm, minimum height=2.131cm] at (3.667, 3.417){};
+	\node[shape=rectangle, minimum width=1.506cm, minimum height=0.465cm] at (3.563, 6.917){} node[anchor=west, align=left, text width=1.118cm, inner sep=6pt] at (2.792, 6.917){\scriptsize Tile 224};
+	\node[shape=rectangle, minimum width=1.506cm, minimum height=0.465cm] at (3.563, 2.083){} node[anchor=west, align=left, text width=1.118cm, inner sep=6pt] at (2.792, 2.083){\scriptsize Tile 226};
+	\draw (15.5, 6) to[multiwire] (16.5, 6);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (16, 6.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (15.583, 6.75){\scriptsize 8x8};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=3.798cm] at (17.75, 4.583){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (17.75, 4.583){\small Corner-turn\\Packetizer};
+	\draw (15.5, 5) to[multiwire] (16.5, 5);
+	\draw (15.5, 4) to[multiwire] (16.5, 4);
+	\draw (15.5, 3) to[multiwire] (16.5, 3);
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (16, 5.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (15.583, 5.75){\scriptsize 8x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (16, 4.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (15.583, 4.75){\scriptsize 8x8};
+	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (16, 3.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (15.583, 3.75){\scriptsize 8x8};
+\end{tikzpicture}
+	\caption[Block diagram of the F-engine architecture]{Block diagram of the F-engine architecture. The design processes 32 antenna signals, where each ADC is sampled at \SI{4.9152}{\giga\hertz} in quadrature mode I/Q. The digitized data is first channelized using a biplex \gls{pfb} with 4 taps, producing 8192 frequency channels per stream. The outputs are then fed into a 4-stream FFT block, which computes the Fourier transform for each stream in parallel. The resulting spectra are re-quantized to a compact 4+4 bit format before being transmitted via a QSFP28 optical interface at \SI{100}{\giga\bit\per\second}. The design also includes custom blocks for spectral reordering and data formatting to ensure compatibility with the X-engine.}
+	\label{fig:f_engine_block_diagram}
 \end{figure}
 
-\begin{table}[h!]
+
+\section{Digitization}
+\label{sec:digitization}
+The digitization strategy for CHARTS was carefully designed to meet the system requirements while ensuring architectural compatibility. To achieve this, the RFSoC 4x2's \gls{rfdc} was configured in quadrature (I/Q) mode. This approach was chosen because real sampling would have required a rate exceeding twice the target bandwidth ($\sim \SI{2366}{\mega\hertz}$), which, although within the ADC's maximum capability of 5 Gsps, would not allow a power-of-two number of parallel samples, something that is crucial for the posterior PFB/FFT. Quadrature sampling with decimation provided an efficient solution, as it enables the effective processed bandwidth to match the sampling frequency, fully capturing the required band while adhering to the RFDC's architectural constraints.
+
+The sampling rate was therefore fixed at $\nu_s=\SI{4.9152}{\giga\hertz}$, comfortably covering the \SI{2366}{\mega\hertz} input band produced by the FDM stage. An internal NCO at \SI{-1.2288}{\giga\hertz} downconverts the signal to baseband, producing complex I/Q outputs centered at 0 Hz. To reduce the data rate and allow a power-of-two number of parallel samples, a decimation factor of 2 was applied, resulting in a usable baseband bandwidth of \SI{2457.6}{\mega\hertz}. This configuration is illustrated in Figure~\ref{fig:quadrature_sampling_rfdc}, which shows how the input spectrum is progressively shifted and decimated into the final baseband representation.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{../figures/quadrature_sampling_rfdc.pdf}
+    \caption[Illustration of the frequency-domain behavior of the signal across processing stages done by the RFDC]{Illustration of the frequency-domain behavior of the signal across processing stages done by the RFDC. The top panel shows the original analog signal obtained through FDM (with each rectangle representing an antenna signal), occupying the first Nyquist zone between $0$ and $\nu_s/2$. The second panel corresponds to the digitized signal, where aliasing replicas appear both in the negative Nyquist zone ($-\nu_s/2$ to $0$) and in the second Nyquist zone ($\nu_s/2$ to $\nu_s$), as expected from sampling. The third panel illustrates the effect of mixing with a NCO at $-\nu_s/4$ (see Figure \ref{fig:quadrature_sampling}), which shifts the spectrum and redistributes its content symmetrically across the Nyquist regions. The bottom panel shows the result after decimation by a factor of two, where the spectrum is compressed into half the bandwidth, now spanning from $-\nu_s/4$ to $+\nu_s/4$.}
+    \label{fig:quadrature_sampling_rfdc}
+\end{figure}
+
+Since the system must simultaneously digitize 32 antennas, with 8 signals multiplexed per ADC, all converters available in the RFSoC 4x2 are used. In particular, the dual tiles 224 and 226 were enabled and configured for quadrature sampling (see Figure \ref{fig:rfsoc_tiles} for tile organization of ADCs). Table \ref{tab:rfdc_config} summarizes the configuration parameters for each ADC.
+
+
+\begin{table}[htbp]
 \centering
 \begin{tabular}{lc}
 \toprule
 Parameter & Value \\
 \midrule
-Sampling rate & 4915.2 Msps \\
+Sampling rate $\nu_s$ & 4915.2 Msps \\
 Reference clock & 307.2 MHz \\
 Digital Output & I/Q \\
 Decimation Mode & 2x \\
@@ -64,7 +117,7 @@ Nyquist Zone & Zone 1 \\
 Calibration Mode & Mode 2 \\
 \bottomrule
 \end{tabular}
-\caption{Configuration parameters of the RFSoC4x2 RFDC ADC dual tiles (224 and 226).}
+\caption{Configuration parameters of the RFSoC 4x2 RFDC ADC dual tiles (224 and 226).}
 \label{tab:rfdc_config}
 \end{table}
 
@@ -73,12 +126,65 @@ With these configurations, the output data rate is \SI{256}{bits} per clock cycl
 
 Since for dual-tile platforms in I/Q digital output modes the in-phase and quadrature data are produced from different ports, before channelization the data stream is reordered using the CASPER \texttt{munge} block into the format $[I_1, Q_1, I_2, Q_2, \dots]$, ensuring compatibility with downstream processing blocks.
 
-\begin{figure}[h!]
-    \centering
-    \includegraphics[width=\textwidth]{../figures/quadrature_sampling_rfdc.pdf}
-    \caption[Illustration of the frequency-domain behavior of the signal across processing stages done by the RFDC]{Illustration of the frequency-domain behavior of the signal across processing stages done by the RFDC. The top panel shows the original analog signal obtained through FDM, occupying the first Nyquist zone between $0$ and $\nu_s/2$. The second panel corresponds to the digitized signal, where aliasing replicas appear both in the negative Nyquist zone ($-\nu_s/2$ to $0$) and in the second Nyquist zone ($\nu_s/2$ to $\nu_s$), as expected from sampling. The third panel illustrates the effect of mixing with a NCO at $-\nu_s/4$ (see Figure \ref{fig:quadrature_sampling}), which shifts the spectrum and redistributes its content symmetrically across the Nyquist regions. The bottom panel shows the result after decimation by a factor of two, where the spectrum is compressed into half the bandwidth, now spanning from $-\nu_s/4$ to $+\nu_s/4$.}
-    \label{fig:quadrature_sampling_rfdc}
+
+\section{LO generation}
+
+The \glspl{lo} are a key element in the \gls{fdm} architecture, as they enable the upconversion of the 300--500 MHz signals from the antennas into higher frequency bands ranging from 300 to $\sim 2366$ MHz. Since the RFSoC 4x2 incorporates high-speed \glspl{dac}, these were used to synthesize the \glspl{lo} digitally and output them directly in the analog domain. This choice avoids the need for external frequency synthesizers, while providing high flexibility and real-time configurability.
+
+The system requires four independent \glspl{lo} at the frequencies listed in Table~\ref{tab:lo_frequencies}. The rationale behind these values will be discussed later in the channelization section (\S\ref{sec:channelization}), but they were chosen to satisfy the bandwidth and frequency placement requirements of the instrument.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{cc}
+\toprule
+\textbf{LO} & \textbf{Frequency (MHz)} \\
+\midrule
+1 & 1065.6 \\
+2 & 1332.0 \\
+3 & 1600.8 \\
+4 & 1864.8 \\
+\bottomrule
+\end{tabular}
+\caption{Frequencies of the \glspl{lo} generated for the \gls{fdm} mixers.}
+\label{tab:lo_frequencies}
+\end{table}
+
+The \gls{dac} tiles were configured similarly to the \gls{adc} tiles, but operating in real-to-real mode without interpolation. Each tile outputs 16 parallel 16-bit samples per clock cycle, with a sampling rate of \SI{4915.2}{\mega\hertz}, therefore the AXI4-Stream clock frequency is also set to \SI{307.2}{\mega\hertz} to match the ADC sample clock. The DAC output is thus a real-valued waveform with a Nyquist frequency of \SI{2457.6}{\mega\hertz}, which is sufficient to cover the highest required \gls{lo} frequency of \SI{1864.8}{\mega\hertz}. The configuration parameters of the DAC tiles are summarized in Table~\ref{tab:dac_config}.
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lc}
+\toprule
+Parameter & Value \\
+\midrule
+Sampling rate $\nu_s$ & 4915.2 Msps \\
+Reference clock & 307.2 MHz \\
+Digital Input & Real \\
+Interpolation Mode & None \\
+Samples per Cycle & 16 \\
+Nyquist Zone & Zone 1 \\
+Calibration Mode & Mode 2 \\
+\bottomrule
+\end{tabular}
+\caption{Configuration parameters of the RFSoC 4x2 RFDC DAC tiles (228 and 230).}
+\label{tab:dac_config}
+\end{table}
+
+
+The generation of the \glspl{lo} is based on the digital synthesis of four sinusoidal tones per \gls{dac}. Each tone has programmable frequency and amplitude, and all are summed digitally to form a composite signal. At the analog stage, external band-pass filters are used to isolate the desired frequency component, ensuring that each mixer receives its corresponding \gls{lo}.
+
+The tones are synthesized using lookup tables stored in block RAM, which contain the sampled values of a sine function. These are addressed by phase accumulators operating at the system clock, where the phase increment determines the output frequency. Amplitude control is achieved by applying digital attenuations to the waveform samples before summation. Both frequency and attenuation parameters are mapped to software-controlled registers, enabling their adjustment in real time. Credits to Frederik Brecht from University of Toronto for the original tone generator design and Verilog implementation.
+
+Figure~\ref{fig:lo_generation} illustrates the architecture of the \gls{lo} generation block. Each \gls{dac} tile produces two independent outputs, each containing a sum of four tones. The outputs are connected to the appropriate pins on the RFSoC board, which are routed to SMA connectors for external filtering and distribution to the FDM boards.
+
+\begin{figure}[htbp]
+	\centering
+	\caption[Schematic of the LO generation block]{Schematic of the LO generation block. Each DAC tile generates two independent outputs, each consisting of a sum of four digitally synthesized tones. The frequencies and amplitudes of these tones are programmable via software registers, allowing real-time adjustment. External band-pass filters are used to isolate the desired LO frequency for each mixer in the FDM stage.}
+	\label{fig:lo_generation}
 \end{figure}
+
+\label{sec:lo_generation}
+
+
 
 
 \section{Channelization}
@@ -90,7 +196,6 @@ Channelization is performed by a 4-tap PFB with convergent rounding and 18-bit c
 The filtered samples are then passed to an 8192-point radix-2 pipeline FFT, which operates directly on the complex input.  The FFT is configured with automatic bit growth: at each stage of the 13-stage radix-2 pipeline, the word length increases by 1 bit to accommodate intermediate dynamic range expansion. Consequently, the final output has a format of $31 + 31$ bits, which is subsequently re-quantized according to the strategy described in \S\ref{sec:re-quantization}. As there are 13 stages the total number of channels is $2^{13} = 8192$, resulting in a channel width of \SI{300}{\kilo\hertz} over the \SI{2457.6}{\mega\hertz} bandwidth. The FFT is clocked at \SI{307.2}{\mega\hertz} with 8 samples per clock cycle, producing a new spectrum every \SI{3.33}{\micro\second}, and unlike real-input FFT architectures, no channels are discarded. 
 Key specifications of the F-engine design are summarized in Table~\ref{tab:f_engine_metrics}.
 
-The \SI{300}{\kilo\hertz} channel width provides the spectral resolution required for the intended scientific applications and mitigates dispersion-induced broadening (DM smearing), which is more acute in lower frequencies where the dispersion is greater. In addition, the \SI{3.33}{\micro\second} frame time resolution enables high-cadence, low-latency processing, facilitating calibration and correlation of antenna signals for each of the eight FDM chains. The full band and corresponding FFT bins for each chain are listed in Table~\ref{tab:fdm_chains}.
 \begin{table}[htbp]
 \centering
 \begin{tabular}{l l}
@@ -107,30 +212,38 @@ Frame time resolution & \SI{3.33}{\micro\second}  \\
 \label{tab:f_engine_metrics}
 \end{table}
 
+The \SI{300}{\kilo\hertz} channel width provides the spectral resolution required for the intended scientific applications and mitigates dispersion-induced broadening (DM smearing), which is more acute in lower frequencies where the dispersion is greater. In addition, the \SI{3.33}{\micro\second} frame time resolution enables high-cadence, low-latency processing, facilitating calibration and correlation of antenna signals for each of the eight FDM chains. The full band and corresponding FFT bins for each chain are listed in Table~\ref{tab:fdm_chains}, resulting in 672 channels per chain. Note that chains 1, 2, and 3 require frequency flipping due to the mixing scheme used in the FDM stage.
+
 \begin{table}[htbp]
 \centering
 \begin{tabular}{ccccc}
 \toprule
-Chain & Frequency Range & Bin Range & Number of Bins & Flipped \\
+Chain & Associated LO (MHz) & Frequency Range (MHz) & Bin Range & Flipped \\
 \midrule
-0 & 300--499.8 MHz   & 1000--1666 & 667 & No \\
-1 & 566--765.9 MHz   & 1887--2553 & 667 & Yes \\
-2 & 833--1032.9 MHz  & 2777--3443 & 667 & Yes \\
-3 & 1100--1299.9 MHz & 3667--4333 & 667 & Yes \\
-4 & 1366--1565.7 MHz & 4553--5219 & 667 & No \\
-5 & 1633--1832.7 MHz & 5443--6109 & 667 & No \\
-6 & 1900--2099.7 MHz & 6333--6999 & 667 & No \\
-7 & 2166--2365.8 MHz & 7220--7886 & 667 & No\\
+0 & -- & 300--501.6 & 1000--1672 & No \\
+1 & 1065.6 & 564--765.6 & 1880--2552 & Yes \\
+2 & 1332.0 & 830.4--1032 & 2768--3440 & Yes \\
+3 & 1600.8 & 1099.2--1300.8 & 3664--4336 & Yes \\
+4 & 1065.6 & 1365.6--1567.2 & 4552--5224 & No \\
+5 & 1332.0 & 1632--1833.6 & 5440--6112 & No \\
+6 & 1600.8 & 1900.8--2102.4 & 6336--7008 & No \\
+7 & 1864.8 & 2164.8--2366.4 & 7216--7888 & No \\
 \bottomrule
 \end{tabular}
-\caption[FDM chains and corresponding FFT bins]{FDM chains and corresponding FFT bins. Each of the 8 FDM chains covers a $\sim\SI{200}{\mega\hertz}$ band, with a \SI{66}{\mega\hertz} guard region between adjacent chains. The table lists the frequency range, FFT bin range, number of bins, and whether the spectrum is flipped due to mixing in FDM stage for each chain.}
+\caption[FDM chains and corresponding FFT bins]{FDM chains and corresponding FFT bins. Each of the 8 FDM chains covers a $\sim\SI{201.6}{\mega\hertz}$ band, with a $\sim\SI{66}{\mega\hertz}$ guard region between adjacent chains. The table lists the frequency range, FFT bin range, and the LO frequency associated with each chain.}
 \label{tab:fdm_chains}
 \end{table}
 
 \section{Re-quantization and calibration}
 \label{sec:re-quantization}
 
-\begin{figure}
+The FFT output produces complex samples with a precision of 31+31 bits per channel, which must be reduced before transmission to the X-engine. To achieve this, the system applies a re-quantization step that truncates the data stream to 4+4 bits. Although this quantization inevitably leads to some information loss, in practice the effect is small for typical radio astronomy signals and is compensated by the advantages of reducing the data volume. The lower bit depth enables higher bandwidth coverage and efficient real-time processing, while keeping quantization-induced biases within negligible levels.
+
+Quantization, however, introduces systematic effects in both amplitude and phase of the measured correlations, which in turn impact calibration accuracy and the fidelity of reconstructed images. To minimize these effects, the system applies a digital gain and scaling stage prior to truncation. The calibration aims to adjust each frequency channel such that the signal level is close to 1 bit RMS (approximately two quantization steps). In this regime, the correlation between the signal and the quantization error becomes vanishingly small, the increase in output variance is only about 4\%, and the resulting bias in correlation measurements falls below $10^{-6}$ in magnitude and $10^{-11}$ degrees in phase (see \citealt{menaparra2018quantizationbiasdigitalcorrelators} for a detailed analysis of quantization effects in radio interferometry).
+
+The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the 31+31 bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a 48+48\footnote{The additional bit for real and imaginary parts comes from the signed extension of the gain value to 17 bits.} bit word, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even, yielding a compact 4+4 bit representation per channel. A clipping flag is raised whenever a value with integer part equal to 0111 (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
+
+\begin{figure}[htbp]
     \centering
     \begin{tikzpicture}
 	% Paths, nodes and wires:
@@ -158,9 +271,16 @@ Chain & Frequency Range & Bin Range & Number of Bins & Flipped \\
 	\node[shape=rectangle, minimum width=0.765cm, minimum height=0.298cm] at (8.75, 3){} node[anchor=center, align=center, text width=0.377cm, inner sep=6pt] at (8.75, 3){\small 5};
 	\node[shape=rectangle, draw, line width=1pt, minimum width=1.215cm, minimum height=0.965cm] at (3.375, 4){} node[anchor=center, align=center, text width=0.827cm, inner sep=6pt] at (3.375, 4){FFT};
 \end{tikzpicture}
-    \caption[Schematic of the quantization process]{Schematic of the quantization process. Gains can be configured independently for each channel, while the shift value is shared across all channels. After the left shift, convergent rounding to even is applied, keeping only the 4 most significant bits. This limits the representable range to $[-8,7]$. A clip flag is asserted whenever a value with an integer part equal to 0111 (decimal 7) and a non-zero fractional part reaches the rounding stage.}
+    \caption[Schematic of the quantization process]{Schematic of the quantization process. The 31+31 bit FFT output is first multiplied by a 16-bit programmable gain factor $g$, resulting in a 48+48 bit word. This is then shifted left by a configurable number of bits (up to 5 bits) to optimize dynamic range. Finally, the most significant 4 bits of the real and imaginary components are selected, with convergent rounding-to-even applied to yield a compact 4+4 bit representation per channel. A clipping flag is raised if saturation occurs during rounding.}
     \label{fig:quantizer_architecture}
 \end{figure}
+
+
+
+The combination of the programmable per-channel gain and the global left shift defines the effective digital gain applied in the calibration stage. These parameters are software-configurable, allowing flexible tuning of the re-quantization pipeline. The calibration gains are initially computed by measuring the RMS power of the channelized data for each input and frequency channel, ensuring that the levels are brought close to the desired 1 bit RMS target. Subsequently, the per-channel gains are smoothed across frequency using an iterative algorithm that combines polynomial fitting with Fourier-based filtering. This smoothing suppresses unphysical channel-to-channel variations while preserving real spectral structure.
+
+In practice, the digital gain calibration needs to be performed only once for each input and frequency channel under stable observing conditions. Updates may be required if instrumental responses drift significantly over time or if the RFI environment changes.
+
 \section{Spectral reordering}
 \label{sec:spectral_reordering}
 
@@ -187,5 +307,3 @@ Payload & 8192 & 8192 channels for each ADC.\\
 \end{tabular}
 \end{table}
 
-\section{LO generation}
-\label{sec:lo_generation}

@@ -8,8 +8,7 @@ mpl.style.use('thesis_sty.mplstyle')
 
 T = 5500  
 
-# Now using frequency instead of wavelength
-frequency = np.logspace(11, 16, 1000)  # Hz range covering visible spectrum
+frequency = np.logspace(8, 16, 1000)  
 # Constants
 h = constants.h  # Planck constant
 c = constants.c  # Speed of light
@@ -27,7 +26,6 @@ def rayleigh_jeans_freq(nu, T):
 def wien_approx_freq(nu, T):
     return (2.0 * h * nu**3 / c**2) * np.exp(-h * nu / (k * T))
 
-# Calculate spectral brightness
 B_planck = planck_law_freq(frequency, T)
 B_rayleigh_jeans = rayleigh_jeans_freq(frequency, T)
 B_wien = wien_approx_freq(frequency, T)
@@ -44,7 +42,6 @@ visible_frequencies = np.linspace(visible_min, visible_max, 100)
 
 # Create rainbow gradient for visible spectrum
 for i in range(len(visible_frequencies)-1):
-    # Map frequency to RGB color (red->violet, reversed from wavelength)
     color = plt.cm.jet(1 - (visible_frequencies[i] - visible_min) / (visible_max - visible_min))
     plt.axvspan(visible_frequencies[i], visible_frequencies[i+1], alpha=0.3, color=color, ec=None)
 
@@ -53,7 +50,7 @@ plt.ylabel('Spectral brightness $B_{\\nu}$ (W m$^{-2}$ Hz$^{-1}$)')
 plt.title(f'$T$ = {T} K')
 plt.grid(True, which="both", ls="-", alpha=0.2)
 
-plt.xlim(1e11, 1e16)
+plt.xlim(1e8, 1e16)
 plt.ylim(1e-20, 1e-5)
 
 plt.legend(loc='upper left')

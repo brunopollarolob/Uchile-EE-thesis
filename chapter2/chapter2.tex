@@ -41,7 +41,7 @@ Building on the concept of specific intensity, it is essential to understand how
 \end{equation}
 where $h$ is Planck's constant, $c$ is the speed of light, and $k$ is Boltzmann's constant. Planck's law has two notable limiting cases: at high frequencies ($h\nu \gg kT$), it reduces to Wien's law, while at low frequencies ($h\nu \ll kT$), it approaches the Rayleigh-Jeans approximation. 
 Figure \ref{fig:spectral_brightness} illustrates the spectral brightness $B_\nu$ as a function of frequency\footnote{It is important to clarify that $B_\nu(\nu,T)$ and $B_\lambda(\lambda,T)$ are distinct quantities with different units, \si{\watt \per \steradian  \per \meter \squared \per \hertz} and \si{\watt \per \steradian \per \meter \cubed}, respectively. The conversion between them is given by $B_\nu = B_\lambda \frac{c}{\nu^2}$.} 
-for a blackbody at 5500~K (approximately the temperature of the Sun's surface). The plot compares the predictions of Planck's law, the Rayleigh-Jeans approximation, and Wien's law, highlighting the differences between these models across the electromagnetic spectrum.
+for a blackbody at 5500~K (approximately the temperature of the Sun's surface). The plot compares the predictions of Planck's law, the Rayleigh-Jeans approximation, and Wien's law, where the limiting behaviors are evident. Particularly the spectral brightness in the radio regime (below $\sim 10^{12}$ Hz) appears as a straight line in this log-log plot, indicating the validity of the Rayleigh-Jeans approximation in this frequency range.
 \begin{figure}[h!]
 	\centering
 	\includegraphics{../figures/blackbody_radiation_frequency.pdf}
@@ -205,18 +205,26 @@ Radio waves traveling through ionized media interact with free electrons and mag
 	\end{equation}
 	with $B_\parallel$ the magnetic field component along the line of sight. Measuring RM in pulsars and FRBs provides information about magnetic fields in the ISM and \gls{igm}.
 
-    \item \textbf{Scattering:} Inhomogeneities in the ISM cause multipath propagation, broadening the observed pulse profile. This effect typically introduces an exponential scattering tail, more severe at low frequencies ($\tau_{\text{sc}} \propto \nu^{-\alpha}$, with $\alpha \sim 4$).
+    \item \textbf{Scattering:} Density inhomogeneities in the ISM cause multipath propagation, producing an exponential scattering tail in the pulse profile. This effect is stronger at lower frequencies, with $\tau_{\text{sc}} \propto \nu^{-\alpha}$ and $\alpha \sim 4$. The scattering timescale can be estimated empirically from the DM and observing frequency.  
+
     \item \textbf{Scintillation:} Variations in electron density lead to constructive and destructive interference, causing intensity fluctuations over time and frequency. These effects provide insights into the small-scale structure of the ISM.
 \end{itemize}
+Figure \ref{fig:sim_galactic_magnetar} illustrates how these effects shape the observed signal. The panels show a simulated pulse from the Galactic magnetar SGR~1935+2154 \citep{Galactic_magnetar}, a two-component pulse whose discovery was groundbreaking due to its resemblance to FRBs, strengthening the hypothesis that FRBs may originate from magnetars. The simulation, generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, assumes a DM of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz}. Dispersion stretches the pulse over several seconds across the band (left), while de-dispersion recovers the intrinsic profile, still broadened by scattering (right).
 
+\begin{figure}[h!]
+	\centering
+	\includegraphics{../figures/galactic_magnetar_effects.png}
+	\caption[Simulated pulse profile of the Galactic magnetar SGR 1935+2154]{Simulation of the Galactic magnetar SGR 1935+2154 within the 400-800 MHz observing band, illustrating the combined effects of dispersion and scattering. The dynamic spectrum was generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, using parameters from \citet{Galactic_magnetar}. The model assumes a dispersion measure (DM) of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz} for two components with different spectral indexes. The left panel shows the dispersed signal extending over several seconds across frequency, while the right panel presents the de-dispersed pulse profile, where the intrinsic shape modified by scattering becomes visible specially at lower frequencies.}
+	\label{fig:sim_galactic_magnetar}
+\end{figure}
 
 \subsection{Fast radio bursts}
 \label{sec:frbs}
 
-\glspl{frb} are bright, millisecond-duration bursts of radio emission of extragalactic origin, first reported in 2007 \citep{Lorimer_2007}. Their high \gls{dm} values, exceeding the expected Galactic contribution, demonstrate that they originate at cosmological distances. 
+\glspl{frb} are bright, millisecond-duration bursts of radio emission of extragalactic origin, first reported in \citeyear{Lorimer_2007} by \citeauthor{Lorimer_2007}. Their high \gls{dm} values, exceeding the expected Galactic contribution, demonstrate that they originate at cosmological distances.
 
 
-The observational landscape has grown rapidly: while most FRBs appear as one-off events, a subset exhibit repeating activity, such as FRB121102 \citep{Spitler_2016}, suggesting multiple progenitor channels. Proposed origins range from compact-object models (e.g., magnetars, neutron star mergers) to more exotic mechanisms (see \citealt{Zhang2023physics} for a review on emission mechanisms). Figure \ref{fig:frb_sky_distribution} shows the sky distribution of known FRBs, highlighting their isotropic distribution \citep{Josephy2021} and the locations of repeating sources, but with a bias towards the northern hemisphere due to fact that most surveys have been conducted there.
+The observational landscape has grown rapidly: while most FRBs appear as one-off events, a subset exhibit repeating activity (such as the FRB121102; \citealt{Spitler_2016}), suggesting multiple progenitor channels. Proposed origins range from compact-object models (e.g., magnetars, neutron star mergers) to more exotic mechanisms (see \citealt{Zhang2023physics} for a review on emission mechanisms). Figure \ref{fig:frb_sky_distribution} shows the sky distribution of known FRBs, highlighting their isotropic distribution (there isn't a dependence in galactic latitude as shown in \citealt{Josephy2021}) and the locations of repeating sources, but with a bias towards the northern hemisphere due to fact that most surveys have been conducted there.
 
 \begin{figure}[h!]
 	\centering
@@ -248,39 +256,30 @@ This section summarizes key DSP concepts relevant to this work: digital sampling
 Sampling is one of two processes that take place when an analogue signal is converted into a digital equivalent (the other is quantisation, which will be covered \S\ref{sec:quantization}). We can think of sampling as converting the time axis of a signal to a set of discrete time instants, while quantisation converts its amplitude to a discrete set of representable amplitude values. This simple model of analogue-to-digital conversion is depicted in Figure \ref{fig:adc_process}, where an analogue signal is passed through an ADC to create a digital equivalent.
 \begin{figure}
 	\begin{tikzpicture}[scale=1.5]
-		% Bloque ADC en la parte superior
 		\node[rectangle, fill=black, text=white, minimum width=1.5cm, minimum height=0.8cm] at (3,2) {ADC};
 		\draw[->, thick, red] (0,2) -- (2.2,2) node[midway, above] {\color{red}$x(t)$};
 		\draw[->, thick, blue] (3.8,2) -- (6,2) node[midway, above] {\color{blue}$x[n]$};
-		% Gráfico izquierdo - Señal Continua
 		\begin{scope}[xshift=0cm]
-			% Ejes
 			\draw[->] (-2,0) -- (2.5,0) node[right] {$t$};
 			\draw[->] (0,-1.5) -- (0,1.5) node[above] {$x(t)$};
 			
-			% Señal continua
 			\draw[thick, red, smooth, domain=-2:2, samples=100] 
 				plot (\x, {sin(2*180*\x)});
 			
 			
-			% Título
 			\node[below] at (0,-2) {(a) Continuous signal};
 		\end{scope}
 
-		% Gráfico derecho - Señal Discreta
 		\begin{scope}[xshift=6cm]
-			% Ejes
 			\draw[->] (-2,0) -- (2.5,0) node[right] {$n$};
 			\draw[->] (0,-1.5) -- (0,1.5) node[above] {$x[n]$};
 			
-			% Señal discreta (puntos con líneas verticales)
 			\foreach \x in {-2,-1.9,...,2} {
 				\draw[dashed, blue] (\x,0) -- (\x,{sin(2*180*\x)});
 				\fill[blue] (\x,{sin(2*180*\x)}) circle (2pt);
 			}
 			
 			
-			% Título
 			\node[below] at (0,-2) {(b) Discrete signal};
 		\end{scope}
 	\end{tikzpicture}
@@ -319,14 +318,12 @@ then all information in the signal can be retained, even if the center frequency
 \begin{figure}[h!]
 	\centering
 	\begin{tikzpicture}[scale=1.4]
-		% Líneas verticales para las zonas
 		\draw[thin, dashed] (1.2,0) -- (1.2,2.5);
 		\draw[thin, dashed] (2.4,0) -- (2.4,2.5);
 		\draw[thin, dashed] (3.6,0) -- (3.6,2.5);
 		\draw[thin, dashed] (4.8,0) -- (4.8,2.5);
 		\draw[thin, dashed] (6.0,0) -- (6.0,2.5);
 
-		% Etiquetas del eje x
 		\node[below] at (0,-0.1) {$0$};
 		\node[below] at (1.2,-0.1) {$0.5\nu_s$};
 		\node[below] at (2.4,-0.1) {$\nu_s$};
@@ -334,7 +331,6 @@ then all information in the signal can be retained, even if the center frequency
 		\node[below] at (4.8,-0.1) {$2\nu_s$};
 		\node[below] at (6.0,-0.1) {$2.5\nu_s$};
 
-		% Zonas coloreadas
 		\fill[gray!30] (0,0) rectangle (1.2,2.5);
 		\fill[gray!30] (2.4,0) rectangle (3.6,2.5);
 		\fill[gray!30] (4.8,0) rectangle (6.0,2.5);
@@ -342,7 +338,6 @@ then all information in the signal can be retained, even if the center frequency
 		\fill[gray!60] (1.2,0) rectangle (2.4,2.5);
 		\fill[gray!60] (3.6,0) rectangle (4.8,2.5);
 
-		% Etiquetas de las zonas
 		\node[black, align=center, font=\small\bfseries] at (0.6,1.25) {1st\\Nyquist\\Zone};
 		\node[black, align=center, font=\small\bfseries] at (1.8,1.25) {2nd\\Nyquist\\Zone};
 		\node[black, align=center, font=\small\bfseries] at (3.0,1.25) {3rd\\Nyquist\\Zone};
@@ -350,10 +345,8 @@ then all information in the signal can be retained, even if the center frequency
 		\node[black, align=center, font=\small\bfseries] at (5.4,1.25) {5th\\Nyquist\\Zone};
 		\node[black, align=center, font=\small\bfseries\itshape] at (6.75,1.25) {Upper\\Nyquist\\Zones...};
 
-		% Flecha indicadora para las zonas superiores
 		\draw[-Stealth, black, thick] (6.5,0.6) -- (7.2,0.6);
 
-		% Ejes
 		\draw[thick, -Stealth] (0,0) -- (7.5,0) node[right] {frequency};
 		\draw[thick, -Stealth] (0,0) -- (0,2.5);
 	\end{tikzpicture}
@@ -372,7 +365,7 @@ Quadrature sampling is a technique used to digitize a band-limited signal by shi
 \end{equation}
 where $\nu_0$ is the center frequency of the signal. This multiplication shifts the spectrum of $x[n]$ to be centered at $\nu_0$, allowing it to be sampled at a rate equal to its bandwidth. The resulting complex signal can be represented as:
 \begin{equation}
-	x'[n] = x_I[n] + j x_Q[n]
+	x'[n] = x_I[n] + \mathrm{j} x_Q[n]
 	\label{eq:complex_signal}
 \end{equation}
 where $x_I[n]$ and $x_Q[n]$ represent the in-phase and quadrature components, respectively. In practice, this is implemented using a \gls{nco}, where a cosine wave is used for the in-phase component and a sine wave (90° phase-shifted) for the quadrature component, as illustrated in Figure \ref{fig:quadrature_sampling}.
@@ -454,7 +447,7 @@ A large portion of signal processing is devoted to the problems of detection and
 
 Figure~\ref{fig:fourier_decomposition} illustrates this principle. A periodic time-domain signal (left) is expressed as a linear combination of sinusoidal functions at harmonically related frequencies. Each component contributes with a specific amplitude $b_n$, shown in the frequency domain (right) as discrete spectral lines located at multiples of the fundamental frequency $1/T$. This visualization emphasizes the duality between the time and frequency domains: while the time-domain signal may appear complex, its harmonic content can be concisely described by a small set of Fourier coefficients. This spectral representation is the foundation of many detection and estimation techniques in signal processing, as it isolates the periodic components embedded in noisy or corrupted observations.
 
-In digital implementations, we typically work with $N$ uniformly spaced samples of the observed signal. The \Gls{dft} produces $N$ equally spaced samples of the corresponding periodic spectrum, offering an elegant framework for spectral decomposition in an $N$-dimensional orthogonal vector space \citep{Cooley1969finite}. Its mathematical formulation is given by
+In digital implementations, we typically work with $N$ uniformly spaced samples of the observed signal. The \gls{dft} produces $N$ equally spaced samples of the corresponding periodic spectrum, offering an elegant framework for spectral decomposition in an $N$-dimensional orthogonal vector space \citep{Cooley1969finite}. Its mathematical formulation is given by
 
 \begin{equation}
 X[k] = \sum_{n=0}^{N-1} x[n] e^{-\mathrm{j} 2 \pi k n / N}, \quad k = 0, 1, \ldots, N-1,
@@ -613,7 +606,7 @@ Window functions are also fundamental in digital filter design. Among the most w
 % \end{figure}
 
 \subsection{Polyphase filter banks}
-As discussed earlier, applying a window function before the DFT is a common method to reduce spectral leakage. However, this approach alone is insufficient in real-time digital spectrometers, where both efficiency and spectral purity are critical. The polyphase filter bank (PFB) technique provides an elegant solution by combining windowing and decimation with the DFT in a computationally efficient way \citep{Harris1978}.
+As discussed earlier, applying a window function before the DFT is a common method to reduce spectral leakage. However, this approach alone is insufficient in real-time digital spectrometers, where both efficiency and spectral purity are critical. The \gls{pfb} technique provides an elegant solution by combining windowing and decimation with the DFT in a computationally efficient way \citep{Harris1978}.
 
 In a PFB, instead of feeding the DFT directly with $N$ samples, a longer block of length $M = N \times P$ is considered, where $P$ is the number of taps. This block is multiplied by a window function $w[n]$, often derived from a sinc function further tapered by a smoother function (e.g., Hanning or Hamming) to improve sidelobe suppression. The weighted block is then decomposed into $N$ polyphase sub-filters of length $P$, which are summed to form a filtered sequence. Finally, this sequence is processed by an $N$-point DFT, yielding spectral estimates with strongly reduced leakage.
 
@@ -1013,7 +1006,7 @@ A typical \Gls{fpga} layout can thus be visualized as a matrix of CLBs  surround
 	\label{fig:clb_structure}
 \end{figure}
 
-The inclusion of specialized DSP blocks streamlines high-speed operations such as multiplication and accumulation, while block RAM provides storage far more resource-efficient than distributed logic registers. Moreover, modern FPGAs often integrate additional features such as high-speed transceivers, phase-locked loops (PLLs), and even embedded microprocessor cores or system-on-chip (SoC) capabilities, enhancing their versatility for complex applications (see \citealt{zhang2018fpga}, Chapter 8).
+The inclusion of specialized DSP blocks streamlines high-speed operations such as multiplication and accumulation, while block RAM provides storage far more resource-efficient than distributed logic registers. Moreover, modern FPGAs often integrate additional features such as high-speed transceivers, phase-locked loops (PLLs), and even embedded microprocessor cores or \gls{rfsoc} capabilities, enhancing their versatility for complex applications (see \citealt{zhang2018fpga}, Chapter 8).
 
 FPGA architecture grants a compelling trade-off: designers can implement custom circuits with parallelism tailored to the application, while still retaining reconfigurability. Compared to fixed architectures like CPUs or GPUs, FPGAs achieve higher performance per watt for many tasks, especially where spatial parallelism and low-latency processing are essential \citep{kuon2008fpga,zhang2018fpga}.
 
@@ -1021,19 +1014,35 @@ FPGA architecture grants a compelling trade-off: designers can implement custom 
 
 Ethernet has become the standard interconnect technology in modern radio astronomy backends, providing a scalable and cost-effective solution for transporting high data rates between FPGAs, GPUs, and storage systems \citep{Price_2020}. Commercial high-speed variants such as 10~GbE, 40~GbE, and 100~GbE (QSFP28) are routinely employed, enabling real-time redistribution of digitized signals in FX correlators and spectrometers.  
 
-A key design choice in these systems is the adoption of the User Datagram Protocol (UDP) as the transport layer. UDP is lightweight and connectionless, avoiding the complexity and latency penalties of TCP. Since astronomical signal processing prioritizes sustained throughput over guaranteed delivery, packet loss is tolerated at a low level, with robustness ensured by packet formats that embed sufficient metadata. Typical headers include a master counter (MCNT), antenna or ADC identifier, frequency channel indices, and payload data. This design allows receiving nodes to reassemble the data stream even in the presence of dropped or out-of-order packets.  
+A key design choice in these systems is the adoption of the \gls{udp} as the transport layer. UDP is lightweight and connectionless, avoiding the complexity and latency penalties of TCP. Since astronomical signal processing prioritizes sustained throughput over guaranteed delivery, packet loss is tolerated at a low level, with robustness ensured by packet formats that embed sufficient metadata. Typical headers include a master counter (MCNT), antenna or ADC identifier, frequency channel indices, and payload data. This design allows receiving nodes to reassemble the data stream even in the presence of dropped or out-of-order packets.  
 
 UDP-based transmission thus enables efficient implementation of the \emph{corner turn}, where data must be reorganized from time-major to frequency-major order for correlation or further spectral analysis. By leveraging Ethernet switches, this operation can be distributed across the network without requiring custom interconnects. The combination of Ethernet and UDP has therefore become a defining feature of current large-scale radio interferometers.  
 
 
 \subsection{RFSoC 4x2}
 \label{sec:rfsoc}
-The RFSoC 4x2\footnote{\url{https://www.realdigital.org/hardware/rfsoc-4x2}}, developed by Xilinx, is a heterogeneous processing platform that integrates high-speed ADCs and DACs with digital processing resources on a single chip, based on the Zynq UltraScale+ RFSoC architecture. This board features four 14-bit ADCs, each capable of sampling rates up to 5~GSPS, enabling simultaneous acquisition and transmission of wideband signals across multiple channels. The ADCs support advanced features such as interleaved sampling, parallel data paths, decimation, and integrated numerical control oscillators for quadrature sampling. The board also has two 14-bit DACs, which facilitate the generation of complex waveforms, including LO signals for frequency conversion in radio systems, such as the frequency division multiplexing (FDM) architecture used in CHARTS.
 
-At its core, the RFSoC incorporates a high-performance FPGA, consisting of 930,000 logic cells and 4,200 DSP blocks, which provides substantial parallel computing capability for real-time digital signal processing. Figure \ref{fig:rfsoc_top_view} shows a top view of the RFSoC 4x2 board.
-\begin{figure}
-	\centering
-	\includegraphics[scale=0.58]{../figures/rfsoc.png}
-	\caption[RFSoC4x2 top view]{Top view of the RFSoC4x2 FPGA board. The SMA ports on the left side show the ADCs and DACs.}
-	\label{fig:rfsoc_top_view}
+The RFSoC 4x2\footnote{\url{https://www.realdigital.org/hardware/rfsoc-4x2}}, developed by RealDigital in collaboration with AMD-Xilinx, is a heterogeneous processing platform based on the Zynq UltraScale+ RFSoC Gen3 architecture. This board integrates high-speed analog-to-digital and digital-to-analog converters directly with FPGA fabric and embedded processors, making it particularly well-suited for real-time digital signal processing and software-defined radio (SDR) applications. Figure~\ref{fig:rfsoc_top_view} presents a top view of the board and its principal components.
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.58]{../figures/rfsoc.png}
+\caption[RFSoC 4x2 principal components]{Top view of the RFSoC 4x2 FPGA board. SMA connectors provide access to four ADCs and two DACs, while high-speed ports such as QSFP28 enable fast data offload.}
+\label{fig:rfsoc_top_view}
 \end{figure}
+The board supports up to 5 Gsps sampling for 14-bit ADCs and up to 9.85 Gsps for 14-bit DACs, enabling wideband direct RF sampling without the need for external downconversion stages. Four ADC SMA ports and two DAC SMA ports are available, complemented by a MABA-011118 balun (10~MHz–10~GHz) that allows single-ended antenna or signal source connections with no additional circuitry. Each converter is organized into tiles: ADCs A and B belong to tile 224, ADCs C and D to tile 226, while DACs A and B are part of tiles 228 and 230, respectively. Every tile includes a PLL, clock distribution logic, and digital up/down converters (DUC/DDC) for flexible data-path configurations. Figure~\ref{fig:rfsoc_tiles} illustrates the arrangement of the ADC and DAC tiles on the board.
+
+\begin{figure}[h!]
+\centering
+\includegraphics[scale=0.7]{rfsoc_tiles.png}
+\caption[RFSoC4x2 ADC and DAC tiles]{RFSoC4x2 ADC and DAC tiles. The board contains two ADC and two DAC tiles, each with integrated PLLs, mixers, and digital up/down converters. A MABA-011118 balun is connected between each SMA and ADC, supporting single-ended antenna connections.}
+\label{fig:rfsoc_tiles}
+\end{figure}
+
+
+Beyond data converters, the RFSoC 4x2 integrates a powerful FPGA fabric with 930k logic cells and 4200 DSP slices, alongside a processing system featuring a quad-core ARM Cortex-A53, a dual-core Cortex-R5F, and an ARM Mali-400 GPU. Two independent \SI{4}{GB} DDR4 memories operate at 2400~MHz, one attached to the processing system and one to the programmable logic, ensuring high-throughput data handling. Internal UltraRAM and block RAM further enhance buffering and streaming capabilities.
+
+The board also provides multiple high-speed interfaces for data offload and system integration, including a 100~Gbps QSFP28 port, Gigabit Ethernet, USB~3.0, and a Mini DisplayPort. External clock and pulse-per-second (PPS) SMA ports enable precise synchronization and multi-board operation. Power regulation and monitoring are handled by dedicated ICs, with protection against overvoltage, overcurrent, and overheating.
+
+
+
+
