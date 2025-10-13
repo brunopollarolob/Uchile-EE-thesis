@@ -1,7 +1,8 @@
 \chapter{F-engine design}
 \label{chap:fengine}
 
-The F-engine firmware development for this project was carried out using the graphical Simulink environment, leveraging blocks from the \gls{casper}\footnote{\url{https://casper.berkeley.edu/wiki/Main_Page}} framework. CASPER offers a library of pre-built modules for common DSP operations, such as FFTs, PFBs, and filtering, that can be easily combined to implement complex signal processing pipelines for radio astronomy applications.  
+The development of the F-engine firmware for this project utilized the Xilinx® System Generator for DSP \citep{Xilinx_UG948_2020}. This process combined Simulink® and Xilinx blocks with components from the \gls{casper}\footnote{\url{https://casper.berkeley.edu/wiki/Main_Page}} framework, enabling an efficient and modular design approach. CASPER offers a library of pre-built modules for common DSP operations, such as FFTs, PFBs, and filtering, that can be easily combined to implement complex signal processing pipelines for radio astronomy applications.
+
 This methodology enables the design of digital architectures through functional blocks and visual connections, simplifying development compared to traditional hardware description languages such as VHDL or Verilog. The CASPER toolflow also includes a simulation and compilation process that translates the Simulink designs into synthesizable \gls{hdl} code, which can then be implemented on \glspl{fpga}. Nevertheless, some custom \gls{hdl} coding was necessary to implement specific functionalities not covered by existing CASPER blocks. 
 
 This chapter details the design of the F-engine for the \gls{charts} telescope, covering the overall architecture, the digitization and channelization chain, spectral reordering, data transmission to the X-engine and generation of local oscillators for the mixers in the FDM stage. 
@@ -176,11 +177,13 @@ The tones are synthesized using lookup tables stored in block RAM, which contain
 
 Figure~\ref{fig:lo_generation} illustrates the architecture of the \gls{lo} generation block. Each \gls{dac} tile produces two independent outputs, each containing a sum of four tones. The outputs are connected to the appropriate pins on the RFSoC board, which are routed to SMA connectors for external filtering and distribution to the FDM boards.
 
-\begin{figure}[htbp]
-	\centering
-	\caption[Schematic of the LO generation block]{Schematic of the LO generation block. Each DAC tile generates two independent outputs, each consisting of a sum of four digitally synthesized tones. The frequencies and amplitudes of these tones are programmable via software registers, allowing real-time adjustment. External band-pass filters are used to isolate the desired LO frequency for each mixer in the FDM stage.}
-	\label{fig:lo_generation}
+\begin{figure}[h!]
+\centering
+
+\caption[Architecture of the LO generation block]{Architecture of the \gls{lo} generation block. Four tone generators operate in parallel, each producing a digitally synthesized sine wave from lookup tables in block RAM. The phase increment defines the tone frequency, while digital attenuation sets its amplitude. The tones are summed and sent to the DAC tile, which outputs real-valued signals routed to SMA connectors for external analog filtering and distribution to the FDM boards.}
+\label{fig:lo_generation}
 \end{figure}
+
 
 \label{sec:lo_generation}
 
@@ -212,7 +215,7 @@ Frame time resolution & \SI{3.33}{\micro\second}  \\
 \label{tab:f_engine_metrics}
 \end{table}
 
-The \SI{300}{\kilo\hertz} channel width provides the spectral resolution required for the intended scientific applications and mitigates dispersion-induced broadening (DM smearing), which is more acute in lower frequencies where the dispersion is greater. In addition, the \SI{3.33}{\micro\second} frame time resolution enables high-cadence, low-latency processing, facilitating calibration and correlation of antenna signals for each of the eight FDM chains. The full band and corresponding FFT bins for each chain are listed in Table~\ref{tab:fdm_chains}, resulting in 672 channels per chain. Note that chains 1, 2, and 3 require frequency flipping due to the mixing scheme used in the FDM stage.
+The \SI{300}{\kilo\hertz} channel width provides the spectral resolution required for the intended scientific applications and mitigates dispersion-induced broadening (DM smearing), which is more acute in lower frequencies where the dispersion is greater. In addition, the \SI{3.33}{\micro\second} frame time resolution enables high-cadence, low-latency processing, facilitating calibration and correlation of antenna signals for each of the eight FDM chains. The full band and corresponding FFT bins for each chain are listed in Table~\ref{tab:fdm_chains}, resulting in 672 channels per chain. The frequency placement of the chains was chosen so that the bands align with multiples of eight, ensuring compatibility with the FFT output, which delivers the spectrum in groups of eight samples. Note that chains 1, 2, and 3 require frequency flipping due to the mixing scheme used in the FDM stage.
 
 \begin{table}[htbp]
 \centering
@@ -241,7 +244,7 @@ The FFT output produces complex samples with a precision of 31+31 bits per chann
 
 Quantization, however, introduces systematic effects in both amplitude and phase of the measured correlations, which in turn impact calibration accuracy and the fidelity of reconstructed images. To minimize these effects, the system applies a digital gain and scaling stage prior to truncation. The calibration aims to adjust each frequency channel such that the signal level is close to 1 bit RMS (approximately two quantization steps). In this regime, the correlation between the signal and the quantization error becomes vanishingly small, the increase in output variance is only about 4\%, and the resulting bias in correlation measurements falls below $10^{-6}$ in magnitude and $10^{-11}$ degrees in phase (see \citealt{menaparra2018quantizationbiasdigitalcorrelators} for a detailed analysis of quantization effects in radio interferometry).
 
-The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the 31+31 bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a 48+48\footnote{The additional bit for real and imaginary parts comes from the signed extension of the gain value to 17 bits.} bit word, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even, yielding a compact 4+4 bit representation per channel. A clipping flag is raised whenever a value with integer part equal to 0111 (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
+The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the 31+31 bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a 48+48\footnote{The additional bit for real and imaginary parts comes from the signed extension of the gain value to 17 bits.} bit word, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even following the UG901 guidelines \citep{Xilinx_UG901_2025} for hardware efficiency, yielding a compact 4+4 bit representation per channel. A clipping flag is raised whenever a value with integer part equal to 0111 (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
 
 \begin{figure}[htbp]
     \centering

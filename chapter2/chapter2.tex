@@ -1,6 +1,6 @@
 
 \chapter{Theoretical Framework}
-This chapter provides the theoretical foundation required to understand the work presented in this thesis. It is organized into several sections, each covering a key topic relevant to the design and implementation of the F-engine for CHARTS. The chapter begins with an introduction to radio astronomy fundamentals, followed by a description of transient astronomical phenomena such as fast radio bursts and pulsars, including their propagation effects and the signal processing challenges they present. Next, it reviews essential concepts in digital signal processing, including sampling, quantization, filtering, polyphase filterbanks, and frequency analysis using the discrete Fourier transform. The chapter then discusses spectrometers and correlators, outlining their main types, performance metrics, and typical architectures. Finally, it presents an overview of the computational hardware used, with a focus on field programmable gate arrays and their integration with other processing units, such as GPUs, via high-speed optical interconnects using the \SI{100}{\giga \bit \per \second} QSFP28 standard.
+This chapter provides the theoretical foundation required to understand the work presented in this thesis. It is organized into several sections, each covering a key topic relevant to the design and implementation of the F-engine for CHARTS. The chapter begins with an introduction to radio astronomy fundamentals, followed by a description of time domain astronomy and transient astronomical phenomena such as fast radio bursts and pulsars, including their main propagation effects. Next, it reviews essential concepts in digital signal processing, including sampling, quantization, filtering, polyphase filterbanks, and frequency analysis using the discrete Fourier transform. The chapter then discusses spectrometers and correlators, outlining their main types, performance metrics, and typical architectures. Finally, it presents an overview of the computational hardware used, with a focus on field programmable gate arrays and their integration with other processing units, such as GPUs, via high-speed optical interconnects.
 
 \section{Radio astronomy fundamentals}
 \label{sec:radio_fundamentals}
@@ -165,20 +165,16 @@ Modern receivers predominantly employ heterodyne architectures, which integrate 
 
 Despite the widespread use of heterodyne technology, there is a growing trend towards direct sampling receivers, enabled by the availability of high-speed, high-dynamic-range \glspl{adc}. In this approach, the sky signal (after amplification and appropriate filtering) is digitized directly at the \gls{rf} or at a high intermediate frequency without prior analogue down-conversion. This simplifies the analogue front-end, reduces sources of instrumental instability, and allows flexible digital signal processing.
 
-\section{Pulsars and radio transients}
+\section{Time domain astronomy and radio transients}
 \label{sec:transient_astronomy}
 
-Radio transients are astronomical phenomena that produce bursts of radio emission over short timescales, ranging from milliseconds to a few seconds. They arise from a wide variety of astrophysical processes, including stellar explosions, compact object mergers, and coherent emission mechanisms in magnetized plasmas. Importantly, radio transients constitute a broad category that encompasses distinct classes of sources, such as \glspl{frb} and pulsars, which differ in their energy scales, repetition rates, and underlying physical mechanisms.
+Astronomy has traditionally focused on mapping the spatial and spectral properties of celestial sources, revealing the large-scale structure and composition of the Universe. Yet, a complementary perspective arises when one observes how these signals evolve in time. This approach, known as \textit{time-domain astronomy}, explores the dynamic sky by studying variations in brightness, polarization, or frequency over timescales that range from fractions of a millisecond to years. Such temporal variability offers a unique window into energetic and transient astrophysical processes that cannot be accessed through static observations alone.
 
-\subsection{Pulsars}
+The study of time variability has historically led to major breakthroughs in astrophysics. The discovery of pulsars in 1967 revealed the existence of neutron stars \citep{Hewish1968}, providing one of the first confirmations of stellar evolution beyond supernova explosions. Likewise, the detection of X-ray variability in Cygnus~X-1 offered early evidence for the presence of black holes \citep{CygnusX1_1972}. These discoveries demonstrated that time-series analysis is a powerful diagnostic of compact objects, extreme magnetic fields, and relativistic plasma environments.
 
-Pulsars form a well-defined subclass of radio-emitting objects, distinct from the broader category of transients. They are rapidly rotating, highly magnetized neutron stars that emit beams of coherent radio waves from their magnetic poles. As the star spins, these beams sweep across the sky like a cosmic lighthouse, and if the Earth lies within their path, observers detect a sequence of periodic pulses. This periodicity, ranging from milliseconds to seconds, is one of the hallmarks that separates pulsars from one-off or irregular transients.
+Within this domain, a particularly rich class of phenomena is formed by transient sources that appear, brighten, and fade on observable timescales. Transients may last from milliseconds, as in \glspl{frb}, to months, as in supernovae and tidal disruption events. While some exhibit periodic or quasi-periodic behavior, others are one-off events whose mechanisms remain only partially understood. Their fleeting nature poses significant observational challenges, requiring continuous monitoring and rapid data processing to capture their signatures before they vanish.
 
-Since their discovery in 1967, pulsars have become fundamental astrophysical laboratories \citep{Lorimer2004}. Their remarkable rotational stability makes them precise cosmic clocks \citep{PulsarTimingArray}, enabling stringent tests of general relativity, the study of dense matter equations of state, and the characterization of the \gls{ism}. Moreover, pulsar timing arrays exploit their long-term stability to search for nanohertz gravitational waves.
-
-The emission mechanism of pulsars is thought to involve coherent processes in the magnetosphere, where charged particles accelerated along curved magnetic field lines produce radio waves. Despite decades of study, the detailed physics of pulsar emission remains an active area of research, particularly regarding the origin of phenomena such as mode changing, nulling, and giant pulses.
-
-Because of their pulsed signals, pulsars are especially sensitive to propagation effects. Dispersion caused by free electrons in the \gls{ism} delays lower frequencies with respect to higher ones, multipath scattering broadens the pulses, and Faraday rotation rotates the plane of polarization as the waves traverse magnetized plasma \citep{PropagationISM}. These signatures allow astronomers to not only probe the intrinsic pulsar emission but also extract valuable information about the intervening medium. In addition, their well-defined profiles and repeatability make pulsars reliable calibration sources for radio telescopes.
+For this thesis in particular we will focus on two types of radio emitting objects: \glspl{frb} and pulsars. Both classes emit bright, coherent radio pulses, but they differ in their origins, timescales, and observational characteristics. First, we will review the main propagation effects that shape their observed signals.
 
 \subsection{Propagation effects}
 
@@ -205,7 +201,7 @@ Radio waves traveling through ionized media interact with free electrons and mag
 	\end{equation}
 	with $B_\parallel$ the magnetic field component along the line of sight. Measuring RM in pulsars and FRBs provides information about magnetic fields in the ISM and \gls{igm}.
 
-    \item \textbf{Scattering:} Density inhomogeneities in the ISM cause multipath propagation, producing an exponential scattering tail in the pulse profile. This effect is stronger at lower frequencies, with $\tau_{\text{sc}} \propto \nu^{-\alpha}$ and $\alpha \sim 4$. The scattering timescale can be estimated empirically from the DM and observing frequency.  
+    \item \textbf{Scattering:} Density inhomogeneities in the ISM cause multipath propagation, producing an exponential scattering tail in the pulse profile. This effect is stronger at lower frequencies, with $\tau_{\text{sc}} \propto \nu^{-\alpha}$ and $\alpha \sim 4$ for Kolmogorov turbulence \citep{Rickett_1977}. The scattering timescale can be estimated empirically from the DM and observing frequency.
 
     \item \textbf{Scintillation:} Variations in electron density lead to constructive and destructive interference, causing intensity fluctuations over time and frequency. These effects provide insights into the small-scale structure of the ISM.
 \end{itemize}
@@ -214,9 +210,21 @@ Figure \ref{fig:sim_galactic_magnetar} illustrates how these effects shape the o
 \begin{figure}[h!]
 	\centering
 	\includegraphics{../figures/galactic_magnetar_effects.png}
-	\caption[Simulated pulse profile of the Galactic magnetar SGR 1935+2154]{Simulation of the Galactic magnetar SGR 1935+2154 within the 400-800 MHz observing band, illustrating the combined effects of dispersion and scattering. The dynamic spectrum was generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, using parameters from \citet{Galactic_magnetar}. The model assumes a dispersion measure (DM) of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz} for two components with different spectral indexes. The left panel shows the dispersed signal extending over several seconds across frequency, while the right panel presents the de-dispersed pulse profile, where the intrinsic shape modified by scattering becomes visible specially at lower frequencies.}
+	\caption[Simulated pulse profile of the Galactic magnetar SGR 1935+2154]{Simulation of the Galactic magnetar SGR 1935+2154 within the 400-800 MHz observing band, illustrating the combined effects of dispersion and scattering. The dynamic spectrum was generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, using parameters from \citet{Galactic_magnetar}. The model assumes a dispersion measure (DM) of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz} for two components with different spectral properties (spectral index, spectral running, etc). The left panel shows the dispersed signal extending over several seconds across frequency, while the right panel presents the de-dispersed pulse profile, where the intrinsic shape modified by scattering becomes visible specially at lower frequencies.}
 	\label{fig:sim_galactic_magnetar}
 \end{figure}
+
+\subsection{Pulsars}
+
+Pulsars form a well-defined subclass of radio-emitting objects, distinct from the broader category of transients. They are rapidly rotating, highly magnetized neutron stars that emit beams of coherent radio waves from their magnetic poles. As the star spins, these beams sweep across the sky like a cosmic lighthouse, and if the Earth lies within their path, observers detect a sequence of periodic pulses. This periodicity, ranging from milliseconds to seconds, is one of the hallmarks that separates pulsars from one-off or irregular transients.
+
+Since their discovery in 1967, pulsars have become fundamental astrophysical laboratories \citep{Lorimer2004}. Their remarkable rotational stability makes them precise cosmic clocks \citep{PulsarTimingArray}, enabling stringent tests of general relativity, the study of dense matter equations of state, and the characterization of the \gls{ism}. Moreover, pulsar timing arrays exploit their long-term stability to search for nanohertz gravitational waves.
+
+The emission mechanism of pulsars is thought to involve coherent processes in the magnetosphere, where charged particles accelerated along curved magnetic field lines produce radio waves. Despite decades of study, the detailed physics of pulsar emission remains an active area of research, particularly regarding the origin of phenomena such as mode changing, nulling, and giant pulses.
+
+Because of their pulsed signals, pulsars are especially sensitive to propagation effects. Dispersion caused by free electrons in the \gls{ism} delays lower frequencies with respect to higher ones, multipath scattering broadens the pulses, and Faraday rotation rotates the plane of polarization as the waves traverse magnetized plasma \citep{PropagationISM}. These signatures allow astronomers to not only probe the intrinsic pulsar emission but also extract valuable information about the intervening medium. In addition, their well-defined profiles and repeatability make pulsars reliable calibration sources for radio telescopes.
+
+
 
 \subsection{Fast radio bursts}
 \label{sec:frbs}
@@ -253,7 +261,7 @@ Digital signal processing (DSP) involves the use of mathematical algorithms to a
 This section summarizes key DSP concepts relevant to this work: digital sampling, the Nyquist-Shannon theorem, quadrature sampling, quantization, frequency analysis using the discrete Fourier transform, and window functions, including polyphase filterbanks. For a more comprehensive treatment of these topics, readers are referred to \citet{Proakis1996digital} and \citet{Crockett2023}.
 
 \subsection{Digital sampling}
-Sampling is one of two processes that take place when an analogue signal is converted into a digital equivalent (the other is quantisation, which will be covered \S\ref{sec:quantization}). We can think of sampling as converting the time axis of a signal to a set of discrete time instants, while quantisation converts its amplitude to a discrete set of representable amplitude values. This simple model of analogue-to-digital conversion is depicted in Figure \ref{fig:adc_process}, where an analogue signal is passed through an ADC to create a digital equivalent.
+Sampling is one of two processes that take place when an analogue signal is converted into a digital equivalent (the other is quantization, which will be covered \S\ref{sec:quantization}). We can think of sampling as converting the time axis of a signal to a set of discrete time instants, while quantization converts its amplitude to a discrete set of representable amplitude values. This simple model of analogue-to-digital conversion is depicted in Figure \ref{fig:adc_process}, where an analogue signal is passed through an ADC to create a digital equivalent.
 \begin{figure}
 	\begin{tikzpicture}[scale=1.5]
 		\node[rectangle, fill=black, text=white, minimum width=1.5cm, minimum height=0.8cm] at (3,2) {ADC};
@@ -300,7 +308,7 @@ The selection of an appropriate sampling frequency is determined by the frequenc
 
 \subsection{Nyquist-Shannon sampling theorem}
 \label{sec:nyquist_shannon}
-The minimum sampling frequency required to avoid aliasing is formally established by the Nyquist-Shannon sampling theorem. This theorem states that a baseband, bandlimited signal must be sampled at a rate greater than twice its highest frequency component to ensure all frequency information is preserved. Here, a \emph{baseband} signal refers to one whose lowest frequency component is at or near 0~Hz, such as audio or sensor signals, while a \emph{bandpass} signal occupies a frequency range away from 0~Hz, as is common in modulated communications. Both types are considered \emph{bandlimited} if their energy is confined within a specific frequency range. If this condition is not satisfied, frequency components above half the sampling rate will be aliased, resulting in distortion and loss of information. The threshold $\nu_s/2$ is known as the Nyquist frequency. Mathematically, this is expressed as:
+The minimum sampling frequency required to prevent aliasing is defined by the Nyquist–Shannon sampling theorem, originally proposed by \citet{Nyquist1928} and later formalized by \citet{Shannon1949}. This theorem states that a baseband, bandlimited signal must be sampled at a rate greater than twice its highest frequency component to ensure all frequency information is preserved. Here, a \emph{baseband} signal refers to one whose lowest frequency component is at or near 0~Hz, such as audio or sensor signals, while a \emph{bandpass} signal occupies a frequency range away from 0~Hz, as is common in modulated communications. Both types are considered \emph{bandlimited} if their energy is confined within a specific frequency range. If this condition is not satisfied, frequency components above half the sampling rate will be aliased, resulting in distortion and loss of information. The threshold $\nu_s/2$ is known as the Nyquist frequency. Mathematically, this is expressed as:
 \begin{equation}
 	\nu_s > 2\nu_{\text{max}}
 	\label{eq:nyquist_condition}
@@ -914,36 +922,32 @@ Due to the advantages of the FX architecture, the remainder of this section focu
 \subsection{F-engine}
 In an FX correlator, the F-stage (commonly referred to as the F-engine) is responsible for three main tasks: channelization, complex gain adjustment and corner turn with packetization. Channelization allows for frequency-specific signal corrections, facilitates efficient distribution of data throughout the correlator hardware, and enables the cross-correlation of antenna pairs via complex multiplication.  
 
-As illustrated in Fig.~\ref{fig:f-engine}, the input signal is first digitized by the ADC, providing a discrete representation of the analogue voltages from each antenna. A coarse delay stage is then applied to align signals from different antennas at the sample level, compensating for the bulk of the geometric delays introduced by their separation. The PFB and FFT perform the channelization, dividing the wideband signal into narrow frequency bins with reduced spectral leakage. After channelization, a fine delay stage provides sub-sample corrections in the frequency domain, ensuring precise alignment of signals across the array.  
+As illustrated in Fig.~\ref{fig:f-engine}, the input signal is first digitized by the ADC, providing a discrete representation of the analogue voltages from each antenna. The PFB and FFT perform the channelization, dividing the wideband signal into narrow frequency bins with reduced spectral leakage. 
 
 To reduce bandwidth and storage requirements, the spectra are re-quantized to a lower bit depth while maintaining adequate sensitivity. The corner turn operation then reorganizes the data: instead of being grouped by antenna, the output is arranged by frequency channel, which is the natural format required for the cross-correlation step. Finally, the packetizer encapsulates the data into network packets for efficient transmission to the X-engine, where the correlation products are computed.
 
 \begin{figure}[h]
 	\centering
 	\begin{tikzpicture}[
-		block/.style={rectangle, draw, thick, minimum width=1cm, minimum height=0.8cm, align=center, fill=gray!10, font=\small},
-		arrow/.style={-{Stealth[length=2.5mm]}, thick},
-		node distance=0.7cm]
+			block/.style={rectangle, draw, thick, minimum width=1cm, minimum height=0.8cm, align=center, fill=gray!10, font=\small},
+			arrow/.style={-{Stealth[length=2.5mm]}, thick},
+			node distance=0.7cm]
 
-		% F-engine components
-		\node[block] (adc) {ADC};
-		\node[block, right=of adc] (coarse) {Coarse\\ Delay};
-		\node[block, right=of coarse] (pfb) {PFB};
-		\node[block, right=of pfb] (fft) {FFT};
-		\node[block, right=of fft] (fine) {Fine\\ Delay};
-		\node[block, right=of fine] (requant) {Re-quant.};
-		\node[block, right=of requant] (corner) {Corner\\ Turn};
-		\node[block, right=of corner] (packet) {Packetizer};
+			% F-engine components
+			\node[block] (adc) {ADC};
+			\node[block, right=of adc] (pfb) {PFB};
+			\node[block, right=of pfb] (fft) {FFT};
+			\node[block, right=of fft] (requant) {Re-quant.};
+			\node[block, right=of requant] (corner) {Corner\\ Turn};
+			\node[block, right=of corner] (packet) {Packetizer};
 
-		% Connect blocks with arrows
-		\draw[arrow] (adc) -- (coarse);
-		\draw[arrow] (coarse) -- (pfb);
-		\draw[arrow] (pfb) -- (fft);
-		\draw[arrow] (fft) -- (fine);
-		\draw[arrow] (fine) -- (requant);
-		\draw[arrow] (requant) -- (corner);
-		\draw[arrow] (corner) -- (packet);
-	\end{tikzpicture}
+			% Connect blocks with arrows
+			\draw[arrow] (adc) -- (pfb);
+			\draw[arrow] (pfb) -- (fft);
+			\draw[arrow] (fft) -- (requant);
+			\draw[arrow] (requant) -- (corner);
+			\draw[arrow] (corner) -- (packet);
+		\end{tikzpicture}
 	\caption[Block diagram of the F-engine processing chain]{Block diagram of the F-engine processing chain in an FX correlator. The input signal is digitized by the ADC, then undergoes coarse delay correction, filtering through a polyphase filterbank, and transformation to the frequency domain via FFT. Fine delay adjustment and re-quantization prepare the data for the corner turn operation, which rearranges data by frequency rather than by antenna before packetization for transmission to the X-engine.}
 	\label{fig:f-engine}
 \end{figure}
@@ -1026,7 +1030,7 @@ The RFSoC 4x2\footnote{\url{https://www.realdigital.org/hardware/rfsoc-4x2}}, de
 \begin{figure}[h!]
 \centering
 \includegraphics[scale=0.58]{../figures/rfsoc.png}
-\caption[RFSoC 4x2 principal components]{Top view of the RFSoC 4x2 FPGA board. SMA connectors provide access to four ADCs and two DACs, while high-speed ports such as QSFP28 enable fast data offload.}
+\caption[RFSoC 4x2 principal components]{Top view of the RFSoC 4x2 FPGA board. SMA connectors provide access to four ADCs and two DACs, while high-speed ports such as QSFP28 enable fast data offload. Extracted from \citet{RealDigital_RFSoC4x2_RefMan_A3}.}
 \label{fig:rfsoc_top_view}
 \end{figure}
 The board supports up to 5 Gsps sampling for 14-bit ADCs and up to 9.85 Gsps for 14-bit DACs, enabling wideband direct RF sampling without the need for external downconversion stages. Four ADC SMA ports and two DAC SMA ports are available, complemented by a MABA-011118 balun (10~MHz–10~GHz) that allows single-ended antenna or signal source connections with no additional circuitry. Each converter is organized into tiles: ADCs A and B belong to tile 224, ADCs C and D to tile 226, while DACs A and B are part of tiles 228 and 230, respectively. Every tile includes a PLL, clock distribution logic, and digital up/down converters (DUC/DDC) for flexible data-path configurations. Figure~\ref{fig:rfsoc_tiles} illustrates the arrangement of the ADC and DAC tiles on the board.
@@ -1034,7 +1038,7 @@ The board supports up to 5 Gsps sampling for 14-bit ADCs and up to 9.85 Gsps for
 \begin{figure}[h!]
 \centering
 \includegraphics[scale=0.7]{rfsoc_tiles.png}
-\caption[RFSoC4x2 ADC and DAC tiles]{RFSoC4x2 ADC and DAC tiles. The board contains two ADC and two DAC tiles, each with integrated PLLs, mixers, and digital up/down converters. A MABA-011118 balun is connected between each SMA and ADC, supporting single-ended antenna connections.}
+\caption[RFSoC4x2 ADC and DAC tiles]{RFSoC4x2 ADC and DAC tiles. The board contains two ADC and two DAC tiles, each with integrated PLLs, mixers, and digital up/down converters. A MABA-011118 balun is connected between each SMA and ADC, supporting single-ended antenna connections. Extracted from \citet{RealDigital_RFSoC4x2_RefMan_A3}.}
 \label{fig:rfsoc_tiles}
 \end{figure}
 

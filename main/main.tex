@@ -28,13 +28,15 @@
 \usepackage{subfiles}
 \usepackage{bookmark}
 \usepackage{float}
+\usepackage{tabularx}
+\usepackage{rotating}
 
 \usepackage{tikz}
 \usepackage{pgfplots} % loads tikz which loads pgf
 \pgfplotsset{compat=1.18}
 \usetikzlibrary{arrows, arrows.meta, calc, shapes, positioning, patterns, 
 decorations.pathreplacing, decorations.pathmorphing, shapes.geometric, shapes.symbols, shapes.arrows, 
-datavisualization, datavisualization.formats.functions, automata, fit, angles, quotes, decorations.markings, 3d}
+datavisualization, datavisualization.formats.functions, automata, fit, angles, quotes, decorations.markings, 3d, backgrounds}
 \tikzset{>=latex} % for LaTeX arrow head
 \colorlet{myred}{red!85!black}
 \colorlet{myblue}{blue!80!black}
@@ -61,6 +63,7 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 \usepackage{verbatimbox}
 \usepackage{printlen}
 \usepackage{multicol}
+\usepackage{subcaption}
 
 
 \usepackage{siunitx}
@@ -70,6 +73,7 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 \DeclareSIUnit{\arcmin}{arcmin}
 \DeclareSIUnit{\arcsec}{arcsec}
 \DeclareSIUnit{\mas}{mas}
+\DeclareSIUnit{\decibelm}{dBm}
 \sisetup{
   range-phrase=\text{--},
   range-units=single
@@ -235,10 +239,12 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 
   \pdfbookmark[section]{Dedication}{dedication}
   \begin{dedication}
-    Dedicated to Google.
+    Happiness only real when shared. 
   \end{dedication}
 
   \newpage
+
+  
 
   \pdfbookmark[section]{Acknowledgements}{acknowledgements}
   \begin{acknowledgements}

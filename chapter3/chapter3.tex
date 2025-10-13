@@ -42,18 +42,191 @@ Laguna Carén also hosts a limited number of research projects from public and p
 
 The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. On August 28, 2025, a specialized measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies. For this analysis, the CHORD feed (an ultra-wideband antenna with $S11 < -10$ dB in the 0 to \SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC 4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range.
 
-The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}. While most of the band remains relatively clean, several strong \gls{rfi} features are evident. In particular, dangerous peaks appear within the science band of \SIrange{300}{500}{\mega\hertz}, most notably around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{570}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$~K, raising the risk of saturation if left unmitigated.  
+The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}. While most of the band remains relatively clean, several strong \gls{rfi} features are evident. In particular, dangerous peaks appear within the science band of \SIrange{300}{500}{\mega\hertz}, most notably around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$~K, raising the risk of saturation if left unmitigated.  
 
 \begin{figure}[h!]
   \centering
-  \includegraphics{../figures/sky_temperature.pdf}
-  \caption[Sky temperature at Laguna Carén site]{Sky temperature at Laguna Carén site. The plot shows the measured sky brightness temperature as a function of frequency over the 0--2457.6 MHz band. The data was collected using the feed of CHORD, an amplification box with known system temperature and the RFSoC 4x2. For the sky measurements 15 minutes of data were collected and averaged.}
+  \includegraphics{sky_temperature_comparison.pdf}
+  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna Carén site (blue) and Cerro Calán (red). The CHARTS science band (300--500 MHz) is highlighted. Several strong RFI features are evident, particularly around 416 MHz and 435 MHz, as well as in the 530--700 MHz range. These signals reach brightness temperatures approaching $10^8$ K, posing a risk of saturation if not properly mitigated.}
   \label{fig:rfi_caren}
 \end{figure}
 
 
 \section{Analog system}
-The CHARTS analog system consists of three main components: the antenna, the LNAs, and the FDM board. The antenna is a dual-polarized patch differential designed to cover the \SI{300}{\mega\hertz} to \SI{500}{\mega\hertz} band with a wide field of view (HPBW$\sim90^\circ$) and a impedance of \SI{100}{\ohm}. Each antenna element has a ULNA located within the antenna itself. 
+\label{sec:analog_system}
+
+The CHARTS analog frontend forms the interface between the antennas and the digital spectrometer. It is responsible for capturing, amplifying, and frequency-multiplexing the sky signals before digitization. The system is composed of three main components: the active antennas, the low-noise amplification chain, and the \gls{fdm} board. Together, these stages ensure low system noise, high stability, and optimal use of the available sampling bandwidth of the RFSoC digitizers.
+
+\subsection{Active antennas}
+Each CHARTS antenna is a dual-polarized, differential patch designed to operate across the \SIrange{300}{500}{\mega\hertz} band. The antenna provides a wide field of view (HPBW $\sim 100^\circ$) and an impedance of \SI{100}{\ohm}, making it suitable for dense array configurations. The design is intentionally simple and cost-effective, fabricated on a standard PCB substrate to enable large-scale deployment across the 256-element array.
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.8\textwidth]{../figures/antenna.jpg}
+  \caption[CHARTS antenna]{CHARTS antenna. The antenna is a dual-polarized patch designed to operate across the 300--500 MHz band. Each polarization integrates a first-stage ULNA directly at the antenna feed to minimize cable losses and thermal noise contribution.}
+  \label{fig:charts_antenna}
+\end{figure}
+
+Each polarization integrates a first-stage ultra-low noise amplifier (ULNA) directly at the antenna feed (see Figure \ref{fig:amp_ulna}) to minimize cable losses and thermal noise contribution. The integrated amplifier employs four QPL9547 devices (two per polarization), delivering a gain of \SI{19.3}{\decibel} and a noise figure of approximately \SI{0.3}{\decibel} when powered at \SI{3.3}{\volt} and \SI{80}{\milli\ampere}. This configuration provides a low overall system temperature while simplifying cabling and assembly.
+
+The antenna outputs are differential and interfaced through standard RJ45 connectors, which serve both signal transmission and DC power delivery. Future versions will include integrated low-pass filters to improve rejection of out-of-band interference and prevent saturation in subsequent amplification stages.
+
+\subsection{Amplification chain}
+After the antennas, the signals are further amplified by a second-stage \gls{lna} (Figure \ref{fig:amp_second}), housed in the frontend electronics. This module employs two PSA4-5043+ amplifiers followed by an internal voltage regulator, providing roughly \SI{20}{\decibel} of gain and a noise figure near \SI{0.65}{\decibel} at \SI{400}{\mega\hertz}. The amplifiers operate at \SI{3.3}{\volt} and \SI{70}{\milli\ampere}, and their placement close to the antennas ensures sufficient drive power for the FDM mixers while maintaining a high signal-to-noise ratio.
+
+For specific subsystems, additional amplifier types are used. A high-power amplifier stage (Figure \ref{fig:amp_highpower}), operating at \SI{28}{\volt}, drives the \gls{lo} distribution network feeding multiple FDM boards. Early prototypes also included single-ended LNAs (two QPL9547 devices in cascade, Figure \ref{fig:amp_singleended}) providing $\sim\SI{50}{\decibel}$ of gain, which are now used for laboratory testing and calibration purposes.
+
+\begin{figure}[h!]
+\centering
+
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{ulna.png}
+    \caption{Antennas LNA: QPL9547 ultra-low noise amplifiers (Gain: 19.3\,dB, NF: 0.3\,dB, 3.3\,V/80--90\,mA). }
+    \label{fig:amp_ulna}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{second_stage.png}
+    \caption{Second stage LNA: Two PSA4-5043+ LNAs with voltage regulator (Gain: $\sim$20\,dB, NF: 0.65\,dB, 3.3\,V/70\,mA).}
+    \label{fig:amp_second}
+\end{subfigure}
+
+\vspace{1em}
+
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{high_power.png}
+    \caption{High power amplifier: Used for LO distribution to all FDM modules (28\,V)}
+    \label{fig:amp_highpower}
+\end{subfigure}
+\hfill
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \includegraphics[width=0.9\textwidth]{single_ended.png}
+    \caption{Single-ended LNA: Two QPL9547 amplifiers (Gain: $\sim$50\,dB, NF: $\sim$0.9\,dB, 5\,V/110\,mA).}
+    \label{fig:amp_singleended}
+\end{subfigure}
+
+\caption{Amplifiers used in the CHARTS analog chain.}
+\label{fig:amplifiers}
+\end{figure}
+
+\subsection{Frequency division multiplexing board}
+The FDM board is a critical component that allows CHARTS to efficiently utilize the \SI{4.9152}{\giga\hertz} sampling capability of the RFSoC by combining multiple antenna signals into a single digitizer input. This is achieved by upconverting each sub-band to a distinct \gls{if} using independent \glspl{lo}. Each board processes eight input signals—one per antenna—and combines them into a single wideband output channel covering the range from \SI{300}{\mega\hertz} to \SI{2366.4}{\mega\hertz}.
+
+The FDM architecture uses four digitally generated LO tones (see \S \ref{sec:lo_generation} for specific details regarding LO generation), which are distributed to the mixers with carefully controlled power levels between -15 dBm and -5 dBm (nominally \SI{-10}{\decibelm}). These tones correspond to the center frequencies of the upconverted sub-bands, effectively partitioning the overall spectrum into eight adjacent frequency chains. Each chain spans \SI{201.6}{\mega\hertz}, with $\sim\SI{66}{\mega\hertz}$ guard bands between them to minimize inter-chain interference. The choice of LO frequencies was made to align each band with an integer multiple of the FFT channel spacing, simplifying later channelization and data organization. Figure \ref{fig:fdm_block_diagram} illustrates the FDM block diagram and frequency plan.
+
+\begin{figure}[h!]
+    \centering
+    \begin{circuitikz}[yscale=1, xscale=2.2, font=\small]
+
+      \def\antenna{
+        -- +(0mm, 1.5mm) -- +(2mm, 4.5mm) -- +(-2mm, 4.5mm) -- +(0mm, 1.5mm)
+            }
+            
+            \edef\antysep{.7cm};
+            \edef\blocksep{2.75}
+            
+            \ctikzset{
+        multipoles/external pins width=0.025,
+        multipoles/external pins thickness=5,
+        multipoles/dipchip/pin spacing=.2,
+        multipoles/thickness=1,
+        muxdemuxes/fill=gray!5,
+        multipoles/muxdemux/base len=.4
+        }
+            
+            \draw (2, 4) node[
+        muxdemux,
+        muxdemux def={
+          NL=8,
+          NB=0,
+          NT=4,
+          NR=1,
+          square pins=1,
+          },
+        ] (fdm) {FDM-00};
+            
+            \draw ({\blocksep * 2}, 6) node[
+        dipchip,
+        no topmark,
+        fill=white,
+        hide numbers,
+        num pins=10,
+        draw only pins={1-4, 6-10},
+        ] (rfsoc) {RFSoC-0};
+            
+            \draw[line width=1pt] (rfsoc.pin 1) -- ++ (-1.5, 0) |- (fdm.rpin 1) node[gray, above, pos=0] {\qtyrange{300}{2366.4}{\mega\hertz}};
+            \draw[line width=1pt] (rfsoc.pin 2) -- ++ (-1.25, 0) -- ++ (0, -3) edge[dotted] ++ (0, -.75);
+            \draw[line width=1pt] (rfsoc.pin 3) -- ++ (-1, 0) -- ++ (0, -3) edge[dotted] ++ (0, -.75);
+            \draw[line width=1pt] (rfsoc.pin 4) -- ++ (-.75, 0) -- ++ (0, -3) edge[dotted] ++ (0, -.75);
+            
+            \foreach \x [count=\xi, evaluate={\labeli={int(\xi - 1)}}] in {3.5, 2.5, ..., -3.5}{
+        \draw[line width=1pt] (fdm) ++ (-2, {\x * \antysep}) \antenna node[left] (A7node) {A-00\labeli} |- ++ (.25, 0) node[currarrow, scale=1]{} -- ++ (.25, 0) coordinate (A\labeli);
+        \draw[line width=1pt] (A\labeli) -- (fdm.lpin \xi);
+        }
+            \path (A0) -- (fdm.lpin 1) node[gray, above, pos=-0.4, right=.3cm] {\qtyrange{300}{500}{\mega\hertz}};
+            
+            % bottom labels
+            \draw let \p1=(A7node) in (\x1,1) node[align=center] {$\vdots$ \\ A-255};
+            \draw let \p1=(fdm) in (\x1,1) node[align=center] {$\vdots$ \\ FDM-31};
+            \draw let \p1=(rfsoc) in (\x1,1) node[align=center] {$\vdots$ \\ RFSoC-7};
+
+            \node[gray] at ($(fdm.tpin 1)!0.5!(fdm.tpin 4) + (0, .25)$) {$\nu_{\text{LO}_{1}}$--$\nu_{\text{LO}_{4}}$};
+
+            \path let \p1=(A7node.west) in (\x1, 0) coordinate (front-top);
+            \path let \p1=(rfsoc.east) in (\x1, 0) coordinate (back-top);
+
+            \coordinate (plot-height) at (0, 7.2);
+
+            \begin{scope}[shift={($(rfsoc.pin 1 |- plot-height) + (-5,0.5)$)}, scale=0.5]
+                    \draw[->] (0,0) -- (2.6,0) node[right, font=\small] {$\nu$};
+                    \draw[->] (0,0) -- (0,1.5);
+                    \draw[thick, blue] (0.5,0) -- (0.7,1.2) -- (1.3,1.2) -- (1.5,0);
+                    \node[font=\small] at (1.7, 0.7) {$\times 8$};
+                  \end{scope}
+
+            \draw[->, thick] ($(rfsoc.pin 1 |- plot-height) + (-3.7, 0.9)$) -- ($(rfsoc.pin 1 |- plot-height) + (-2.5, 0.9)$);
+
+            \begin{scope}[shift={($(rfsoc.pin 1|- plot-height) + (-2.25, 0.5)$)}, scale=0.5]
+              \draw[->] (0,0) -- (5.7,0) node[right, font=\small] {$\nu$};
+              \draw[->] (0,0) -- (0,1.5);
+
+              \foreach \i in {0,...,7}{
+                \pgfmathsetmacro{\xstart}{0.5 + \i*0.625}
+                \pgfmathsetmacro{\xend}{0.5 + (\i+1)*0.625}
+                \draw[thick, blue] (\xstart,0) -- (\xstart+0.05,1.2) -- (\xend-0.05,1.2) -- (\xend,0);
+              }
+            \end{scope}
+    
+    \end{circuitikz}
+    \caption[FDM block diagram and frequency plan]{FDM block diagram and frequency plan. Each FDM board combines signals from eight antennas (A-000 to A-007) into a single wideband output channel (300--2366.4 MHz) for digitization by one ADC of the RFSoC. The upconversion is performed using four independent LO tones ($\nu_{\text{LO}_1}$ to $\nu_{\text{LO}_4}$), each driving two mixers to create eight adjacent frequency bands. The resulting spectrum consists of eight contiguous sub-bands, each 201.6 MHz wide, with guard bands between them to minimize interference.}
+    \label{fig:fdm_block_diagram}
+  \end{figure}
+
+The FDM employs active mixers, which require a stable \SI{3.3}{\volt} DC supply at around \SI{140}{\milli\ampere}. The upconverted output of each mixer is then combined into a single differential signal, transmitted via coaxial cables to the RFSoC digitizer. Post-mixing, narrowband analog bandpass filters are used to isolate each LO product and suppress unwanted intermodulation terms.
+
+Several versions of the FDM board have been developed throughout the project. Figure \ref{fig:fdm_board_diff} shows the differential-input FDM board with SMA connectors, which will be used in the CHARTS-8 implementation. Figure \ref{fig:fdm_board_rj45} shows the RJ45 version, which incorporates most of the improvements identified from the previous differential design while adding RJ45 connectors. This latest board is still under development.
+
+\begin{figure}[h!]
+  \centering
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{diff_fdm.jpg}
+    \caption[Differential-input FDM board]{Differential-input FDM board.}
+    \label{fig:fdm_board_diff}
+  \end{subfigure}
+  \hfill
+  \begin{subfigure}{0.45\textwidth}
+    \centering
+    \includegraphics[width=\textwidth]{rj45_fdm.jpg}
+    \caption[RJ45 FDM board]{RJ45 FDM board.}
+    \label{fig:fdm_board_rj45}
+  \end{subfigure}
+  \caption[CHARTS FDM boards]{CHARTS FDM boards. The differential-input version (a) uses SMA connectors and is intended for the CHARTS-8 deployment. The RJ45 version (b) incorporates improvements from the differential design and adds RJ45 connectors for easier integration with the antenna system.}
+\end{figure}
 
 \section{Digital backend and processing pipeline}
 \label{sec:charts_digital_backend}
