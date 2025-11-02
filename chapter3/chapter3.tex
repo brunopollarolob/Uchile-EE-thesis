@@ -3,28 +3,44 @@ CHARTS is a compact, wide-field interferometer designed to explore the transient
 
 The system consists of 256 single-polarized antennas, a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation.
 
-Key operational and performance aspects include:
-\begin{itemize}
-  \item Operating band: 300--500\,MHz, optimized for FRB detection with strong flux at low frequencies.
-  \item Wide instantaneous field of view, designed for high-cadence surveys and coverage of the southern hemisphere.
-  \item Differential analog architecture for antennas, LNAs, and FDM, minimizing costs through the use of ethernet cables for signal transmission.
-  \item Signal processing: FDM $\rightarrow$ ADC $\rightarrow$ PFB/FFT (RFSoC) $\rightarrow$ corner-turn $\rightarrow$ GPU (correlation / beamforming / search).
-  \item Target sensitivity: $T_{\text{sys}} \lesssim 50\,$K, with an expected detection rate of $\sim$100 FRBs per year under nominal survey configurations.
-  \item RFI strategy: site shielding, analog front-end filtering, and software rejection during GPU-based processing.
-  \item Science output: detection of low-DM FRBs, population studies, and coordinated multi-wavelength follow-up.
-\end{itemize}
-
 CHARTS additionally functions as a platform to experiment with novel digital instrumentation methods, such as IQ sampling using complex FFT and the demultiplexing of multiple antennas through a single ADC, techniques that other arrays don't have used. Its modular architecture supports gradual enhancements and scalability, enabling CHARTS to remain aligned with changing scientific objectives.
 
-The subsequent sections provide a detailed discussion of the site characteristics, including RFI measurements, the analog system comprising the antenna, LNA, and FDM, as well as the digital backend and processing pipeline. F-engine design considerations are described separately in Chapter~\ref{chap:fengine}.
+The subsequent sections provide a detailed exploration of the CHARTS system. They begin with an overview of the scientific objectives, site characteristics, and RFI measurements. This is followed by a comprehensive description of the analog system, encompassing the antenna, LNA, and FDM. The digital backend and processing pipeline are also discussed. Design considerations specific to the F-engine are presented separately in Chapter~\ref{chap:fengine}.
+
+The development of CHARTS has been a collaborative effort. The analog components, such as the antenna, LNA, and FDM, were primarily developed by Dr. Albert Wai Kit Lau, a postdoctoral researcher at University of Toronto, and MSc Sebastián Manosalva from Universidad de Chile. The digital development, including all RFSoC measurements like the RFI characterization shown in Figure~\ref{fig:rfi_caren}, has been led by the author of this thesis, with some contributions in the LO generator of BSc student Frederik Brecht from University of Toronto. The software for the processing and search nodes is being developed collaboratively by MSc Gonzalo Burgos and MSc student Juan Pablo Contreras from Universidad de Chile.
+\section{Science goals}
+\label{sec:scientific_objectives}
+
+The primary scientific goal of CHARTS is to detect and monitor \glspl{frb} in the nearby universe, focusing particularly on sources at southern declinations. By doing so, CHARTS aims to reveal the closest FRB emitters, those best suited for detailed studies of progenitors, radiation mechanisms, and local environments. The experiment will thus complement northern-hemisphere surveys, expand the global sky coverage toward the Galactic Center, and open an unexplored region of the southern sky for transient radio astronomy. Importantly, it will also strengthen FRB science within South America, where no detections have yet been reported.
+
+Beyond its discovery potential, CHARTS will contribute to several key areas of time-domain astrophysics:
+
+\begin{enumerate}
+    \item \textbf{Emission mechanisms.} Coherent emission from relativistic particles in strong magnetic fields is widely accepted, but the exact mechanisms remain uncertain \citep{EmissionMechanisms2022}. Magnetar-based models, including magnetospheric emission \citep{FRBtheory2020} and coherent curvature radiation by bunches of charged particles \citep{Lyubarsky2020}, are key areas of study. CHARTS will help constrain these mechanisms through multi-frequency follow-ups.
+
+    \item \textbf{Progenitor diversity.} FRBs occur in diverse environments, from globular clusters \citep{FRBGC2022} to dwarf galaxies \citep{FRBdwarf2022}. CHARTS will expand the sample of nearby repeaters, enabling detailed studies of host galaxies and local conditions.
+
+    \item \textbf{Galactic transients.} CHARTS’ daily transit over the Galactic Center (see Figure~\ref{fig:instantaneous_fov}) enables searches for bursts from magnetars like SGR~1935+2154 \citep{Galactic_magnetar}, giant-pulse emitters, rotating radio transients (RRATs; \citealt{RRATs2022}), and other rare phenomena.
+
+    \item \textbf{Repeating FRBs.} CHARTS will identify new repeaters, share real-time alerts, and enable multi-wavelength follow-ups, essential for calibration and validation of array capabilities.
+  \end{enumerate}
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics[width=\textwidth]{../figures/instantaneous_fov.pdf}
+  \caption[Comparison of CHARTS FoV with other radio transient detectors]{Comparison of the field-of-view (FoV) of CHARTS with CHIME/FRB far sidelobe \citep{Lin2024} and BURSTT \citep{Ling_2022}. CHARTS uniquely covers southern latitudes, complementing existing facilities. Its FoV includes the Galactic center, enabling daily monitoring of transient events in the Galaxy and local extragalactic Universe. The gray scale represents the synchrotron background at 300 MHz \citep{BeyondPlanck2023}, with scatter sources indicating magnetars \citep{MagnetarCatalog2014}. Figure made by Dr. Tomás Cassanelli.}
+  \label{fig:instantaneous_fov}
+\end{figure}
+
+In summary, CHARTS is designed not only to expand the discovery space for radio transients in the southern hemisphere but also to provide critical insights into the physics of coherent radio emission, the diversity of FRB progenitors, and the dynamic sky of our Galaxy.
 
 \section{Site and RFI environment}
 The selection of the CHARTS site began in 2023 with measurements at several candidate locations to quantitatively compare their \gls{rfi} environments. The chosen site was Laguna Carén park\footnote{\url{https://caren.uchile.cl}}, on the outskirts of Santiago, Chile. Owned by Universidad de Chile, the area provides stable electrical supply, basic infrastructure, and a reserved section suitable for scientific installations. Located at latitude \qty{-33.45}{\degree} and longitude \qty{-70.75}{\degree}, about \qty{25}{\kilo\m} northwest of downtown Santiago, the park sits at an elevation of \qty{550}{\m} with flat terrain that facilitates the deployment of the array (Figure~\ref{fig:caren_site}).  
 
-\begin{figure}[h!]
+\begin{figure}[!ht]
   \centering
   \includegraphics[width=\textwidth]{caren_site.pdf}
-  \caption[Site location compared to other observatories]{Left: Chile and Argentina above Santiago's latitude \qty{-30}{\degree}. Major observatories in Chile will share same instantaneous FoV with CHARTS, enabling local follow-up collaborations. Right: Zoom-in at the Laguna Carén site. Laguna Carén site and its location respect to Chile's main city Santiago (where the city are located to the right of the map). The site is located in a reserved area from Universidad de Chile where private and public research institutions have projects. The CHARTS site will be placed deep in the reserved area closed by several gates and away from the public (roughly \qty{2}{\kilo\m}).}
+  \caption[Site location compared to other observatories]{Left: Chile and Argentina above Santiago's latitude \qty{-30}{\degree}. Major observatories in Chile will share same instantaneous FoV with CHARTS, enabling local follow-up collaborations. Right: Zoom-in at the Laguna Carén site. Laguna Carén site and its location respect to Chile's main city Santiago (where the city are located to the right of the map). The site is located in a reserved area from Universidad de Chile where private and public research institutions have projects. The CHARTS site will be placed deep in the reserved area closed by several gates and away from the public (roughly \qty{2}{\kilo\m}). Figure made by Dr. Tomás Cassanelli.}
   \label{fig:caren_site}
 \end{figure}
 
@@ -32,7 +48,7 @@ The site offers sufficient space for a \numproduct{16x16} antenna array within a
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{charts_location.pdf}
-  \caption[Site layout and infrastructure]{A: Front view of the CHARTS future location (seeing towards Northwest). B: Aerial view Laguna Carén. The CHARTS circle location corresponds to an area of \qty{\sim35}{\m} diameter. At a distance of \qty{\sim25}{\m} a power grid is located and capable enough to provide power for all machine and systems. The receiver hut (container) it's placed  between the power line and the location of the array.}
+  \caption[Site layout and infrastructure]{(A) Front view of the future CHARTS site, facing northwest. (B) Aerial view of Laguna Carén, highlighting the CHARTS location, which spans an area of approximately \qty{35}{\m} in diameter. The power grid, located about \qty{25}{\m} away, is sufficient to supply all necessary systems and equipment. The receiver hut (a container) is positioned between the power line and the array site. Note: The aerial image predates the installation of the receiver hut. Figure made by Dr. Tomás Cassanelli.}
   \label{fig:charts_location}
 \end{figure}
 
@@ -42,12 +58,12 @@ Laguna Carén also hosts a limited number of research projects from public and p
 
 The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. On August 28, 2025, a specialized measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies. For this analysis, the CHORD feed (an ultra-wideband antenna with $S11 < -10$ dB in the 0 to \SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC 4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range.
 
-The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}. While most of the band remains relatively clean, several strong \gls{rfi} features are evident. In particular, dangerous peaks appear within the science band of \SIrange{300}{500}{\mega\hertz}, most notably around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$~K, raising the risk of saturation if left unmitigated.  
-
+The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}, alongside a reference measurement taken at Cerro Calán (where the Astronomy Department is located, within the city of Santiago). The sky temperature at Cerro Calán is significantly elevated due to urban RFI, reaching levels around $10^5$ K in the CHARTS band. In contrast, Laguna Carén exhibits a much lower baseline sky temperature, approximately $2\times10^2-3\times10^2$ K, indicating a substantially cleaner environment. However, several strong RFI features are evident, particularly around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$ K, posing a risk of saturation if not properly mitigated. The CHARTS analog front-end incorporates bandpass filters to attenuate out-of-band interference, and additional filtering is planned for future iterations to further enhance system robustness against RFI.
+ 
 \begin{figure}[h!]
   \centering
   \includegraphics{sky_temperature_comparison.pdf}
-  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna Carén site (blue) and Cerro Calán (red). The CHARTS science band (300--500 MHz) is highlighted. Several strong RFI features are evident, particularly around 416 MHz and 435 MHz, as well as in the 530--700 MHz range. These signals reach brightness temperatures approaching $10^8$ K, posing a risk of saturation if not properly mitigated.}
+  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna Carén site (blue) and Cerro Calán (red). The CHARTS science band (300--500 MHz) is highlighted. The measurements were conducted using the CHORD feed and RFSoC 4x2 backend, with an amplification box providing a known system temperature for accurate calibration. The Laguna Carén site exhibits a significantly lower sky temperature compared to Cerro Calán, indicating a cleaner RFI environment, although several strong RFI features are present that require mitigation through filtering.}
   \label{fig:rfi_caren}
 \end{figure}
 
@@ -89,7 +105,7 @@ For specific subsystems, additional amplifier types are used. A high-power ampli
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=0.9\textwidth]{second_stage.png}
-    \caption{Second stage LNA: Two PSA4-5043+ LNAs with voltage regulator (Gain: $\sim$20\,dB, NF: 0.65\,dB, 3.3\,V/70\,mA).}
+    \caption{Second stage LNA: Two PSA4-5043+ LNAs with voltage regulator (Gain: $\sim$20 dB, NF: 0.65 dB, 3.3 V/70 mA).}
     \label{fig:amp_second}
 \end{subfigure}
 
@@ -98,14 +114,14 @@ For specific subsystems, additional amplifier types are used. A high-power ampli
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=0.9\textwidth]{high_power.png}
-    \caption{High power amplifier: Used for LO distribution to all FDM modules (28\,V)}
+    \caption{High power amplifier: Used for LO distribution to all FDM modules (28 V)}
     \label{fig:amp_highpower}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.45\textwidth}
     \centering
     \includegraphics[width=0.9\textwidth]{single_ended.png}
-    \caption{Single-ended LNA: Two QPL9547 amplifiers (Gain: $\sim$50\,dB, NF: $\sim$0.9\,dB, 5\,V/110\,mA).}
+    \caption{Single-ended LNA: Two QPL9547 amplifiers (Gain: $\sim$50 dB, NF: $\sim$0.9 dB, 5 V/110 mA).}
     \label{fig:amp_singleended}
 \end{subfigure}
 
@@ -116,7 +132,7 @@ For specific subsystems, additional amplifier types are used. A high-power ampli
 \subsection{Frequency division multiplexing board}
 The FDM board is a critical component that allows CHARTS to efficiently utilize the \SI{4.9152}{\giga\hertz} sampling capability of the RFSoC by combining multiple antenna signals into a single digitizer input. This is achieved by upconverting each sub-band to a distinct \gls{if} using independent \glspl{lo}. Each board processes eight input signals—one per antenna—and combines them into a single wideband output channel covering the range from \SI{300}{\mega\hertz} to \SI{2366.4}{\mega\hertz}.
 
-The FDM architecture uses four digitally generated LO tones (see \S \ref{sec:lo_generation} for specific details regarding LO generation), which are distributed to the mixers with carefully controlled power levels between -15 dBm and -5 dBm (nominally \SI{-10}{\decibelm}). These tones correspond to the center frequencies of the upconverted sub-bands, effectively partitioning the overall spectrum into eight adjacent frequency chains. Each chain spans \SI{201.6}{\mega\hertz}, with $\sim\SI{66}{\mega\hertz}$ guard bands between them to minimize inter-chain interference. The choice of LO frequencies was made to align each band with an integer multiple of the FFT channel spacing, simplifying later channelization and data organization. Figure \ref{fig:fdm_block_diagram} illustrates the FDM block diagram and frequency plan.
+The FDM architecture uses four digitally generated LO tones (see \S \ref{sec:lo_generation} for specific details regarding LO generation), which are distributed to the mixers with carefully controlled power levels between -15 dBm and -5 dBm (nominally \SI{-10}{\decibelm}). These tones correspond to the center frequencies of the upconverted sub-bands, effectively partitioning the overall spectrum into eight adjacent frequency chains. Each chain spans \SI{201.6}{\mega\hertz}, with $\sim\SI{66}{\mega\hertz}$ guard bands between them to minimize inter-chain interference. The choice of LO frequencies was made to align each band with an integer multiple of the FFT channel spacing, simplifying later channelization and data organization. Figure \ref{fig:fdm_block_diagram} illustrates the FDM block diagram and Table \ref{tab:fdm_lo_tones} summarizes the frequency allocation for each antenna input, including the LO frequencies and resulting IF bands.
 
 \begin{figure}[h!]
     \centering
@@ -202,9 +218,30 @@ The FDM architecture uses four digitally generated LO tones (see \S \ref{sec:lo_
             \end{scope}
     
     \end{circuitikz}
-    \caption[FDM block diagram and frequency plan]{FDM block diagram and frequency plan. Each FDM board combines signals from eight antennas (A-000 to A-007) into a single wideband output channel (300--2366.4 MHz) for digitization by one ADC of the RFSoC. The upconversion is performed using four independent LO tones ($\nu_{\text{LO}_1}$ to $\nu_{\text{LO}_4}$), each driving two mixers to create eight adjacent frequency bands. The resulting spectrum consists of eight contiguous sub-bands, each 201.6 MHz wide, with guard bands between them to minimize interference.}
+    \caption[FDM block diagram and frequency plan]{FDM block diagram and frequency plan. Each FDM board combines signals from eight antennas (A-000 to A-007) into a single wideband output channel (300--2366.4 MHz) for digitization by one ADC of the RFSoC. The upconversion is performed using four independent LO tones ($\nu_{\text{LO}_1}$ to $\nu_{\text{LO}_4}$), each driving 4 mixers to create eight adjacent frequency bands. The resulting spectrum consists of eight contiguous sub-bands, each 201.6 MHz wide, with guard bands of $\sim66$ MHz between them to minimize interference.}
     \label{fig:fdm_block_diagram}
   \end{figure}
+
+  \begin{table}[h!]
+  \centering
+  
+   \begin{tabular}{cccc}
+    \toprule
+    Chain & Frequency range & LO tone & Band \\
+    \midrule
+    0 & 300--501.6 MHz   & /            & USB \\
+    1 & 564--765.6 MHz   & 1065.6 MHz   & LSB \\
+    2 & 830.4--1032 MHz  & 1332.0 MHz   & LSB \\
+    3 & 1099.2--1300.8 MHz & 1600.8 MHz & LSB \\
+    4 & 1365.6--1567.2 MHz & 1065.6 MHz & USB \\
+    5 & 1632--1833.6 MHz & 1332.0 MHz   & USB \\
+    6 & 1900.8--2102.4 MHz & 1600.8 MHz & USB \\
+    7 & 2164.8--2366.4 MHz & 1864.8 MHz & USB \\
+    \bottomrule
+    \end{tabular}
+  \caption[FDM sub-band and corresponding LO tones]{FDM sub-band and corresponding LO tones. Also shown is whether the band is upper sideband (USB) or lower sideband (LSB) with respect to the LO frequency.}
+  \label{tab:fdm_lo_tones}
+  \end{table}
 
 The FDM employs active mixers, which require a stable \SI{3.3}{\volt} DC supply at around \SI{140}{\milli\ampere}. The upconverted output of each mixer is then combined into a single differential signal, transmitted via coaxial cables to the RFSoC digitizer. Post-mixing, narrowband analog bandpass filters are used to isolate each LO product and suppress unwanted intermodulation terms.
 
@@ -232,7 +269,7 @@ Several versions of the FDM board have been developed throughout the project. Fi
 \label{sec:charts_digital_backend}
 
 
-\begin{figure}
+\begin{figure}[h!]
     \centering
     \includegraphics[width=\textwidth]{../figures/CHARTS_signal_chain.pdf}
     \caption[CHARTS signal chain]{Signal path for the 8 single polarization antennas (1 tile digitizes 32 antennas). The RFSoC separates the frontend and backend of the
@@ -249,5 +286,5 @@ Several versions of the FDM board have been developed throughout the project. Fi
     and then distributed to a switch to feed then the 4 processing nodes (each of them processing 1/4 of the band). Each processing node will calibrate,
     beamform beams, upchannelize, downsample, square, and sum (I-Stokes) the dataset. Then the search node will efficiently dedisperse a set of DM
     values and perform a peak-find algorithm for potential candidates. Site communication will be done through a satellite remote connection, and
-    remote monitoring will be done to system. Thick lines are analog connections and thin lines are digitized signals.}
+    remote monitoring will be done to system. Thick lines are analog connections and thin lines are digitized signals. Figure made by Dr. Tomás Cassanelli.}
   \end{figure}

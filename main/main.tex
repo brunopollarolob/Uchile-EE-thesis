@@ -64,6 +64,7 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 \usepackage{printlen}
 \usepackage{multicol}
 \usepackage{subcaption}
+\usepackage{listings}
 
 
 \usepackage{siunitx}
@@ -101,11 +102,11 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
   pdffitwindow=true,
   pdfstartview={FitH},
   pdftitle={Thesis},
-  pdfauthor={Tomas Cassanelli},
-  pdfsubject={Thesis subject},
-  pdfcreator={Tomas Cassanelli},
-  pdfproducer={Tomas Cassanelli},
-  pdfkeywords={Keywords},
+  pdfauthor={Bruno Pollarolo},
+  pdfsubject={CHARTS F-engine},
+  pdfcreator={Bruno Pollarolo},
+  pdfproducer={Bruno Pollarolo},
+  pdfkeywords={FRB, radio astronomy, FPGA, RFSoC, digital signal processing},
   pdfnewwindow=true,
   colorlinks=true,
   linkcolor=click_color,
@@ -163,13 +164,13 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 
     \MakeUppercase{Facultad de Ciencias Físicas y Matemáticas}
 
-    \MakeUppercase{Departamento Ingeniería Eléctrica}
+    \MakeUppercase{Departamento de Ingeniería Eléctrica}
 	\end{minipage}
 
 	\begin{center}
     \vspace{1.5cm}
 
-    \MakeUppercase{\textbf{Design and implementation of the F-engine for the Canadian Chilean Array for Radio Transient Studies (CHARTS)}}
+    \MakeUppercase{\textbf{Design and implementation of the F-engine for the Canadian-Chilean Array for Radio Transient Studies (CHARTS) project}}
 
     \vspace{1.5cm}
 
@@ -182,16 +183,17 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
       \MakeUppercase{\textbf{Bruno Aldo Pollarolo Buschmann}} \\
       \vspace{1.0cm} \\
       PROFESOR GUÍA: \\
-      TOMÁS ALBERTO CASSANELLI ESPEJO \\
+      TOMÁS CASSANELLI ESPEJO \\
       \vspace{0.5cm} \\
       MIEMBROS DE LA COMISIÓN: \\
-      RICARDO ALBERTO FINGER CAMUS \\
-      PROFESOR 3 \\
+      RICARDO FINGER CAMUS \\
+      JUAN MENA-PARRA \\
       \vspace{0.5cm} \\
       Este trabajo ha sido parcialmente financiado por la \\
       Agencia Nacional de Investigación y Desarrollo (ANID) \\
-      a través de su fondo QUIMAL 230001 y el Dunlap \\
-      Institute for Astronomy \& Astrophysics \\
+      a través de su fondo QUIMAL 230001/FONDECYT 2025 \\
+      Folio 11250312 y el Dunlap Institute for Astronomy \\
+      \& Astrophysics \\
       \vspace{0.5cm} \\
       \MakeUppercase{Santiago de Chile} \\
       \MakeUppercase{2025}
@@ -216,10 +218,15 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 	\end{tabular}
 
   \begin{center}
-    \MakeUppercase{Diseño e implementación del F-engine para el Canadian Chilean Array for Radio Transient Studies (CHARTS)}
+    \MakeUppercase{\textbf{Design and implementation of the F-engine for the Canadian-Chilean Array for Radio Transient Studies (CHARTS) project}}
   \end{center}
-  \lipsum[1-2]
+  La radioastronomía de dominio temporal se ha consolidado como una de las áreas más dinámicas de la astrofísica moderna, revelando fenómenos energéticos como pulsares, estallidos de magnetares y ráfagas rápidas de radio (FRBs, por sus siglas en inglés). Estas emisiones de duración en el orden de los milisegundos figuran entre las más brillantes del cielo en radio y permiten estudiar condiciones físicas extremas, como procesos de emisión coherente, aceleración relativista de partículas y campos magnéticos intensos.\\
 
+  A pesar de los avances recientes, gran parte del cielo austral permanece inexplorado en escalas temporales de transientes de radio. La mayoría de los \textit{surveys}, como CHIME/FRB y FAST, se han concentrado en el hemisferio norte, dejando regiones como el Centro Galáctico y el cielo extragaláctico austral con una cobertura limitada. El proyecto \textit{Canadian-Chilean Array for Radio Transient Studies} (CHARTS) surge para cubrir este vacío, mediante el despliegue de un arreglo interferométrico de baja frecuencia (300–500 MHz) en el hemisferio sur, orientado a detectar y monitorear FRBs y otros fenómenos transitorios, además de fortalecer la comunidad de radioastronomía en Sudamérica.\\
+
+  Esta tesis presenta el diseño e implementación del F-engine, la primera etapa del backend digital de CHARTS. Basado en la plataforma AMD Xilinx RFSoC 4×2, el sistema digitaliza, canaliza y cuantiza múltiples señales de antena, generando flujos espectrales compactos listos para correlación y búsqueda de transitorios. El diseño admite hasta 32 entradas en un ancho de banda de $\sim$2.5 GHz, integra osciladores locales digitales para el esquema de multiplexado en frecuencia y transmite los datos procesados a través de enlaces ópticos de 100 \si{\giga\bit\per\second}.\\
+
+  La arquitectura desarrollada logra un procesamiento espectral de alta velocidad y baja latencia adecuado para operación en tiempo real, estableciendo un componente tecnológico clave para CHARTS y sentando las bases para futuras detecciones en el cielo del hemisferio sur.
   \newpage
 
   \begin{tabular}{l}
@@ -231,15 +238,22 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 	\end{tabular}
 
   \begin{center}
-    \MakeUppercase{Design and implementation of the F-engine for the Canadian Chilean Array for Radio Transient Studies (CHARTS)}
+    \MakeUppercase{\textbf{Design and implementation of the F-engine for the Canadian-Chilean Array for Radio Transient Studies (CHARTS) project}}
   \end{center}
-  \lipsum[1-2]
+  Time-domain radio astronomy has become one of the most dynamic areas of modern astrophysics, revealing energetic phenomena such as pulsars, magnetar flares, and \glspl{frb}. These millisecond-duration flashes are among the brightest signals in the radio sky and provide unique insight into extreme physical conditions, including coherent emission, relativistic particle acceleration, and strong magnetic fields.\\
 
+  However, the southern sky remains largely unexplored at radio transient timescales. Most surveys, such as CHIME/FRB and FAST, have focused on northern declinations, leaving regions like the Galactic Center and the southern extragalactic sky under-observed. The \gls{charts} project was conceived to address this gap by deploying a low-frequency (300–500 MHz) interferometric array in the Southern Hemisphere to detect and monitor FRBs and other transient phenomena, while strengthening the radio astronomy community in South America.\\
+
+  This thesis presents the design and implementation of the F-engine, the first stage of CHARTS’ digital backend. Built on the AMD Xilinx RFSoC 4×2 platform, the system digitizes, channelizes, and quantizes multiple antenna signals into compact spectral data streams ready for correlation and transient searches. It supports up to 32 inputs across $\sim$2.5 GHz of bandwidth, integrates internally generated local oscillators for frequency-division multiplexing, and transmits processed data through 100 \si{\giga\bit\per\second} optical links.\\
+
+  The resulting architecture achieves high-throughput, low-latency spectral processing suitable for real-time operation, establishing a key technological foundation for CHARTS and enabling future discoveries in the dynamic radio sky of the Southern Hemisphere.
   \newpage
 
   \pdfbookmark[section]{Dedication}{dedication}
   \begin{dedication}
-    Happiness only real when shared. 
+     A ese niño de 8 años \\
+     que alguna vez se interesó por \\ 
+     un cometa pequeño y poco brillante.
   \end{dedication}
 
   \newpage
@@ -248,7 +262,11 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 
   \pdfbookmark[section]{Acknowledgements}{acknowledgements}
   \begin{acknowledgements}
-    \lipsum[1-2]
+    El primer pilar fundamental es evidentemente mi familia. Pese a que mis modos no sean lo suficientemente expresivos, creo importante tomar este hito para explicitarlos. Primero a mi papá, por estar ahí siempre, de forma hasta patológica, pero que con el tiempo he llegado a valorar enormemente. A mi mamá, por ser mi mayor admiradora e instarme a creerme el cuento, especialmente cuando la autoestima emocional flaquea. Y al Franco, por ser un gran hermano mayor, estar siempre a mi lado y ser el mejor compañero de sobremesa. \\
+
+    Agradezco también la fortuna de contar con amistades excepcionales. A mis amigos del colegio: Pacolin, Kaco, Pedor, Musa, Tom, Muñoz, Santi y Mateo, por una amistad sincera y duradera, y por estar siempre dispuestos a acompañarme en cualquier circunstancia. A mis amigos de la universidad, quienes han sido un apoyo fundamental durante estos años: el Coco, por su compañía constante, especialmente en los primeros años presenciales, y el Benja, por los entrenos y las innumerables tallas compartidas en los últimos 2 años. Menciones honoríficas: Tincho, Renzi, Pin, Gale, Adri, Araya, Kopp y Ulloa.\\
+
+    Finalmente, agradezco a mi profesor guía, Tomás, y al resto de la comisión, por brindarme la oportunidad de participar en este proyecto y por fomentar la ciencia y la instrumentación desarrollada en Chile. Gracias por permitirme formar parte del AstroLab y MWL, donde he aprendido enormemente y he conocido a personas excepcionales. También agradezco a mis compañeros de laboratorio, especialmente a Sebita y Gonzalo, por su buena disposición y por ayudarme a aportar mi granito de arena en el desafío de sacar adelante CHARTS.
   \end{acknowledgements}
 
   \pdfbookmark[section]{Contents}{contents}

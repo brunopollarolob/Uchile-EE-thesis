@@ -1,2 +1,286 @@
 
-\chapter{First useful appendix}
+\chapter{Verilog codes}
+
+\definecolor{verilogcommentcolor}{RGB}{104,180,104}
+\definecolor{verilogkeywordcolor}{RGB}{49,49,255}
+\definecolor{verilogsystemcolor}{RGB}{128,0,255}
+\definecolor{verilognumbercolor}{RGB}{255,143,102}
+\definecolor{verilogstringcolor}{RGB}{160,160,160}
+\definecolor{verilogdefinecolor}{RGB}{128,64,0}
+\definecolor{verilogoperatorcolor}{RGB}{0,0,128}
+
+% Verilog style
+\lstdefinestyle{prettyverilog}{
+   language           = Verilog,
+   commentstyle       = \color{verilogcommentcolor},
+   alsoletter         = \$'0123456789\`,
+   literate           = *{+}{{\verilogColorOperator{+}}}{1}%
+                         {-}{{\verilogColorOperator{-}}}{1}%
+                         {@}{{\verilogColorOperator{@}}}{1}%
+                         {;}{{\verilogColorOperator{;}}}{1}%
+                         {*}{{\verilogColorOperator{*}}}{1}%
+                         {?}{{\verilogColorOperator{?}}}{1}%
+                         {:}{{\verilogColorOperator{:}}}{1}%
+                         {<}{{\verilogColorOperator{<}}}{1}%
+                         {>}{{\verilogColorOperator{>}}}{1}%
+                         {=}{{\verilogColorOperator{=}}}{1}%
+                         {!}{{\verilogColorOperator{!}}}{1}%
+                         {^}{{\verilogColorOperator{$\land$}}}{1}%
+                         {|}{{\verilogColorOperator{|}}}{1}%
+                         {=}{{\verilogColorOperator{=}}}{1}%
+                         {[}{{\verilogColorOperator{[}}}{1}%
+                         {]}{{\verilogColorOperator{]}}}{1}%
+                         {(}{{\verilogColorOperator{(}}}{1}%
+                         {)}{{\verilogColorOperator{)}}}{1}%
+                         {,}{{\verilogColorOperator{,}}}{1}%
+                         {.}{{\verilogColorOperator{.}}}{1}%
+                         {~}{{\verilogColorOperator{$\sim$}}}{1}%
+                         {\%}{{\verilogColorOperator{\%}}}{1}%
+                         {\&}{{\verilogColorOperator{\&}}}{1}%
+                         {\#}{{\verilogColorOperator{\#}}}{1}%
+                         {\ /\ }{{\verilogColorOperator{\ /\ }}}{3}%
+                         {\ _}{\ \_}{2}%
+                        ,
+   morestring         = [s][\color{verilogstringcolor}]{"}{"},%
+   identifierstyle    = \color{black},
+   vlogdefinestyle    = \color{verilogdefinecolor},
+   vlogconstantstyle  = \color{verilognumbercolor},
+   vlogsystemstyle    = \color{verilogsystemcolor},
+   basicstyle         = \scriptsize\fontencoding{T1}\ttfamily,
+   keywordstyle       = \bfseries\color{verilogkeywordcolor},
+   numbers            = left,
+   numbersep          = 10pt,
+   tabsize            = 4,
+   escapeinside       = {/*!}{!*/},
+   upquote            = true,
+   sensitive          = true,
+   showstringspaces   = false, %without this there will be a symbol in the places where there is a space
+   frame              = single
+}
+
+
+% This is shamelessly stolen and modified from:
+% https://github.com/jubobs/sclang-prettifier/blob/master/sclang-prettifier.dtx
+\makeatletter
+
+% Language name
+\newcommand\language@verilog{Verilog}
+\expandafter\lst@NormedDef\expandafter\languageNormedDefd@verilog%
+  \expandafter{\language@verilog}
+  
+% save definition of single quote for testing
+\lst@SaveOutputDef{`'}\quotesngl@verilog
+\lst@SaveOutputDef{``}\backtick@verilog
+\lst@SaveOutputDef{`\$}\dollar@verilog
+
+% Extract first character token in sequence and store in macro 
+% firstchar@verilog, per http://tex.stackexchange.com/a/159267/21891
+\newcommand\getfirstchar@verilog{}
+\newcommand\getfirstchar@@verilog{}
+\newcommand\firstchar@verilog{}
+\def\getfirstchar@verilog#1{\getfirstchar@@verilog#1\relax}
+\def\getfirstchar@@verilog#1#2\relax{\def\firstchar@verilog{#1}}
+
+% Initially empty hook for lst
+\newcommand\addedToOutput@verilog{}
+\lst@AddToHook{Output}{\addedToOutput@verilog}
+
+% The style used for constants as set in lstdefinestyle
+\newcommand\constantstyle@verilog{}
+\lst@Key{vlogconstantstyle}\relax%
+   {\def\constantstyle@verilog{#1}}
+
+% The style used for defines as set in lstdefinestyle
+\newcommand\definestyle@verilog{}
+\lst@Key{vlogdefinestyle}\relax%
+   {\def\definestyle@verilog{#1}}
+
+% The style used for defines as set in lstdefinestyle
+\newcommand\systemstyle@verilog{}
+\lst@Key{vlogsystemstyle}\relax%
+   {\def\systemstyle@verilog{#1}}
+
+% Counter used to check current character is a digit
+\newcount\currentchar@verilog
+  
+% Processing macro
+\newcommand\@ddedToOutput@verilog
+{%
+   % If we're in \lstpkg{}' processing mode...
+   \ifnum\lst@mode=\lst@Pmode%
+      % Save the first token in the current identifier to \@getfirstchar
+      \expandafter\getfirstchar@verilog\expandafter{\the\lst@token}%
+      % Check if the token is a backtick
+      \expandafter\ifx\firstchar@verilog\backtick@verilog
+         % If so, then this starts a define
+         \let\lst@thestyle\definestyle@verilog%
+      \else
+         % Check if the token is a dollar
+         \expandafter\ifx\firstchar@verilog\dollar@verilog
+            % If so, then this starts a system command
+            \let\lst@thestyle\systemstyle@verilog%
+         \else
+            % Check if the token starts with a single quote
+            \expandafter\ifx\firstchar@verilog\quotesngl@verilog
+               % If so, then this starts a constant without length
+               \let\lst@thestyle\constantstyle@verilog%
+            \else
+               \currentchar@verilog=48
+               \loop
+                  \expandafter\ifnum%
+                  \expandafter`\firstchar@verilog=\currentchar@verilog%
+                     \let\lst@thestyle\constantstyle@verilog%
+                     \let\iterate\relax%
+                  \fi
+                  \advance\currentchar@verilog by \@ne%
+                  \unless\ifnum\currentchar@verilog>57%
+               \repeat%
+            \fi
+         \fi
+      \fi
+      % ...but override by keyword style if a keyword is detected!
+      %\lsthk@DetectKeywords% 
+   \fi
+}
+
+% Add processing macro only if verilog
+\lst@AddToHook{PreInit}{%
+  \ifx\lst@language\languageNormedDefd@verilog%
+    \let\addedToOutput@verilog\@ddedToOutput@verilog%
+  \fi
+}
+
+% Colour operators in literate
+\newcommand{\verilogColorOperator}[1]
+{%
+  \ifnum\lst@mode=\lst@Pmode\relax%
+   {\bfseries\textcolor{verilogoperatorcolor}{#1}}%
+  \else
+    #1%
+  \fi
+}
+
+\makeatother
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% End Verilog Code Style
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the 4-bit convergent quantizer with gain and dynamic shift.}, captionpos=b, label={lst:verilog_quantizer}]
+module quantizer (
+    input  wire          clk,
+    input  wire          ce,
+    input  wire signed [30:0] din,   
+    input  wire [15:0]   gain,       
+    input  wire [5:0]    shift,      
+    output reg signed [3:0] dout,
+    output reg           clip_flag
+);
+    // Stage 1: multiplication
+    reg signed [47:0] mult_result;
+    // Stage 2: shift left
+    reg signed [47:0] shifted_stage;
+    // Stage 3: rounding variables
+    reg signed [47:0] rounded_stage; 
+    reg pattern_detect;
+    reg signed [47:0] multadd_reg;
+    
+    // Delays for shifted_stage to align with rounding pipeline
+    reg signed [47:0] shifted_stage_d1;  
+    reg signed [47:0] shifted_stage_d2;  
+    
+    // Convergent rounding constants
+    wire [43:0] pattern = 44'b00000000000000000000000000000000000000000000;
+    wire [47:0] c = 48'b000001111111111111111111111111111111111111111111; 
+    wire signed [47:0] multadd;
+    
+    // Hierarchical OR for fractional part detection (hardware efficient)
+    wire frac_nonzero_1 = |shifted_stage_d2[43:33];  // 11 bits
+    wire frac_nonzero_2 = |shifted_stage_d2[32:22];  // 11 bits  
+    wire frac_nonzero_3 = |shifted_stage_d2[21:11];  // 11 bits
+    wire frac_nonzero_4 = |shifted_stage_d2[10:0];   // 11 bits
+    wire any_frac_bit = frac_nonzero_1 | frac_nonzero_2 | frac_nonzero_3 | frac_nonzero_4;
+    
+    // =========================
+    // Stage 1: Multiply by gain
+    // =========================
+    always @(posedge clk) begin
+        if (ce)
+            mult_result <= din * $signed({1'b0, gain});
+        else
+            mult_result <= 0;
+    end
+    
+    // =========================
+    // Stage 2: Shift LEFT
+    // =========================
+    always @(posedge clk) begin
+        if (ce)
+            shifted_stage <= mult_result <<< shift;  // shift left
+        else
+            shifted_stage <= 0;
+    end
+    
+    // =========================
+    // Delay registers for shifted_stage
+    // =========================
+    always @(posedge clk) begin
+        if (ce) begin
+            shifted_stage_d1 <= shifted_stage;    
+            shifted_stage_d2 <= shifted_stage_d1; 
+        end else begin
+            shifted_stage_d1 <= 0;
+            shifted_stage_d2 <= 0;
+        end
+    end
+    
+    // =========================
+    // Stage 3: Convergent Rounding Logic
+    // =========================
+    assign multadd = shifted_stage + c + 1'b1;
+    
+    always @(posedge clk) begin
+        if (ce) begin
+            pattern_detect <= (multadd[43:0] == pattern) ? 1'b1 : 1'b0;
+            multadd_reg <= multadd;
+        end else begin
+            pattern_detect <= 1'b0;
+            multadd_reg <= 48'b0;
+        end
+    end
+    
+    always @(posedge clk) begin
+        if (ce) begin
+            // Convergent rounding: if pattern detected (midpoint), force LSB to 0
+            if (pattern_detect)
+                rounded_stage <= {multadd_reg[47:45], 1'b0, multadd_reg[43:0]}; 
+            else
+                rounded_stage <= multadd_reg; // Normal half up rounding
+        end else begin
+            rounded_stage <= 48'b0;
+        end
+    end
+    
+    // =========================
+    // Stage 4: Overflow Detection and Saturation
+    // =========================
+    always@(posedge clk) begin
+        if (ce) begin
+            // Use delayed shifted_stage aligned with rounded_stage
+            if ((shifted_stage_d2[47:44] == 4'b0111) && any_frac_bit) begin
+                // Positive overflow: shifted_stage > 7.0
+                dout <= 4'b0111; // Max positive value for 4-bit signed
+                clip_flag <= 1'b1;
+            end else begin
+                // No overflow, assign the rounded value
+                dout <= rounded_stage[47:44]; // Take the top 4 bits as output
+                clip_flag <= 1'b0;
+            end
+        end else begin
+            dout <= 4'b0;
+            clip_flag <= 1'b0;
+        end
+    end
+    
+endmodule
+\end{lstlisting}

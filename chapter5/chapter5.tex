@@ -1,1 +1,23 @@
 \chapter{Testing, validation, and performance results}
+In this chapter, we present the testing and validation results of the F-engine designed for the CHARTS project. The performance metrics are evaluated through a series of laboratory measurements and on-sky observations. We assess key parameters such as linearity, dynamic range, channelization accuracy, and timing stability. Additionally, we demonstrate the end-to-end functionality of the system by conducting a solar transit observation and 8 antenna correlation tests.
+
+\section{RFSoC 4x2 ADC characterization}
+
+\section{LO generator performance}
+\section{Digital gains calibration results}
+
+\section{Linearity and dynamic range}
+
+\section{Testing correlation}
+
+
+\section{Solar transit observation}
+\label{sec:solar_transit}
+We performed an on-sky solar observation of the CHARTS prototype antenna and electronics at the Laguna Carén site. The prototype system used is shown in Figure \ref{fig:charts_antenna_caren}, with one of the antennas in front (with temporary ground) and the FDM system at the back. Two antennas operated in different sub-bands on the SMA port FDM, with the prototype amplification and filtering between the feeds and digitizer. The antennas were separated by a eyeballed \qty{19}{\meter} baseline, while the sun traveled through the sky in the antenna beam. The complex cross-correlations show clear sinusoidal fringes with phase wraps on minute timescales, consistent with the projected baseline and observing frequencies. This result verifies end-to-end functionality, front-end gain and filtering, sub-band selection, frequency stability, and timing.
+
+\begin{figure}[h!]
+    \centering 
+    \includegraphics[width=\linewidth]{charts_antenna_caren.png} 
+    \caption{CHARTS prototype antenna with temporary ground in test observation at Laguna Carén; analog and FDM system at the back} 
+    \label{fig:charts_antenna_caren} 
+\end{figure}
