@@ -42,6 +42,42 @@ archivePrefix = {arXiv},
       adsnote = {Provided by the SAO/NASA Astrophysics Data System}
 }
 
+@article{Bernardo_2025,
+   title={Charting the nanohertz gravitational wave sky with pulsar timing arrays},
+   volume={34},
+   ISSN={1793-6594},
+   url={http://dx.doi.org/10.1142/S0218271825400139},
+   DOI={10.1142/s0218271825400139},
+   number={04},
+   journal={International Journal of Modern Physics D},
+   publisher={World Scientific Pub Co Pte Ltd},
+   author={Bernardo, Reginald Christian and Ng, Kin-Wang},
+   year={2025},
+   month=feb }
+
+@misc{mitra2024decodingnaturecoherentradio,
+      title={Decoding the nature of Coherent radio emission in Pulsars I: Observational constraints}, 
+      author={Dipanjan Mitra and Rahul Basu and George I Melikizde},
+      year={2024},
+      eprint={2405.20634},
+      archivePrefix={arXiv},
+      primaryClass={astro-ph.HE},
+      url={https://arxiv.org/abs/2405.20634}, 
+}
+
+@article{Melrose_2016,
+   title={Pulsar electrodynamics: an unsolved problem},
+   volume={82},
+   ISSN={1469-7807},
+   url={http://dx.doi.org/10.1017/S0022377816000398},
+   DOI={10.1017/s0022377816000398},
+   number={2},
+   journal={Journal of Plasma Physics},
+   publisher={Cambridge University Press (CUP)},
+   author={Melrose, D. B. and Yuen, R.},
+   year={2016},
+   month=apr }
+
 @misc{fender2024fillingradiotransientsgap,
       title={Filling the radio transients gap (or: The case for a dedicated radio transients monitoring array in the southern hemisphere)}, 
       author={Rob Fender and Assaf Horesh and Phil Charles and Patrick Woudt and James Miller-Jones and Joe Bright},
@@ -797,6 +833,23 @@ isbn = {978-1-4673-0333-0},
 doi = {10.1109/ICEAA.2012.6328788}
 }
 
+@article{Masui_2019,
+doi = {10.3847/1538-4357/ab229e},
+url = {https://doi.org/10.3847/1538-4357/ab229e},
+year = {2019},
+month = {jun},
+publisher = {The American Astronomical Society},
+volume = {879},
+number = {1},
+pages = {16},
+author = {Masui, Kiyoshi W. and Shaw, J. Richard and Ng, Cherry and Smith, Kendrick M. and Vanderlinde, Keith and Paradise, Adiv},
+title = {Algorithms for FFT Beamforming Radio Interferometers},
+journal = {The Astrophysical Journal},
+abstract = {Radio interferometers consisting of identical antennas arranged on a regular lattice permit fast Fourier transform beamforming, which reduces the correlation cost from  in the number of antennas to . We develop a formalism for describing this process and apply this formalism to derive a number of algorithms with a range of observational applications. These include algorithms for forming arbitrarily pointed tied-array beams from the regularly spaced Fourier transform–formed beams, sculpting the beams to suppress sidelobes while only losing percent-level sensitivity, and optimally estimating the position of a detected source from its observed brightness in the set of beams. We also discuss the effect that correlations in the visibility-space noise, due to cross talk and sky contributions, have on the optimality of Fourier transform beamforming, showing that it does not strictly preserve the sky information of the n2 correlation, even for an idealized array. Our results have applications to a number of upcoming interferometers, in particular the Canadian Hydrogen Intensity Mapping Experiment–Fast Radio Burst (CHIME/FRB) project.}
+}
+
+@article{Price_2024, title={Reduced-resolution beamforming: Lowering the computational cost for pulsar and technosignature surveys}, volume={41}, DOI={10.1017/pasa.2024.35}, journal={Publications of the Astronomical Society of Australia}, author={Price, D.C.}, year={2024}, pages={e037}}
+
 
 
 @article{CHIME2022,
@@ -930,15 +983,133 @@ archivePrefix = {arXiv},
   url          = https://doi.org/10.57760/sciencedb.15070
 }
 
-@misc{menaparra2018quantizationbiasdigitalcorrelators,
-      title={Quantization bias for digital correlators}, 
-      author={J. Mena-Parra and K. Bandura and M. A. Dobbs and J. R. Shaw and S. Siegel},
-      year={2018},
-      eprint={1803.04296},
-      archivePrefix={arXiv},
-      primaryClass={astro-ph.IM},
-      url={https://arxiv.org/abs/1803.04296}, 
+@article{menaparra2018quantizationbiasdigitalcorrelators,
+author = {Mena-Parra, J. and Bandura, K. and Dobbs, M. A. and Shaw, J. R. and Siegel, S.},
+title = {Quantization Bias for Digital Correlators},
+journal = {Journal of Astronomical Instrumentation},
+volume = {07},
+number = {02n03},
+pages = {1850008},
+year = {2018},
+doi = {10.1142/S2251171718500083},
+
+URL = {
+        https://doi.org/10.1142/S2251171718500083
+},
+eprint = { 
+        https://doi.org/10.1142/S2251171718500083
 }
+,
+    abstract = { In radio interferometry, the quantization process introduces a bias in the magnitude and phase of the measured correlations which translates into errors in the measurement of source brightness and position in the sky, affecting both the system calibration and image reconstruction. In this paper, we investigate the biasing effect of quantization in the measured correlation between complex-valued inputs with a circularly symmetric Gaussian probability density function (PDF), which is the typical case for radio astronomy applications. We start by calculating the correlation between the input and quantization error and its effect on the quantized variance, first in the case of a real-valued quantizer with a zero mean Gaussian input and then in the case of a complex-valued quantizer with a circularly symmetric Gaussian input. We demonstrate that this input-error correlation is always negative for a quantizer with an odd number of levels, while for an even number of levels, this correlation is positive in the low signal level regime. In both cases, there is an optimal interval for the input signal level for which this input-error correlation is very weak and the model of additive uncorrelated quantization noise provides a very accurate approximation. We determine the conditions under which the magnitude and phase of the measured correlation have negligible bias with respect to the unquantized values: we demonstrate that the magnitude bias is negligible only if both unquantized inputs are optimally quantized (i.e. when the uncorrelated quantization error model is valid), while the phase bias is negligible when (1) at least one of the inputs is optimally quantized, or when (2) the correlation coefficient between the unquantized inputs is small. Finally, we determine the implications of these results for radio interferometry. }
+}
+
+@software{kotekan,
+  author       = {Andre Renard and
+                  Richard Shaw and
+                  Cherry Ng and
+                  tristpinsm and
+                  Rick Nitsche and
+                  Jacob Taylor and
+                  Keith Vanderlinde and
+                  Kiyoshi Masui and
+                  James Willis and
+                  Mateus Fandino and
+                  Davor Cubranic and
+                  Arun Naidu and
+                  Kevin Bandura and
+                  Jintao Xu and
+                  Liam Connor and
+                  Shiny Brar and
+                  Anja Kefala and
+                  Emmanuel Fonseca and
+                  ssiegelx and
+                  Adam Lanman and
+                  Ian Tretyakov and
+                  pklages},
+  title        = {Kotekan: A framework for high-performance
+                   radiometric data pipelines
+                  },
+  month        = nov,
+  year         = 2021,
+  publisher    = {Zenodo},
+  version      = {2021.11},
+  doi          = {10.5281/zenodo.5842660},
+  url          = {https://doi.org/10.5281/zenodo.5842660},
+}
+
+@misc{cordes2003ne2001inewmodelgalactic,
+      title={NE2001.I. A New Model for the Galactic Distribution of Free Electrons and its Fluctuations}, 
+      author={J. M. Cordes and T. J. W. Lazio},
+      year={2003},
+      eprint={astro-ph/0207156},
+      archivePrefix={arXiv},
+      primaryClass={astro-ph},
+      url={https://arxiv.org/abs/astro-ph/0207156}, 
+}
+
+@ARTICLE{Yao2017,
+       author = {{Yao}, J.~M. and {Manchester}, R.~N. and {Wang}, N.},
+        title = "{A New Electron-density Model for Estimation of Pulsar and FRB Distances}",
+      journal = {\apj},
+     keywords = {ISM: structure, pulsars: general, stars: distances, Astrophysics - Astrophysics of Galaxies},
+         year = 2017,
+        month = jan,
+       volume = {835},
+       number = {1},
+          eid = {29},
+        pages = {29},
+          doi = {10.3847/1538-4357/835/1/29},
+archivePrefix = {arXiv},
+       eprint = {1610.09448},
+ primaryClass = {astro-ph.GA},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2017ApJ...835...29Y},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+@article{taylor2019spectralkurtosisbasedrfimitationchime,
+author = {Taylor, Jacob and Denman, Nolan and Bandura, Kevin and Berger, Philippe and Masui, Kiyoshi and Renard, Andre and Tretyakov, Ian and Vanderlinde, Keith},
+title = {Spectral Kurtosis-Based RFI Mitigation for CHIME},
+journal = {Journal of Astronomical Instrumentation},
+volume = {08},
+number = {01},
+pages = {1940004},
+year = {2019},
+doi = {10.1142/S225117171940004X},
+
+URL = { 
+    
+        https://doi.org/10.1142/S225117171940004X
+    
+    
+
+},
+eprint = { 
+    
+        https://doi.org/10.1142/S225117171940004X
+    
+    
+
+}
+,
+    abstract = { We present the implementation of a spectral kurtosis-based Radio-Frequency Interference detection system on the CHIME instrument and its reduced-scale pathfinder. Our implementation extends single-receiver formulations to the case of a compact array, combining samples from multiple receivers to improve the confidence with which RFI is detected. Through comparison between on-sky data and simulations, we show that the statistical properties of the canonical spectral kurtosis estimator are functionally unchanged by cross-array integration. Moreover, by comparison of simultaneous data from CHIME and the Pathfinder, we evaluate our implementation’s capacity for interference discrimination for compact arrays of various sizes. We conclude that a spectral kurtosis-based implementation provides a scalable, high cadence RFI discriminator for compact multi-receiver arrays. }
+}
+
+@article{Li_2025,
+doi = {10.1088/1538-3873/ada186},
+url = {https://doi.org/10.1088/1538-3873/ada186},
+year = {2025},
+month = {apr},
+publisher = {The Astronomical Society of the Pacific},
+volume = {137},
+number = {4},
+pages = {044502},
+author = {Li, X. and Buehrer, R. M. and Ellingson, S. W.},
+title = {Parametric Methods for Coherent Time-domain Canceling of Radio Frequency Interference},
+journal = {Publications of the Astronomical Society of the Pacific},
+abstract = {Anthropogenic interference has been a long-standing problem for radio astronomy. In a previous paper, we presented a study of interference mitigation methods based on the concept of coherent time-domain canceling, which ideally allows one to “look through” interference, as opposed to avoiding the interference or deleting the afflicted data. The focus of that paper was on “reference antenna” methods, in which a separately acquired signal containing the interference waveform is used to identify the interference waveform in the primary signal. In this paper, we shift focus to methods in which the reference signal is instead a parametric model of the waveform, so that no additional antenna is needed. As in our previous paper, we present a rigorous theoretical analysis of performance. Findings are demonstrated using real-world interference from the Iridium system. We find that interference suppression is possible if the product of the interference-to-noise ratio and the number of statistically independent samples is greater than 1, and that suppression increases linearly with this product. However good performance is achieved only for interferers whose bandwidth is much less than the sample rate, and algorithm parameters must be carefully selected to avoid undesirable distortion of the noise spectral baseline.}
+}
+
+
+
 
 @misc{hickish2016decadedevelopingradioastronomyinstrumentation,
       title={A Decade of Developing Radio-Astronomy Instrumentation using CASPER Open-Source Technology}, 
@@ -1254,4 +1425,14 @@ archivePrefix = {arXiv},
   author       = {RealDigital},
   year         = {2023},
   howpublished = {\url{https://www.realdigital.org/hardware/rfsoc-4x2}},
+}
+
+@mastersthesis{Hsyu2016,
+  author    = {Gilbert Hsyu},
+  title     = {Calibration and Testing of Components of the Canadian Hydrogen Intensity Mapping Experiment},
+  school    = {McGill University Physics Department},
+  year      = {2016},
+  type      = {Master of Science thesis},
+  address   = {Montreal, Canada},
+  note      = {Submitted December 2016. Preprint typeset using \LaTeX{} style AASTeX6 v. 1.0. \copyright{} Gilbert Hsyu 2016}
 }

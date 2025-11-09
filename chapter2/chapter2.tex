@@ -26,7 +26,7 @@ Although space-based observatories have expanded access to the entire electromag
 In radio astronomy, several fundamental quantities are required to describe and interpret the emission from astrophysical sources. These quantities connect the intrinsic radiation properties of the source with the signal detected by a radio telescope, which is affected by distance, frequency range and the telescope's characteristics such as aperture size and efficiency.
 
 
-The first quantity to be defined is the specific intensity $I_\nu$, which represents the received emission. It is defined as the power received per unit area, frequency, and solid angle:
+The first quantity to be defined is the specific intensity ($I_\nu$), which represents the received emission. It is defined as the power received per unit area, frequency, and solid angle:
 \begin{equation}
 	I_\nu \;=\; \frac{\mathrm{d}P}{ (\cos\theta \, \mathrm{d}\sigma) \, \mathrm{d}\Omega \, \mathrm{d}\nu}
 \end{equation}
@@ -40,7 +40,7 @@ Building on the concept of specific intensity, it is essential to understand how
 	\label{eq:planck}
 \end{equation}
 where $h$ is Planck's constant, $c$ is the speed of light, and $k$ is Boltzmann's constant. Planck's law has two notable limiting cases: at high frequencies ($h\nu \gg kT$), it reduces to Wien's law, while at low frequencies ($h\nu \ll kT$), it approaches the Rayleigh-Jeans approximation. 
-Figure \ref{fig:spectral_brightness} illustrates the spectral brightness $B_\nu$ as a function of frequency\footnote{It is important to clarify that $B_\nu(\nu,T)$ and $B_\lambda(\lambda,T)$ are distinct quantities with different units, \si{\watt \per \steradian  \per \meter \squared \per \hertz} and \si{\watt \per \steradian \per \meter \cubed}, respectively. The conversion between them is given by $B_\nu = B_\lambda \frac{c}{\nu^2}$.} 
+Figure \ref{fig:spectral_brightness} illustrates the spectral brightness $B_\nu$ as a function of frequency\footnote{It is important to clarify that $B_\nu(\nu,T)$ and $B_\lambda(\lambda,T)$ are distinct quantities with different units, \si{\watt \per \steradian  \per \meter \squared \per \hertz} and \si{\watt \per \steradian \per \meter \cubed}, respectively. The conversion between them is given by $B_\nu = \frac{c}{\nu^2} B_\lambda$.} 
 for a blackbody at 5500~K (approximately the temperature of the Sun's surface). The plot compares the predictions of Planck's law, the Rayleigh-Jeans approximation, and Wien's law, where the limiting behaviors are evident. Particularly the spectral brightness in the radio regime (below $\sim 10^{12}$ Hz) appears as a straight line in this log-log plot, indicating the validity of the Rayleigh-Jeans approximation in this frequency range.
 \begin{figure}[h!]
 	\centering
@@ -64,7 +64,7 @@ Solving for the brightness temperature yields
 \end{equation}
 It is important to note that $T_B$ is not necessarily equal to the physical temperature $T$ of the source. These quantities can differ significantly, particularly in non-LTE conditions. Nonthermal processes exhibit frequency-dependent brightness temperatures without a well-defined physical temperature. For instance, synchrotron radiation from relativistic electrons in magnetic fields can produce brightness temperatures far exceeding the actual temperature of the emitting region, while thermal sources in LTE have brightness temperatures that closely match their physical temperature.
 
-While the specific intensity $I_\nu$ characterizes the intrinsic emission from an astronomical source, radio telescopes do not measure $I_\nu$ directly. Instead, they detect the flux density $S_\nu$, which represents the total power received per unit area and frequency from the source, integrated over the solid angle subtended by the telescope's beam:
+While the specific intensity $I_\nu$ characterizes the intrinsic emission from an astronomical source, radio telescopes do not measure $I_\nu$ directly. Instead, they detect the flux density ($S_\nu$), which represents the total power received per unit area and frequency from the source, integrated over the solid angle subtended by the telescope's beam:
 
 \begin{equation}
 	S_\nu = \int I_\nu \, \mathrm{d}\Omega
@@ -75,7 +75,7 @@ where the integration is performed over the solid angle subtended by the source.
 For point sources, where the angular size is much smaller than the telescope beam, the flux density provides a direct measure of the source strength. However, for extended sources that are resolved by the telescope, the relationship between flux density and brightness distribution becomes more complex, requiring careful consideration of the telescope's point spread function.
 
 \subsection{Radiometers}
-The concept of antenna temperature, $T_a$, provides a convenient way to characterize the strength of a received signal in radio astronomy. It is defined as the temperature that would generate the same noise power in a matched resistor as that collected by the antenna. Quantitatively, the antenna temperature can be expressed in terms of the received power and the bandwidth, following the Johnson–Nyquist relation (see \citealt{Nyquits_noise} for derivation):
+The concept of antenna temperature ($T_a$) provides a convenient way to characterize the strength of a received signal in radio astronomy. It is defined as the temperature that would generate the same noise power in a matched resistor as that collected by the antenna. Quantitatively, the antenna temperature can be expressed in terms of the received power and the bandwidth, following the Johnson–Nyquist relation (see \citealt{Nyquits_noise} for derivation):
 
 \begin{equation}
     T_a = \frac{P_\nu}{k \, \Delta \nu},
@@ -143,7 +143,7 @@ To estimate the sensitivity of a radiometer, we use the radiometer equation, whi
 
 where $t_\text{int}$ is the integration time, $\Delta \nu$ is the bandwidth, and $k_c$ is a proportionality constant that depends on the type of detector. This equation is fundamental because it shows that sensitivity improves with larger bandwidth and longer integration.  
 
-The signal-to-noise ratio (SNR) can then be written as:  
+The \gls{snr} can then be written as:  
 
 \begin{equation}
     \text{SNR} = \frac{T_a}{\sigma_T} = \frac{T_a}{T_\text{sys}} \sqrt{t_\text{int} \, \Delta \nu}.
@@ -154,12 +154,12 @@ In radio astronomy, the astronomical signal is usually several orders of magnitu
 \subsection{Radio telescopes receivers}
 The design of radio telescope receivers has undergone significant advancements since the 1940s, beginning with the introduction of the Dicke switch to mitigate gain fluctuations \citep{dicke1946}. By the 1960s, systematic studies, such as those by \citet{tiuri1964}, established a foundational framework for analog receiver architectures, emphasizing system noise temperature ($T_{\text{sys}}$) as a critical metric for sensitivity. 
 
-Modern receivers predominantly employ heterodyne architectures, which integrate \glspl{lna}, frequency down-conversion via mixing with a local oscillator (LO), and digitization. These designs, comprehensively described in \citet{Wilson2013_theory,Wilson2013_practical}, provide flexible frequency translation and stable gain control. Figure \ref{fig:heterodyne_receiver} illustrates a typical heterodyne receiver, encompassing the \gls{rf} front-end, mixer, LO, \gls{adc}, and decimation stages.
+Modern receivers predominantly employ heterodyne architectures, which integrate \glspl{lna}, frequency down-conversion via mixing with a \gls{lo}, and digitization. These designs, comprehensively described in \citet{Wilson2013_theory,Wilson2013_practical}, provide flexible frequency translation and stable gain control. Figure \ref{fig:heterodyne_receiver} illustrates a typical heterodyne receiver, encompassing the \gls{rf} front-end, mixer, LO, \gls{adc}, and decimation stages.
 
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\textwidth]{tikz figures/build/rf_front_end.pdf}
-	\caption[Heterodyne receiver]{Heterodyne radio telescope receiver. The sky signal is amplified by a \gls{lna}, mixed with a local oscillator to an intermediate frequency, and digitized by an \gls{adc}. A digital down-converter with an \gls{nco} and low-pass filter translates the signal to baseband before decimation and further digital processing.}
+	\caption[Heterodyne receiver]{Heterodyne radio telescope receiver. The sky signal is amplified by a \gls{lna}, mixed with a local oscillator to an intermediate frequency, and digitized by an \gls{adc}. A digital down-converter with an \gls{nco} and low-pass filter translates the signal to baseband before decimation and further digital processing. Adapted from \href{https://tikz.net/radiofrequency-frontend/}{TiKz.net}, Rubem Pacelli.}
 	\label{fig:heterodyne_receiver}
 \end{figure}
 
@@ -199,7 +199,7 @@ Radio waves traveling through ionized media interact with free electrons and mag
 	\begin{equation}
 		\mathrm{RM} = \frac{e^2}{2\pi m_e^2 c^4} \int_0^L n_e(l) B_\parallel(l) \, \mathrm{d}l 
 	\end{equation}
-	with $B_\parallel$ the magnetic field component along the line of sight. Measuring RM in pulsars and FRBs provides information about magnetic fields in the ISM and \gls{igm}.
+	with $B_\parallel$ the magnetic field component along the line of sight. Measuring RM in pulsars and FRBs provides information about magnetic fields in the \gls{ism} and \gls{igm}.
 
     \item \textbf{Scattering:} Density inhomogeneities in the ISM cause multipath propagation, producing an exponential scattering tail in the pulse profile. This effect is stronger at lower frequencies, with $\tau_{\text{sc}} \propto \nu^{-\alpha}$ and $\alpha \sim 4$ for Kolmogorov turbulence \citep{Rickett_1977}. The scattering timescale can be estimated empirically from the DM and observing frequency.
 
@@ -218,9 +218,9 @@ Figure \ref{fig:sim_galactic_magnetar} illustrates how these effects shape the o
 
 Pulsars form a well-defined subclass of radio-emitting objects, distinct from the broader category of transients. They are rapidly rotating, highly magnetized neutron stars that emit beams of coherent radio waves from their magnetic poles. As the star spins, these beams sweep across the sky like a cosmic lighthouse, and if the Earth lies within their path, observers detect a sequence of periodic pulses. This periodicity, ranging from milliseconds to seconds, is one of the hallmarks that separates pulsars from one-off or irregular transients.
 
-Since their discovery in 1967, pulsars have become fundamental astrophysical laboratories \citep{Lorimer2004}. Their remarkable rotational stability makes them precise cosmic clocks \citep{PulsarTimingArray}, enabling stringent tests of general relativity, the study of dense matter equations of state, and the characterization of the \gls{ism}. Moreover, pulsar timing arrays exploit their long-term stability to search for nanohertz gravitational waves.
+Since their discovery in 1967, pulsars have become fundamental astrophysical laboratories. Their remarkable rotational stability makes them precise cosmic clocks, enabling tests of general relativity, the study of dense matter equations of state, and the characterization of the \gls{ism}. Moreover, pulsar timing arrays \citep{PulsarTimingArray} exploit their long-term stability to search for nanohertz gravitational waves \citep{Bernardo_2025}.
 
-The emission mechanism of pulsars is thought to involve coherent processes in the magnetosphere, where charged particles accelerated along curved magnetic field lines produce radio waves. Despite decades of study, the detailed physics of pulsar emission remains an active area of research, particularly regarding the origin of phenomena such as mode changing, nulling, and giant pulses.
+The emission mechanism of pulsars is thought to involve coherent processes in the magnetosphere, where charged particles accelerated along curved magnetic field lines produce radio waves \citep{mitra2024decodingnaturecoherentradio}. Despite decades of study, the detailed physics of pulsar emission remains an active area of research \citep{Melrose_2016}, particularly regarding the origin of phenomena such as mode changing, nulling, and giant pulses.
 
 Because of their pulsed signals, pulsars are especially sensitive to propagation effects. Dispersion caused by free electrons in the \gls{ism} delays lower frequencies with respect to higher ones, multipath scattering broadens the pulses, and Faraday rotation rotates the plane of polarization as the waves traverse magnetized plasma \citep{PropagationISM}. These signatures allow astronomers to not only probe the intrinsic pulsar emission but also extract valuable information about the intervening medium. In addition, their well-defined profiles and repeatability make pulsars reliable calibration sources for radio telescopes.
 
@@ -232,7 +232,7 @@ Because of their pulsed signals, pulsars are especially sensitive to propagation
 \glspl{frb} are bright, millisecond-duration bursts of radio emission of extragalactic origin, first reported in \citeyear{Lorimer_2007} by \citeauthor{Lorimer_2007}. Their high \gls{dm} values, exceeding the expected Galactic contribution, demonstrate that they originate at cosmological distances.
 
 
-The observational landscape has grown rapidly: while most FRBs appear as one-off events, a subset exhibit repeating activity (such as the FRB121102; \citealt{Spitler_2016}), suggesting multiple progenitor channels. Proposed origins range from compact-object models (e.g., magnetars, neutron star mergers) to more exotic mechanisms (see \citealt{Zhang2023physics} and \citealt{EmissionMechanisms2022} for a review on emission mechanisms). Figure \ref{fig:frb_sky_distribution} shows the sky distribution of known FRBs, highlighting their isotropic distribution (there isn't a dependence in galactic latitude as shown in \citealt{Josephy2021}) and the locations of repeating sources, but with a bias towards the northern hemisphere due to fact that most surveys have been conducted there.
+The observational landscape has grown rapidly: while most FRBs appear as one-off events, a subset exhibit repeating activity (such as the famous FRB121102; \citealt{Spitler_2016}), suggesting multiple progenitor channels. Proposed origins range from compact-object models (e.g., magnetars, neutron star mergers) to more exotic mechanisms (see \citealt{Zhang2023physics} and \citealt{EmissionMechanisms2022} for a review on emission mechanisms). Figure \ref{fig:frb_sky_distribution} shows the sky distribution of known FRBs, highlighting their isotropic distribution (there isn't a dependence in galactic latitude as shown in \citealt{Josephy2021}) and the locations of repeating sources, but with a bias towards the northern hemisphere due to fact that most surveys have been conducted there.
 
 \begin{figure}[h!]
 	\centering
@@ -255,7 +255,7 @@ Nevertheless, fundamental questions remain open: the nature of progenitors, the 
 
 
 \section{Digital signal processing fundamentals}
-\gls{dsp} involves the use of mathematical algorithms to analyze and manipulate signals in digital form. DSP is fundamental in spectrometer design, offering advantages over analog systems such as precise time delays, stable cross-correlation measurements, and predictable quantization effects. Digital systems provide high dynamic range, support multichannel outputs, and are less prone to phase instability from environmental changes. They are also easier to replicate and maintain, especially in large arrays, except at extremely high data rates \citep{thompson2017interferometry}.
+\Gls{dsp} involves the use of mathematical algorithms to analyze and manipulate signals in digital form. DSP is fundamental in spectrometer design, offering advantages over analog systems such as precise time delays, stable cross-correlation measurements, and predictable quantization effects. Digital systems provide high dynamic range, support multichannel outputs, and are less prone to phase instability from environmental changes. They are also easier to replicate and maintain, especially in large arrays, except at extremely high data rates \citep{thompson2017interferometry}.
 
 
 This section summarizes key DSP concepts relevant to this work: digital sampling, the Nyquist-Shannon theorem, quadrature sampling, quantization, frequency analysis using the discrete Fourier transform, and window functions, including polyphase filterbanks. For a more comprehensive treatment of these topics, readers are referred to \citet{Proakis1996digital} and \citet{Crockett2023}.
@@ -308,19 +308,28 @@ The selection of an appropriate sampling frequency is determined by the frequenc
 
 \subsection{Nyquist-Shannon sampling theorem}
 \label{sec:nyquist_shannon}
-The minimum sampling frequency required to prevent aliasing is defined by the Nyquist–Shannon sampling theorem, originally proposed by \citet{Nyquist1928} and later formalized by \citet{Shannon1949}. This theorem states that a baseband, bandlimited signal must be sampled at a rate greater than twice its highest frequency component to ensure all frequency information is preserved. Here, a \emph{baseband} signal refers to one whose lowest frequency component is at or near 0~Hz, such as audio or sensor signals, while a \emph{bandpass} signal occupies a frequency range away from 0~Hz, as is common in modulated communications. Both types are considered \emph{bandlimited} if their energy is confined within a specific frequency range. If this condition is not satisfied, frequency components above half the sampling rate will be aliased, resulting in distortion and loss of information. The threshold $\nu_s/2$ is known as the Nyquist frequency. Mathematically, this is expressed as:
+The minimum sampling frequency required to prevent aliasing is defined by the Nyquist–Shannon sampling theorem, originally proposed by \citet{Nyquist1928} and later formalized by \citet{Shannon1949}. This theorem states that a baseband, bandlimited signal must be sampled at a rate greater than twice its highest frequency component to ensure all spectral information is preserved. A \emph{baseband} signal occupies frequencies near 0~Hz, while a \emph{bandpass} signal lies within a range away from 0~Hz, as in most modulated systems. Both are considered bandlimited if their spectral energy is confined within a finite bandwidth. Mathematically, the sampling condition can be expressed as
 \begin{equation}
-	\nu_s > 2\nu_{\text{max}}
-	\label{eq:nyquist_condition}
+\nu_s > 2\nu_{\text{max}} ,
+\label{eq:nyquist_condition}
 \end{equation}
-where $\nu_s$ is the sampling frequency and $\nu_{\text{max}}$ is the maximum frequency present in the signal.
+where $\nu_s$ is the sampling frequency and $\nu_{\text{max}}$ the maximum signal frequency.
 
-
-The Nyquist criterion also extends to bandpass, bandlimited signals. In this case, the bandwidth $B$ is defined as the difference between the highest and lowest frequency components, $\nu_H$ and $\nu_L$, respectively. If the sampling frequency exceeds twice the bandwidth,
+The theorem extends naturally to bandpass signals, where the bandwidth $B = \nu_H - \nu_L$ is the difference between the highest and lowest frequency components. If the sampling frequency satisfies
 \begin{equation}
-	\nu_s > 2B = 2(\nu_H - \nu_L)
+\nu_s > 2B = 2(\nu_H - \nu_L),
 \end{equation}
-then all information in the signal can be retained, even if the center frequency is much higher than the bandwidth. This principle underlies the technique of undersampling (or bandpass sampling), which intentionally exploits aliasing and the alignment of the signal within specific Nyquist zones to reconstruct the original signal. Here the Nyquist zones are defined as the frequency ranges between multiples of the Nyquist frequency, $\nu_s/2$. The first Nyquist zone is from 0 to $\nu_s/2$, the second from $\nu_s/2$ to $\nu_s$, and so on (see Figure \ref{fig:nyquist_zones}).
+the signal can be fully reconstructed even when centered far above baseband. This property underlies the principle of \emph{bandpass sampling}, which deliberately exploits aliasing to translate higher-frequency content into a lower Nyquist zone.
+
+In this context, the frequency spectrum is divided into consecutive Nyquist zones of width $\nu_s/2$: the first from 0 to $\nu_s/2$, the second from $\nu_s/2$ to $\nu_s$, and so on (see Figure~\ref{fig:nyquist_zones}). A tone in a higher Nyquist zone will appear “folded” into a lower one depending on its position relative to these boundaries. Formally, the aliased frequency $\nu_{\text{alias}}$ can be expressed as
+\begin{equation}
+\nu_{\text{alias}} =
+\begin{cases}
+\nu_{\text{tone}} \bmod \nu_\text{Nyquist} + \nu_0, & \text{for even zones},\\
+\nu_\text{Nyquist} - (\nu_{\text{tone}} \bmod \nu_\text{Nyquist}) + \nu_0, & \text{for odd zones},
+\end{cases}
+\end{equation}
+where $\nu_\text{Nyquist} = \nu_s/2$ and $\nu_0$ is the lower frequency limit of the zone.
 
 
 \begin{figure}[h!]
@@ -362,7 +371,7 @@ then all information in the signal can be retained, even if the center frequency
 	\label{fig:nyquist_zones}
 \end{figure}
 
-If the sampling frequency is not sufficient, aliasing occurs, causing higher frequency components to be misinterpreted as lower frequencies. This can lead to significant distortion and loss of information in the reconstructed signal. Aliasing occurs in a regular pattern based on Nyquist Zones. As said before, any arbitrary number of Nyquist Zones may be defined, but only sampled signals in the 1st Nyquist Zone can be directly represented, according to the Nyquist Sampling Theorem. Any signal components present in higher Nyquist Zones are ``folded'' down into the 1st Nyquist Zone as a result of aliasing. 
+When $\nu_s$ is insufficient, higher-frequency components fold into the first Nyquist zone, producing spectral overlap and distortion, a phenomenon known as \emph{aliasing}. Understanding this mapping between zones is therefore essential when designing sampling systems, particularly in quadrature sampling architectures such as those employed in CHARTS.
 
 \subsection{Quadrature sampling}
 \label{sec:quadrature_sampling}
@@ -436,7 +445,7 @@ Real devices, however, are limited by nonidealities such as jitter and thermal n
 	\text{ENOB} = \frac{\text{SINAD} - 1.76}{6.02}.
 \end{equation}
 
-Another key metric is the spurious-free dynamic range (SFDR), which compares the fundamental tone to the largest spurious component. This is particularly relevant for mitigating intermodulation products caused by strong interferers.  
+Another key metric is the \gls{sfdr}, which compares the fundamental tone to the largest spurious component. This is particularly relevant for mitigating intermodulation products caused by strong interferers.  
 
 Finally, ADC outputs are often expressed in dBFS (decibels relative to full scale), where 0~dBFS corresponds to the maximum representable amplitude. In this scale, the quantization noise floor of an ideal $N$-bit converter is at approximately $-6.02N - 1.76$~dBFS.  
 
@@ -600,8 +609,8 @@ Window functions are also fundamental in digital filter design. Among the most w
 		Blackman & $w[n] = 0.42 - 0.5 \cos\left(\frac{2\pi n}{N-1}\right) + 0.08 \cos\left(\frac{4\pi n}{N-1}\right)$ \\
 		Gaussian & $w[n] = e^{-\frac{1}{2} \left(\frac{n - (N-1)/2}{\sigma (N-1)/2}\right)^2}$ \\
 	\end{tabular}
-	\label{tab:window_functions}
 	\caption{Common window functions used in digital signal processing.}
+	\label{tab:window_functions}
 \end{table}
 
 
@@ -953,7 +962,24 @@ To reduce bandwidth and storage requirements, the spectra are re-quantized to a 
 \end{figure}
 
 \subsection{X-engine}
-The X-stage (or X-engine) of an FX correlator is tasked with computing the cross-correlation products between all pairs of antennas for each frequency channel. After the F-engine has channelized and packetized the data, the X-engine receives these packets, typically over high-speed network links. The X-engine then performs complex multiplications of the frequency-domain data from each antenna pair, accumulating these products over a specified integration time to enhance the signal-to-noise ratio. Also the beamforming operations can be performed in this stage, where signals from multiple antennas are combined to form a coherent beam in a specific direction. The X-engine must handle a significant computational load, especially for large arrays with many antennas, as the number of cross-correlation products scales with the square of the number of antennas. Efficient algorithms and parallel processing techniques are often employed to manage this workload effectively.
+After the F-engine has channelized and packetized the data, the X-engine receives these packets, typically over high-speed network links. In modern radio telescopes, the X-engine is responsible for performing the complex cross-multiplication and accumulation of visibilities across all antenna pairs, forming the basis for imaging and calibration.
+For an array with $N_\text{ant}$ antennas, the number of unique baselines is $N_\text{bsl} = N_\text{ant}(N_\text{ant}+1)/2$, leading to a computational cost per spectral frame that scales as
+\begin{equation}
+	\mathcal{O} !\left(N_\nu,N_\text{ant}^2\right),
+\end{equation}
+where $N_\nu$ is the number of frequency channels. Temporal integration only changes the multiplicative constant (the number of accumulations), not the asymptotic scaling.
+
+In addition to correlation, X-engines can perform beamforming by coherently summing antenna voltages with appropriate delays or phase rotations. A straightforward delay-and-sum implementation for $B$ beams has a computational complexity of
+\begin{equation}
+\mathcal{O}!\left(N_\nu,B,N_\text{ant}\right),
+\end{equation}
+which becomes prohibitive for large arrays. However, for regularly sampled arrays, FFT beamforming can be applied to synthesize approximately $N_\text{ant}$ orthogonal beams with a reduced cost of
+\begin{equation}
+\mathcal{O}!\left(N_\nu,N_\text{ant}\log_2 N_\text{ant}\right),
+\end{equation}
+substantially improving efficiency when $B \sim N_\text{ant}$ \citep{Masui_2019}.
+This approach, however, constrains the array geometry and pointing grid but is widely used in large-$N$, wide-field interferometers where real-time beamforming is required \citep{Price_2024}.
+
 \section{Computational hardware}
 \label{sec:computational_hardware}
 The digital signal processing required by modern radio telescopes relies primarily on four platforms: \glspl{cpu}, \glspl{gpu}, \glspl{fpga}, and \glspl{asic}. Each offers different trade-offs in terms of flexibility, efficiency, and development cost.  
@@ -1048,7 +1074,7 @@ The board supports up to 5 Gsps sampling for 14-bit ADCs and up to 9.85 Gsps for
 
 Beyond data converters, the RFSoC 4x2 integrates a powerful FPGA fabric with 930k logic cells and 4200 DSP slices, alongside a processing system featuring a quad-core ARM Cortex-A53, a dual-core Cortex-R5F, and an ARM Mali-400 GPU. Two independent \SI{4}{GB} DDR4 memories operate at 2400~MHz, one attached to the processing system and one to the programmable logic, ensuring high-throughput data handling. Internal UltraRAM and block RAM further enhance buffering and streaming capabilities.
 
-The board also provides multiple high-speed interfaces for data offload and system integration, including a 100~Gbps QSFP28 port, Gigabit Ethernet, USB~3.0, and a Mini DisplayPort. External clock and pulse-per-second (PPS) SMA ports enable precise synchronization and multi-board operation. Power regulation and monitoring are handled by dedicated ICs, with protection against overvoltage, overcurrent, and overheating.
+The board also provides multiple high-speed interfaces for data offload and system integration, including a \gls{100gbe} QSFP28 port, USB~3.0, and a Mini DisplayPort. External clock and \gls{pps} SMA ports enable precise synchronization and multi-board operation. Power regulation and monitoring are handled by dedicated ICs, with protection against overvoltage, overcurrent, and overheating.
 
 
 

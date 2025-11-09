@@ -1,11 +1,62 @@
 \chapter{Testing, validation, and performance results}
+\label{chap:results}
 In this chapter, we present the testing and validation results of the F-engine designed for the CHARTS project. The performance metrics are evaluated through a series of laboratory measurements and on-sky observations. We assess key parameters such as linearity, dynamic range, channelization accuracy, and timing stability. Additionally, we demonstrate the end-to-end functionality of the system by conducting a solar transit observation and 8 antenna correlation tests.
 
-\section{RFSoC 4x2 ADC characterization}
+\section{Site RFI characterization results}
+\label{sec:rfi_measurements}
+On August 28, 2025, a specialized RFI measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies and see the impact of local RFI sources in the 300--500 MHz science band. For this analysis, the CHORD feed (an ultra-wideband antenna with $S11 < -10$ dB in the 0 to \SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC 4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range. The measurement procedure involved pointing the CHORD feed towards zenith and recording the power spectrum over a 15-minute integration period. The recorded data were then calibrated to derive the sky temperature as a function of frequency, accounting for the known system temperature of the amplification box.
 
-\section{LO generator performance}
+The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}, alongside a reference measurement taken at Cerro Calán (where the Astronomy Department is located, within the city of Santiago). The sky temperature at Cerro Calán is significantly elevated due to urban RFI, reaching levels around $10^5$ K in the CHARTS band. In contrast, Laguna Carén exhibits a much lower baseline sky temperature, approximately $2\times10^2-3\times10^2$ K, indicating a substantially cleaner environment. However, several strong RFI features are evident, particularly around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$ K, posing a risk of saturation if not properly mitigated. The CHARTS analog front-end incorporates bandpass filters to attenuate out-of-band interference, and additional filtering is planned for future iterations to further enhance system robustness against RFI.
+ 
+\begin{figure}[h!]
+  \centering
+  \includegraphics{sky_temperature_comparison.pdf}
+  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna Carén site (blue) and Cerro Calán (red). The CHARTS science band (300--500 MHz) is highlighted. The measurements were conducted using the CHORD feed and RFSoC 4x2 backend, with an amplification box providing a known system temperature for accurate calibration. The Laguna Carén site exhibits a significantly lower sky temperature compared to Cerro Calán, indicating a cleaner RFI environment, although several strong RFI features are present that require mitigation through filtering.}
+  \label{fig:rfi_caren}
+\end{figure}
+\section{LO tone generation results}
+To validate the LO generation module, we performed measurements using an external spectrum analyzer connected directly to the RFSoC DAC output. The objective was to assess the spectral purity and frequency accuracy of the digitally synthesized signals. The analyzer was configured with a resolution bandwidth (RBW) and video bandwidth (VBW) of \SI{3}{\kilo\hertz}, enabling the resolution of tones separated by approximately \SI{3}{\kilo\hertz} and a sweep time of \SI{19.3}{\second}. The FFT was computed with 750 points over a 3.28--2457.6~MHz span, yielding a frequency resolution of \SI{3.276}{\mega\hertz}. The DAC output was set to its maximum level for 14-bit samples to optimize the signal-to-noise ratio.
+
+
+Figure~\ref{fig:lo_loopback_spectrum} presents the measured power spectrum. The four main tones appear at the expected frequencies. Although the spectrum analyzer's channel width was not narrow enough to resolve individual bins, a DAC-ADC loopback test using the same sampling frequency and FFT configuration confirmed that the tones coincide exactly with the expected frequencies, without spectral leakage. The amplitudes are well matched across channels, with a decrease in power observed for higher frequencies which could be attributed to the cable losses. The strongest spurious components remain below \SI{-49}{\decibelm}; the five largest are observed at \SIlist{533.9;268.6;1451.1;799.2;1716.4;946.6}{\mega\hertz}, which appear to be intermodulation products of the main tones with themselves and/or with harmonics of the clock synthesizers.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{tone_spectrum.pdf}
+    \caption[Measured power spectrum of the LO generation with spectrum analyzer]{Measured power spectrum of the test showing the four synthesized LO tones. The main tones are observed at \SIlist{1064.6;1333.2;1601.8;1863.8}{\mega\hertz} (bins of spectrum analyzer), with power levels between \SIrange{-16}{-17.9}{\decibelm}. The strongest spurious components appear at least \SI{39.31}{\decibel} below the power of the main tones, resulting in an SFDR of \SI{39.31}{\decibel}.}
+    \label{fig:lo_loopback_spectrum}
+\end{figure}
+
+To quantify the spectral purity of the synthesized tones, we computed dynamic metrics from the time-averaged spectrum $\bar{S}(\nu)$ (in dBm). The median noise floor across the band is defined as
+\begin{equation}
+P_{\mathrm{noise}} = \mathrm{median}_{\nu}\{\bar{S}(\nu)\}.
+\end{equation}
+Spectral peaks $\{(\nu_k, P_k)\}_{k \in \mathcal{P}}$ were identified where $\bar{S}(\nu_k)$ exceeded a threshold
+\begin{equation}
+P_{\mathrm{th}} = P_{\mathrm{noise}} + \SI{10}{\decibel}.
+\end{equation}
+The four most powerful peaks correspond to the main LO tones, forming the set $\mathcal{M}$, and the rest of the peaks define the spurious set $\mathcal{S}$. The frequencies $\nu_k$ were determined from the calibrated frequency axis. We then define the reference levels for the main signals and spurs as
+\begin{align}
+P_{\mathrm{sig}} &= \min_{i \in \mathcal{M}} P_i, \\
+P_{\mathrm{spur},\max} &= \max_{j \in \mathcal{S}} P_j,
+\end{align}
+and compute the \gls{sfdr} as
+\begin{equation}
+\mathrm{SFDR} = P_{\mathrm{sig}} - P_{\mathrm{spur},\max},
+\end{equation}
+where all quantities are in dBm. The resulting value, $\mathrm{SFDR} = \SI{39.31}{\decibel}$, demonstrates that the spectral purity of the synthesized tones is sufficient for their use as local oscillators in the \gls{fdm} system. Nevertheless, amplification and filtering stages are still necessary to achieve the required output power levels and further suppress spurious signals before mixing with the antenna signals.
+
+
+
 \section{Digital gains calibration results}
+Using the calibration routine described in \S\ref{sec:re-quantization}, we obtained the digital gain coefficients for all 8192 frequency channels. Figure~\ref{fig:digital_gains_lab} shows the resulting gain profile across the full \SI{2457.6}{\mega\hertz} bandwidth. 
 
+\begin{figure}
+    \centering
+    \includegraphics{digital_gains_lab.pdf}
+    \caption[Digital gain coefficients obtained from laboratory calibration]{Digital gain coefficients obtained from laboratory calibration, plotted against frequency. The gains vary according to the RFI environment, where lower values means that the RFI in that frequency channel is stronger.}
+    \label{fig:digital_gains_lab}
+\end{figure}
 \section{Linearity and dynamic range}
 
 \section{Testing correlation}
@@ -13,11 +64,54 @@ In this chapter, we present the testing and validation results of the F-engine d
 
 \section{Solar transit observation}
 \label{sec:solar_transit}
-We performed an on-sky solar observation of the CHARTS prototype antenna and electronics at the Laguna Carén site. The prototype system used is shown in Figure \ref{fig:charts_antenna_caren}, with one of the antennas in front (with temporary ground) and the FDM system at the back. Two antennas operated in different sub-bands on the SMA port FDM, with the prototype amplification and filtering between the feeds and digitizer. The antennas were separated by a eyeballed \qty{19}{\meter} baseline, while the sun traveled through the sky in the antenna beam. The complex cross-correlations show clear sinusoidal fringes with phase wraps on minute timescales, consistent with the projected baseline and observing frequencies. This result verifies end-to-end functionality, front-end gain and filtering, sub-band selection, frequency stability, and timing.
+On October 15, 2025, an on-sky solar observation was carried out using the CHARTS prototype antenna and analog electronics at the Laguna Carén site. The prototype setup is shown in Figure~\ref{fig:charts_antenna_caren}, with one of the dual-polarization antennas mounted on a temporary ground plane and the FDM system located behind it. Two antennas operated in distinct sub-bands (chains~1 and~2 in Table~\ref{tab:fdm_chains}), connected through the prototype amplification and filtering stages before digitization. The antennas were separated by an approximate \SI{19}{\meter} baseline (originally planned as \SI{20}{\meter}, limited by available \SI{10}{\meter} RF jumpers), while the Sun traversed the wide primary beam of each element.
 
 \begin{figure}[h!]
     \centering 
-    \includegraphics[width=\linewidth]{charts_antenna_caren.png} 
-    \caption{CHARTS prototype antenna with temporary ground in test observation at Laguna Carén; analog and FDM system at the back} 
+    \includegraphics[width=\linewidth]{charts_antenna_caren_anotations.pdf} 
+    \caption{CHARTS prototype antenna with temporary ground during the test observation at Laguna Carén. The analog front-end and FDM system are visible in the background.} 
     \label{fig:charts_antenna_caren} 
 \end{figure}
+
+The test was performed within the scientific band of \SIrange{300}{500}{\mega\hertz}, corresponding to wavelengths between \SI{1.0}{\meter} and \SI{0.6}{\meter}. With the prototype antenna’s broad primary beam (FWHM~$\sim90^{\circ}$), the solar transit through the main lobe lasts approximately six hours, so during the one-hour engineering track the source amplitude envelope remained nearly constant. The effective fringe spacing, set by the ratio of wavelength to baseline length, is given by
+\begin{equation}
+    \theta_{\rm fringe} \approx \frac{\lambda}{b}.
+\end{equation}
+For a \SI{20}{\meter} baseline, this corresponds to $\theta_{\rm fringe}\simeq\SI{2.9}{\degree}$ at \SI{300}{\mega\hertz}, \SI{2.1}{\degree} at \SI{400}{\mega\hertz}, and \SI{1.7}{\degree} at \SI{500}{\mega\hertz}—comfortably larger than the apparent solar diameter of $\theta_\odot\simeq\SI{0.5}{\degree}$. Thus, the Sun behaves effectively as an unresolved (slightly diluted) source, suitable for validating fringe-rate stability and instrumental phase coherence.
+
+The interferometric phase of a two-element array can be written as
+\begin{equation}
+    \phi(t) = \frac{2\pi}{\lambda}\,\mathbf{b}\cdot\mathbf{s}(t),
+\end{equation}
+or equivalently $\phi(t)=2\pi\nu\,\tau_g(t)$, where $\tau_g(t)=\mathbf{b}\cdot\mathbf{s}(t)/c$ is the geometric delay, and $\mathbf{s}(t)$ is the source position vector. The product $\mathbf{b}\cdot\mathbf{s}(t)$ varies with time due to the Earth's rotation, causing the interferometric phase to change and producing fringes in the cross-correlation data. The time derivative of this phase gives the fringe rate,
+\begin{equation}
+    \frac{d\phi}{dt} = \frac{2\pi}{\lambda}\,\mathbf{b}\cdot(\boldsymbol{\omega_\oplus}\times\mathbf{s}),
+\end{equation}
+where $\boldsymbol{\omega_\oplus}$ denotes the Earth's angular velocity vector. The cross product $\boldsymbol{\omega_\oplus}\times\mathbf{s}$ represents the instantaneous velocity of the source across the sky as seen from the observer, and its magnitude is
+\begin{equation}
+    \bigl|\boldsymbol{\omega_\oplus}\times\mathbf{s}\bigr| = \omega_\oplus \sin(90^\circ - \delta) = \omega_\oplus\cos\delta,
+\end{equation}
+where $\delta$ is the source declination. Assuming the baseline is oriented approximately East–West, we can take the projection $\mathbf{b}\simeq b_{\rm EW}\,\hat{\mathbf{e}}_{\rm EW}$, giving
+\begin{align}
+    \mathbf{b}\cdot(\boldsymbol{\omega_\oplus}\times\mathbf{s})
+    &\approx b_{\rm EW}\,\omega_\oplus\cos\delta,\\
+    \therefore\quad \frac{d\phi}{dt}
+    &\approx \frac{2\pi b_{\rm EW}}{\lambda}\,\omega_\oplus\cos\delta.
+\end{align}
+Substituting $b_{\rm EW}\approx\SI{20}{\meter}$, $\omega_\oplus = 2\pi / \SI{24}{\hour}$, and $\delta_\odot\simeq -8.5^{\circ}$ (declination of the sun at the time of observation, obtained from \url{https://theskylive.com/sun-info}) gives the expected phase rates across the observing band:
+\[
+\frac{d\phi}{dt} \simeq 
+\begin{cases}
+\SI{32.54}{\radian\per\hour}, & \text{at } \SI{300}{\mega\hertz},\\[4pt]
+\SI{43.38}{\radian\per\hour}, & \text{at } \SI{400}{\mega\hertz},\\[4pt]
+\SI{54.23}{\radian\per\hour}, & \text{at } \SI{500}{\mega\hertz}.
+\end{cases}
+\]
+Since one full fringe corresponds to a $2\pi$ phase cycle, these rates imply approximately 5, 7, and 9 fringes per hour, respectively. This guided the visibility integration strategy, ensuring that a half-hour track would capture multiple fringe envelopes and provide a robust verification of phase stability and correlator synchronization.
+
+
+
+
+
+
+\section{100GbE transmission integrity}

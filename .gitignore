@@ -178,3 +178,11 @@ Thumbs.db
 
 # csv files
 *.csv
+
+#npy files
+*.npy
+
+#tmp folder
+tmp/
+
+*.json

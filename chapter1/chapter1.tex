@@ -9,24 +9,24 @@ Despite rapid progress, much of the sky, particularly at southern declinations, 
 
 The \gls{charts} project was conceived in this context. It aims to deploy a low-frequency interferometric array (300–500~MHz) in the Southern Hemisphere, combining wide sky coverage with sufficient sensitivity to detect, monitor, and help characterize fast radio bursts, magnetar flares, and other transient radio phenomena. CHARTS also seeks to strengthen the time-domain radio community within South America, where no FRB detections have yet been reported.
 
-At the heart of CHARTS lies a modular signal processing architecture that integrates scalable analog front-ends with a flexible digital backend optimized for transient searches. Within this backend, the F-engine plays a central role: it digitizes and channelizes the signals from each antenna, producing frequency-domain data ready for correlation and transient search pipelines. The development of an efficient, high-throughput F-engine is therefore a key step toward enabling CHARTS to achieve its scientific objectives, supporting real-time monitoring of the southern sky and advancing our understanding of coherent radio emission from compact astrophysical sources.
+At the heart of CHARTS lies a modular signal processing architecture that integrates scalable analog front-ends with a flexible digital backend optimized for transient searches. Within this backend, the F-engine plays a central role: it digitizes and channelizes the signals from each antenna, producing frequency-domain data ready for correlation and transient search pipelines. The development of an efficient, high-throughput F-engine is therefore a key step toward enabling CHARTS to achieve its scientific objectives.
 
 \section{Objectives}
 The main objective of this work is to design and implement a spectrometer capable of demultiplexing multiple antenna signals over a \SI{200}{\mega\hertz} bandwidth, using the \glspl{adc} of the Xilinx AMD RFSoC 4x2 platform. This constitutes a fundamental component of the CHARTS digital backend, as it allows a single RFSoC board to digitize and compute the Fourier transform (hence the F in F-engine) for up to 32 analog signals from the array of 256 antennas.  
 
 In addition to this overarching goal, the specific objectives are:
 \begin{itemize}
-    \item Implement a digitization chain capable of operating over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the entire set of bands allocated through \gls{fdm}.
+    \item Implement a digitization chain capable of operating over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the entire set of chains allocated through the \gls{fdm} board.
     \item Quantize the spectral outputs into a compact 4+4~bit format, representing the real and imaginary parts of each frequency channel.
     \item Internally generate the local oscillators required for the FDM mixers, using the DAC ports of the RFSoC.
     \item Integrate the output system with a QSFP28 optical module, enabling data transmission at \SI{100}{\giga\bit\per\second} via optical fiber.
-    \item Implement spectral reordering logic to automatically discard unused channels, such as those below \SI{300}{\mega\hertz} or between active FDM bands.
+    \item Implement spectral reordering logic to automatically discard unused channels, such as those below \SI{300}{\mega\hertz} or between active FDM chains.
 \end{itemize}
 
 \section{Thesis outline}
 This thesis is structured as follows:
 \begin{itemize}
-    \item Chapter 2 provides a comprehensive theoretical background, introducing key concepts in radio and time domain astronomy, including the nature of transient phenomena and their significance. It also delves into the principles of digital signal processing, including Fourier transforms, sampling theory, and quantization, as well as the fundamentals of radio interferometry and its implementation in modern arrays, including a description of the hardware platforms used in this work.
+    \item Chapter 2 provides a comprehensive theoretical background, introducing key concepts in radio and time domain astronomy, including the nature of transient phenomena and their significance. It also delves into the principles of digital signal processing, including Fourier transforms, sampling theory, and quantization, as well as the fundamentals of radio interferometry and its implementation in modern arrays, including a description of the hardware platforms used in this work and other arrays.
     \item Chapter 3 offers an in-depth overview of the CHARTS instrument, detailing its scientific objectives and system architecture. It describes the analog front-end design, the digital backend components, and the overall signal processing workflow, highlighting how CHARTS is optimized specifically to achieve its scientific goals.
     \item Chapter 4 focuses on the design and implementation of the F-engine, the first digital signal processing component of the CHARTS digital backend. It describes the firmware and software architecture, the integration of the RFSoC platform, and the methods used to achieve high-throughput, low-latency processing. Key design choices, challenges encountered, and solutions implemented are discussed in detail.
     \item Chapter 5 presents the testing and validation process for the F-engine, including laboratory experiments and simulations. It evaluates the system's performance in terms of bandwidth and data integrity, and discusses the results in the context of CHARTS' scientific requirements.

@@ -284,3 +284,252 @@ module quantizer (
     
 endmodule
 \end{lstlisting}
+
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the skid buffer module used in \texttt{packetizer\_top.v}.}, captionpos=b, label={lst:verilog_skid_buffer}]
+//`default_nettype none
+
+module skid_buffer #(
+    parameter DIN_WIDTH = 64
+) (
+    input wire clk,
+    input wire rst,
+
+    input wire [DIN_WIDTH-1:0] din,
+    input wire din_valid, 
+    output wire  din_ready, 
+
+    output wire dout_valid, 
+    input wire dout_ready, 
+    output wire [DIN_WIDTH-1:0] dout
+);
+
+reg [DIN_WIDTH-1:0] din_r=0;
+
+//register valid
+reg val=0;
+always@(posedge clk)begin
+    if(rst)
+        val <=0;
+    else if((din_valid & din_ready) && (dout_valid & ~dout_ready)) begin
+        //there is din valid but dout is stalled
+        val <=1;
+    end 
+    else if(dout_ready)
+        val <= 0;
+end
+
+
+//register data
+always@(posedge clk)begin
+    if(rst)
+        din_r <=0;
+    else if(din_valid & din_ready)
+        din_r <= din;
+end
+
+//din ready
+assign din_ready = ~val;
+
+//dout side
+reg [DIN_WIDTH-1:0] dout_r=0;
+reg dout_valid_r=0;
+
+
+//valid
+reg flag =0;
+wire flag2 = din_valid | val;
+always@(posedge clk)begin
+    if(rst)
+        dout_valid_r <=0;
+    else if((~dout_valid) | dout_ready)begin
+        dout_valid_r <= (din_valid | val);
+        flag <= 1;
+    end
+    else
+        flag <= 0;
+end
+
+//data
+always@(posedge clk)begin
+    if(rst)
+        dout_r <= 0;
+    else if((~dout_valid) | dout_ready)begin
+        if(val)
+            dout_r <= din_r;
+        else if(din_valid)
+            dout_r <= din;
+        else
+            dout_r <= 0;
+    end
+end
+
+assign dout = dout_r;
+assign dout_valid = dout_valid_r; 
+
+endmodule
+\end{lstlisting}
+
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for SIPO converter used in \texttt{packetizer\_top.v}.}, captionpos=b, label={lst:verilog_sipo_converter}]
+//`default_nettype none
+/* DIN --> time demultiplex --> FIFO --> DOUT */
+module sipo #(
+    parameter DIN_WIDTH = 64,
+    parameter DOUT_WIDTH = 512,
+    parameter FIFO_DEPTH = 2048,
+    parameter CYCLES = DOUT_WIDTH/DIN_WIDTH,
+    parameter TIME_SIZE = $clog2(CYCLES)
+) (
+    input wire clk,
+    input wire rst,
+    input wire [DIN_WIDTH-1:0] din,
+    input wire din_valid,
+    output wire din_ready,
+    output wire [DOUT_WIDTH-1:0] dout,
+    output wire dout_valid,
+    input wire dout_ready,
+    output wire fifo_full,
+    output wire fifo_almost_full
+);
+
+/***
+ ***    Skid buffer for input flow control
+ ***/
+wire [DIN_WIDTH-1:0] sk_dout;
+wire sk_valid, sk_ready;
+
+skid_buffer #(
+    .DIN_WIDTH(DIN_WIDTH)
+) skid_buffer_inst (
+    .clk(clk),
+    .rst(rst),
+    .din(din),
+    .din_valid(din_valid), 
+    .din_ready(din_ready), 
+    .dout_valid(sk_valid), 
+    .dout_ready(sk_ready), 
+    .dout(sk_dout)
+);
+
+/***
+ ***    Time demultiplex - serial to parallel accumulation
+ ***/
+reg [DOUT_WIDTH-1:0] parallel_reg = 0;
+reg [$clog2(CYCLES):0] time_demux = 0;
+
+localparam IDLE = 1'b0;
+localparam BUSY = 1'b1;
+reg state = 0, next_state = 0;
+
+always@(posedge clk) begin
+    if(rst)
+        state <= IDLE;
+    else
+        state <= next_state;
+end
+
+always@(*) begin
+    case(state)
+        IDLE: begin
+            if(sk_valid & ~full)    next_state = BUSY;
+            else                    next_state = IDLE;
+        end
+        BUSY: begin
+            if((time_demux == (CYCLES-1)) & sk_valid & sk_ready)
+                next_state = IDLE; 
+            else
+                next_state = BUSY;
+        end
+    endcase
+end
+
+wire can_accept = ~full & ~almost_full;
+assign sk_ready = can_accept;
+
+// Serial to parallel accumulation
+always@(posedge clk) begin
+    if(rst) begin
+        time_demux <= 0;
+        parallel_reg <= 0;
+    end
+    else begin
+        case(state)
+            IDLE: begin
+                if(sk_valid & ~full) begin
+                    parallel_reg[DIN_WIDTH*0+:DIN_WIDTH] <= sk_dout;
+                    time_demux <= 1;
+                end
+                else begin
+                    time_demux <= 0;
+                end
+            end
+            BUSY: begin
+                if(sk_valid & sk_ready) begin
+                    parallel_reg[DIN_WIDTH*time_demux+:DIN_WIDTH] <= sk_dout;
+                    if(time_demux == (CYCLES-1))
+                        time_demux <= 0;
+                    else
+                        time_demux <= time_demux + 1;
+                end
+            end
+        endcase
+    end
+end
+
+// Write enable for FIFO
+reg wen_fifo = 0;
+always@(posedge clk) begin
+    if(rst)
+        wen_fifo <= 0;
+    else
+        wen_fifo <= ((state == BUSY) & (time_demux == (CYCLES-1)) & sk_valid & sk_ready);
+end
+
+/***
+ ***   FIFO
+ ***/
+reg [$clog2(FIFO_DEPTH):0] waddr = 0, raddr = 0;
+
+// Write pointer
+always@(posedge clk) begin
+    if(rst)
+        waddr <= 0;
+    else if(wen_fifo & ~full)
+        waddr <= waddr + 1;
+end
+
+// Read pointer
+always@(posedge clk) begin
+    if(rst)
+        raddr <= 0;
+    else if(dout_ready & ~empty)
+        raddr <= raddr + 1;
+end
+
+bram_infer #(
+    .N_ADDR(FIFO_DEPTH),
+    .DATA_WIDTH(DOUT_WIDTH)
+) bram_inst (
+    .clk(clk),
+    .wen(wen_fifo),
+    .ren(dout_ready),
+    .wadd(waddr[$clog2(FIFO_DEPTH)-1:0]),
+    .radd(raddr[$clog2(FIFO_DEPTH)-1:0]),
+    .win(parallel_reg),
+    .wout(dout)
+);
+
+// FIFO control signals
+wire empty, full, almost_full;
+assign empty = (waddr == raddr);
+assign full = ((waddr[$clog2(FIFO_DEPTH)] != raddr[$clog2(FIFO_DEPTH)]) &
+               (waddr[$clog2(FIFO_DEPTH)-1:0] == raddr[$clog2(FIFO_DEPTH)-1:0]));
+
+wire [$clog2(FIFO_DEPTH):0] occupancy;
+assign occupancy = waddr - raddr;
+assign almost_full = (occupancy >= (FIFO_DEPTH - CYCLES));  
+
+assign dout_valid = ~empty;
+assign fifo_full = full;
+assign fifo_almost_full = almost_full;
+endmodule
+\end{lstlisting}

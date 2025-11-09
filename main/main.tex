@@ -147,7 +147,7 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 
 \newenvironment{acknowledgements}{
   \if@openright\cleardoublepage\else\clearpage\fi
-  \chapter*{Acknowledgements}
+  \chapter*{Agradecimientos}
   \begingroup
   }{\par\endgroup\newpage}
 
@@ -220,13 +220,11 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
   \begin{center}
     \MakeUppercase{\textbf{Design and implementation of the F-engine for the Canadian-Chilean Array for Radio Transient Studies (CHARTS) project}}
   \end{center}
-  La radioastronomía de dominio temporal se ha consolidado como una de las áreas más dinámicas de la astrofísica moderna, revelando fenómenos energéticos como pulsares, estallidos de magnetares y ráfagas rápidas de radio (FRBs, por sus siglas en inglés). Estas emisiones de duración en el orden de los milisegundos figuran entre las más brillantes del cielo en radio y permiten estudiar condiciones físicas extremas, como procesos de emisión coherente, aceleración relativista de partículas y campos magnéticos intensos.\\
+  Esta memoria presenta el diseño e implementación del F-engine para el proyecto \textit{Canadian-Chilean Array for Radio Transient Studies} (CHARTS), un arreglo interferométrico de baja frecuencia (300–500 MHz) ubicado en Santiago de Chile orientado a la detección y monitoreo de \textit{fast radio bursts} (FRBs), púlsares y otros transientes de radio. Los objetivos científicos del proyecto incluyen añadir restricciones a los posibles mecanismos de emisión de los FRBs, expandir la población de \textit{repeaters} en el hemisferio sur y aprovechar la posición privilegiada del arreglo para estudiar el centro Galáctico en búsqueda de transientes de radio.
 
-  A pesar de los avances recientes, gran parte del cielo austral permanece inexplorado en escalas temporales de transientes de radio. La mayoría de los \textit{surveys}, como CHIME/FRB y FAST, se han concentrado en el hemisferio norte, dejando regiones como el Centro Galáctico y el cielo extragaláctico austral con una cobertura limitada. El proyecto \textit{Canadian-Chilean Array for Radio Transient Studies} (CHARTS) surge para cubrir este vacío, mediante el despliegue de un arreglo interferométrico de baja frecuencia (300–500 MHz) en el hemisferio sur, orientado a detectar y monitorear FRBs y otros fenómenos transitorios, además de fortalecer la comunidad de radioastronomía en Sudamérica.\\
+  El F-engine constituye la primera etapa del backend digital de CHARTS. Implementado sobre la plataforma AMD Xilinx RFSoC 4×2, el sistema digitaliza, canaliza y recuantiza múltiples señales de antena, produciendo flujos espectrales compactos listos para su correlación y la búsqueda de transientes. La arquitectura admite hasta 4 entradas de convertidores analógico-digitales, cada una con 8 señales de antena en un ancho de banda de $\sim$2.5 GHz (para un total de 32 señales digitalizadas), integra osciladores locales digitales para el esquema de multiplexación en frecuencia y envía los datos procesados mediante enlaces ópticos a 51.6 \si{\giga\bit\per\second}. Como innovación respecto del estado del arte, se incorporan técnicas como FFT compleja para muestreo IQ y la desmultiplexación de múltiples antenas con un único ADC, dentro de una arquitectura modular, escalable y flexible.
 
-  Esta tesis presenta el diseño e implementación del F-engine, la primera etapa del backend digital de CHARTS. Basado en la plataforma AMD Xilinx RFSoC 4×2, el sistema digitaliza, canaliza y cuantiza múltiples señales de antena, generando flujos espectrales compactos listos para correlación y búsqueda de transitorios. El diseño admite hasta 32 entradas en un ancho de banda de $\sim$2.5 GHz, integra osciladores locales digitales para el esquema de multiplexado en frecuencia y transmite los datos procesados a través de enlaces ópticos de 100 \si{\giga\bit\per\second}.\\
-
-  La arquitectura desarrollada logra un procesamiento espectral de alta velocidad y baja latencia adecuado para operación en tiempo real, estableciendo un componente tecnológico clave para CHARTS y sentando las bases para futuras detecciones en el cielo del hemisferio sur.
+  Pruebas de laboratorio y mediciones en sitio, como la observación del tránsito del sol, validan la integridad de señal, la precisión de la canalización y la eficiencia de transmisión, y se discuten implicancias para instrumentación radioastronómica futura.
   \newpage
 
   \begin{tabular}{l}
@@ -240,13 +238,12 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
   \begin{center}
     \MakeUppercase{\textbf{Design and implementation of the F-engine for the Canadian-Chilean Array for Radio Transient Studies (CHARTS) project}}
   \end{center}
-  Time-domain radio astronomy has become one of the most dynamic areas of modern astrophysics, revealing energetic phenomena such as pulsars, magnetar flares, and \glspl{frb}. These millisecond-duration flashes are among the brightest signals in the radio sky and provide unique insight into extreme physical conditions, including coherent emission, relativistic particle acceleration, and strong magnetic fields.\\
+  This thesis presents the design and implementation of the F-engine for \gls{charts} project, a low-frequency (300–500 MHz) interferometric array in the Southern Hemisphere aimed at detecting and monitoring \glspl{frb}, pulsars, and other radio transients. The scientific objectives of the project include constraining FRB emission mechanisms, expanding the population of repeaters in the Southern Hemisphere, and leveraging the array's privileged location to study the Galactic Center in search of radio transients.
 
-  However, the southern sky remains largely unexplored at radio transient timescales. Most surveys, such as CHIME/FRB and FAST, have focused on northern declinations, leaving regions like the Galactic Center and the southern extragalactic sky under-observed. The \gls{charts} project was conceived to address this gap by deploying a low-frequency (300–500 MHz) interferometric array in the Southern Hemisphere to detect and monitor FRBs and other transient phenomena, while strengthening the radio astronomy community in South America.\\
+  The F-engine constitutes the first stage of the CHARTS digital backend. Implemented on the AMD Xilinx RFSoC 4x2 platform, the system digitizes, channelizes, and requantizes multiple antenna signals, producing compact spectral streams ready for correlation and transient search. The architecture supports up to 4 analog-to-digital converter inputs, each with 8 antenna signals over a $\sim$2.5 GHz bandwidth (for a total of 32 digitized signals), integrates digital local oscillators for the frequency-division multiplexing scheme, and transmits the processed data via optical links at 51.6 \si{\giga\bit\per\second}. As an innovation over the state of the art, techniques such as complex FFT for IQ sampling and demultiplexing multiple antennas with a single ADC are incorporated within a modular, scalable, and flexible architecture.
 
-  This thesis presents the design and implementation of the F-engine, the first stage of CHARTS’ digital backend. Built on the AMD Xilinx RFSoC 4×2 platform, the system digitizes, channelizes, and quantizes multiple antenna signals into compact spectral data streams ready for correlation and transient searches. It supports up to 32 inputs across $\sim$2.5 GHz of bandwidth, integrates internally generated local oscillators for frequency-division multiplexing, and transmits processed data through 100 \si{\giga\bit\per\second} optical links.\\
+  Laboratory tests and on-site measurements, such as the sun transit observation, validate signal integrity, channelization accuracy, and transmission efficiency; and implications for future radio astronomy instrumentation are also discussed.
 
-  The resulting architecture achieves high-throughput, low-latency spectral processing suitable for real-time operation, establishing a key technological foundation for CHARTS and enabling future discoveries in the dynamic radio sky of the Southern Hemisphere.
   \newpage
 
   \pdfbookmark[section]{Dedication}{dedication}
@@ -262,11 +259,11 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 
   \pdfbookmark[section]{Acknowledgements}{acknowledgements}
   \begin{acknowledgements}
-    El primer pilar fundamental es evidentemente mi familia. Pese a que mis modos no sean lo suficientemente expresivos, creo importante tomar este hito para explicitarlos. Primero a mi papá, por estar ahí siempre, de forma hasta patológica, pero que con el tiempo he llegado a valorar enormemente. A mi mamá, por ser mi mayor admiradora e instarme a creerme el cuento, especialmente cuando la autoestima emocional flaquea. Y al Franco, por ser un gran hermano mayor, estar siempre a mi lado y ser el mejor compañero de sobremesa. \\
+    El primer pilar fundamental es evidentemente mi familia. Pese a que mis modos no sean lo suficientemente expresivos, creo importante tomar este hito para explicitarlos. Primero agradecer a mi papá, por estar ahí siempre, de forma hasta patológica, pero que con el tiempo he llegado a valorar enormemente. A mi mamá, por ser mi mayor admiradora e instarme a creerme el cuento, especialmente cuando la autoestima emocional flaqueaba. Al Franco, por ser un gran hermano mayor y el mejor compañero de sobremesa. Y a mis abuelos: Tita, Tata y especialmente Nancy. 
 
-    Agradezco también la fortuna de contar con amistades excepcionales. A mis amigos del colegio: Pacolin, Kaco, Pedor, Musa, Tom, Muñoz, Santi y Mateo, por una amistad sincera y duradera, y por estar siempre dispuestos a acompañarme en cualquier circunstancia. A mis amigos de la universidad, quienes han sido un apoyo fundamental durante estos años: el Coco, por su compañía constante, especialmente en los primeros años presenciales, y el Benja, por los entrenos y las innumerables tallas compartidas en los últimos 2 años. Menciones honoríficas: Tincho, Renzi, Pin, Gale, Adri, Araya, Kopp y Ulloa.\\
+    Agradezco también la fortuna de contar con amistades excepcionales. A mis amigos del colegio: Pacolin, Kaco, Pedro, Musa, Tom, Muñoz, Santi y Mateo, por una amistad sincera y duradera, y por estar siempre dispuestos a acompañarme en cualquier circunstancia. A mis amigos de la universidad, a quienes he visto prácticamente todos los días en esta etapa: el Coco, por su compañía constante en casi todos los ramos, especialmente en los primeros años presenciales, y el Benja, por los entrenos y las innumerables tallas estos últimos 2 años. Y porque no el resto de cabros: Tincho, Renzi, Pin, Gale, Adri, Araya, Kopp y Ulloa.
 
-    Finalmente, agradezco a mi profesor guía, Tomás, y al resto de la comisión, por brindarme la oportunidad de participar en este proyecto y por fomentar la ciencia y la instrumentación desarrollada en Chile. Gracias por permitirme formar parte del AstroLab y MWL, donde he aprendido enormemente y he conocido a personas excepcionales. También agradezco a mis compañeros de laboratorio, especialmente a Sebita y Gonzalo, por su buena disposición y por ayudarme a aportar mi granito de arena en el desafío de sacar adelante CHARTS.
+    Finalmente, agradezco a mi profesor guía, Tomás, y al resto de la comisión, por brindarme la oportunidad de participar en este proyecto y por fomentar la ciencia y la instrumentación desarrollada en Chile. Gracias por permitirme formar parte del AstroLab y MWL, donde he aprendido muchísimo y he conocido a personas excepcionales. También agradezco a mis compañeros de laboratorio, especialmente a Sebita y Gonzalo, por su buena disposición y por ayudarme a aportar mi granito de arena en el desafío de sacar adelante CHARTS.
   \end{acknowledgements}
 
   \pdfbookmark[section]{Contents}{contents}
@@ -292,6 +289,8 @@ datavisualization, datavisualization.formats.functions, automata, fit, angles, q
 \subfile{../chapter3/chapter3}
 \subfile{../chapter4/chapter4}
 \subfile{../chapter5/chapter5}
+
+\subfile{../chapter6/chapter6}
 
 
 \phantomsection

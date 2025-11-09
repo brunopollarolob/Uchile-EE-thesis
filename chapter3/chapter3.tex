@@ -3,9 +3,8 @@ CHARTS is a compact, wide-field interferometer designed to explore the transient
 
 The system consists of 256 single-polarized antennas, a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation.
 
-CHARTS additionally functions as a platform to experiment with novel digital instrumentation methods, such as IQ sampling using complex FFT and the demultiplexing of multiple antennas through a single ADC, techniques that other arrays don't have used. Its modular architecture supports gradual enhancements and scalability, enabling CHARTS to remain aligned with changing scientific objectives.
 
-The subsequent sections provide a detailed exploration of the CHARTS system. They begin with an overview of the scientific objectives, site characteristics, and RFI measurements. This is followed by a comprehensive description of the analog system, encompassing the antenna, LNA, and FDM. The digital backend and processing pipeline are also discussed. Design considerations specific to the F-engine are presented separately in Chapter~\ref{chap:fengine}.
+The subsequent sections provide a detailed exploration of the CHARTS system. They begin with an overview of the scientific objectives and site characteristics. This is followed by a comprehensive description of the analog system, encompassing the antenna, LNA, and FDM. The digital backend and processing pipeline are also discussed. Design considerations specific to the F-engine are presented separately in Chapter~\ref{chap:fengine}.
 
 The development of CHARTS has been a collaborative effort. The analog components, such as the antenna, LNA, and FDM, were primarily developed by Dr. Albert Wai Kit Lau, a postdoctoral researcher at University of Toronto, and MSc Sebastián Manosalva from Universidad de Chile. The digital development, including all RFSoC measurements like the RFI characterization shown in Figure~\ref{fig:rfi_caren}, has been led by the author of this thesis, with some contributions in the LO generator of BSc student Frederik Brecht from University of Toronto. The software for the processing and search nodes is being developed collaboratively by MSc Gonzalo Burgos and MSc student Juan Pablo Contreras from Universidad de Chile.
 \section{Science goals}
@@ -22,7 +21,7 @@ Beyond its discovery potential, CHARTS will contribute to several key areas of t
 
     \item \textbf{Galactic transients.} CHARTS’ daily transit over the Galactic Center (see Figure~\ref{fig:instantaneous_fov}) enables searches for bursts from magnetars like SGR~1935+2154 \citep{Galactic_magnetar}, giant-pulse emitters, rotating radio transients (RRATs; \citealt{RRATs2022}), and other rare phenomena.
 
-    \item \textbf{Repeating FRBs.} CHARTS will identify new repeaters, share real-time alerts, and enable multi-wavelength follow-ups, essential for calibration and validation of array capabilities.
+    \item \textbf{Repeating FRBs and multi-messenger astronomy.} CHARTS will identify new repeaters, share real-time alerts, and enable multi-wavelength follow-ups, essential for calibration and validation of array capabilities.
   \end{enumerate}
 
 \begin{figure}[h!]
@@ -32,9 +31,8 @@ Beyond its discovery potential, CHARTS will contribute to several key areas of t
   \label{fig:instantaneous_fov}
 \end{figure}
 
-In summary, CHARTS is designed not only to expand the discovery space for radio transients in the southern hemisphere but also to provide critical insights into the physics of coherent radio emission, the diversity of FRB progenitors, and the dynamic sky of our Galaxy.
 
-\section{Site and RFI environment}
+\section{Site: Laguna Carén, Chile}
 The selection of the CHARTS site began in 2023 with measurements at several candidate locations to quantitatively compare their \gls{rfi} environments. The chosen site was Laguna Carén park\footnote{\url{https://caren.uchile.cl}}, on the outskirts of Santiago, Chile. Owned by Universidad de Chile, the area provides stable electrical supply, basic infrastructure, and a reserved section suitable for scientific installations. Located at latitude \qty{-33.45}{\degree} and longitude \qty{-70.75}{\degree}, about \qty{25}{\kilo\m} northwest of downtown Santiago, the park sits at an elevation of \qty{550}{\m} with flat terrain that facilitates the deployment of the array (Figure~\ref{fig:caren_site}).  
 
 \begin{figure}[!ht]
@@ -56,16 +54,7 @@ The site offers sufficient space for a \numproduct{16x16} antenna array within a
 Laguna Carén also hosts a limited number of research projects from public and private institutions, most of them concentrated near the park entrance and away from the CHARTS site. The park’s mission emphasizes the promotion of interdisciplinary research (as its first strategic objective declares: \textit{fomento de la investigación transdisciplinaria}), which aligns closely with the scientific goals of CHARTS.
 
 
-The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. On August 28, 2025, a specialized measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies. For this analysis, the CHORD feed (an ultra-wideband antenna with $S11 < -10$ dB in the 0 to \SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC 4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range.
-
-The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}, alongside a reference measurement taken at Cerro Calán (where the Astronomy Department is located, within the city of Santiago). The sky temperature at Cerro Calán is significantly elevated due to urban RFI, reaching levels around $10^5$ K in the CHARTS band. In contrast, Laguna Carén exhibits a much lower baseline sky temperature, approximately $2\times10^2-3\times10^2$ K, indicating a substantially cleaner environment. However, several strong RFI features are evident, particularly around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$ K, posing a risk of saturation if not properly mitigated. The CHARTS analog front-end incorporates bandpass filters to attenuate out-of-band interference, and additional filtering is planned for future iterations to further enhance system robustness against RFI.
- 
-\begin{figure}[h!]
-  \centering
-  \includegraphics{sky_temperature_comparison.pdf}
-  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna Carén site (blue) and Cerro Calán (red). The CHARTS science band (300--500 MHz) is highlighted. The measurements were conducted using the CHORD feed and RFSoC 4x2 backend, with an amplification box providing a known system temperature for accurate calibration. The Laguna Carén site exhibits a significantly lower sky temperature compared to Cerro Calán, indicating a cleaner RFI environment, although several strong RFI features are present that require mitigation through filtering.}
-  \label{fig:rfi_caren}
-\end{figure}
+The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. More details and results from these measurements are presented in Chapter \ref{chap:results} \S\ref{sec:rfi_measurements}.
 
 
 \section{Analog system}
@@ -267,14 +256,37 @@ Several versions of the FDM board have been developed throughout the project. Fi
 
 \section{Digital backend and processing pipeline}
 \label{sec:charts_digital_backend}
+The CHARTS digital backend is responsible for transforming the wideband analog signals from the array into scientifically usable data streams for real-time transient detection and subsequent analysis. It interfaces directly with the analog \gls{fdm} boards, digitizing and channelizing the multiplexed signals, followed by data formatting, transport, and GPU-based processing. Figure~\ref{fig:charts_signal_chain} illustrates the complete signal path, from antenna to detection.
 
+After demodulation and digitization by the RFSoC boards, each of the eight F-engines processes 32 single-polarization antenna inputs, producing complex 4-bit spectral samples. Each board generates an output data stream of approximately \SI{51.6}{\giga\bit\per\second}, based on a sampling rate of 0.2016 GSPS, 8-bit complex representation, and 32 input channels:
+\begin{equation}
+    R_{\text{board}} = 0.2016~\text{GSPS} \times 8~\text{bits} \times 32 = \SI{51.6}{\giga\bit\per\second}.
+\end{equation}
+In total, the 8 boards deliver a combined throughput of \SI{412.8}{\giga\bit\per\second} (\SI{51.6}{\giga\byte\per\second}) to the real-time processing cluster.
+
+This data is transferred through a \SI{100}{\giga\bit\per\second} optical Ethernet switch, which performs the first ``corner-turn’’ operation, redistributing frequency sub-bands to four GPU-based processing nodes. Each node thus receives one quarter of the processed bandwidth (\(\Delta\nu/4 \approx \SI{50}{\mega\hertz}\)) from all antennas. The F-engine firmware, based on the \gls{casper} toolflow, formats and packetizes the channelized data, while the downstream nodes run the \texttt{kotekan} framework \citep{kotekan} for real-time data management and GPU kernel execution.
+
+The GPU cluster constitutes the CHARTS X-engine, comprising four processing nodes, one search node, and one analysis node. Each processing node hosts an NVIDIA RTX~5090 GPU and \SI{512}{\giga\byte} of DDR4 RAM, sufficient to maintain a \SI{40}{\second} ring buffer of baseband data. The main processing stages are as follows:
+\begin{itemize}
+    \item \textbf{Beamforming:} Each node forms $n_b = 103$ coherent beams using a real-time beamforming kernel. The process includes calibration, frequency upchannelization (from 1k to 4k channels per sub-band), and accumulation of intensity (Stokes~I) data.
+    \item \textbf{Downsampling and data reduction:} The beamformed data are squared, integrated to a time resolution of $t_s \approx \SI{1}{\milli\second}$, and reduced to 4-bit I-Stokes values, resulting in an output rate of \SI{16.25}{\giga\bit\per\second} per node.
+    \item \textbf{Search and detection:} The GPU-based search node performs incoherent dedispersion over a fixed bank of \glspl{dm} up to \SI{1e3}{\parsec\per\centi\meter^3}, followed by a peak-finding kernel that identifies statistically significant transient candidates in beam, time, DM, and S/N space.
+\end{itemize}
+
+Candidates with $\text{SNR}>12$ trigger a baseband dump of \SI{100}{\milli\second} of full-voltage data from the ring buffer, while those with $8<\text{SNR}<12$\footnote{The SNR threshold will be further studied once the system is up and running.} are stored as incoherent beam data for offline verification. The dedispersion and search pipeline achieves a total latency below \SI{10}{\second}, ensuring that transient detections remain within the buffer window.
+
+The final analysis is carried out on a CPU-based node, which cross-matches events against pulsar catalogs (NE2001, YMW16; \citealt{cordes2003ne2001inewmodelgalactic, Yao2017}), classifies them using a machine-learning algorithm (Galactic, extragalactic, or known pulsar), and initiates automatic triggers for baseband preservation and follow-up. Offline analyses include coherent dedispersion, polarization studies, and refined localization through SNR-weighted synthesis, similar to techniques used in CHIME/FRB \citep{CHIMEcatalog2021}.
+
+RFI mitigation will be incorporated at both firmware and GPU stages, including statistical outlier rejection, variance-based detection, and reference-antenna subtraction \citep{taylor2019spectralkurtosisbasedrfimitationchime, Li_2025}. Environmental monitoring and automatic safety controls will be implemented using Prometheus\footnote{\url{https://prometheus.io/}} and Grafana\footnote{\url{https://grafana.com/}} metrics, ensuring safe operation during high-temperature conditions.
+
+In summary, the CHARTS digital backend combines high-throughput FPGA-based channelization with GPU-accelerated beamforming and transient search, achieving a sustained data processing rate of over \SI{400}{\giga\bit\per\second} with a total end-to-end latency below \SI{10}{\second}. This architecture provides the necessary computational performance to enable real-time detection of fast radio transients while maintaining modularity and scalability for future array expansions.
 
 \begin{figure}[h!]
     \centering
     \includegraphics[width=\textwidth]{../figures/CHARTS_signal_chain.pdf}
-    \caption[CHARTS signal chain]{Signal path for the 8 single polarization antennas (1 tile digitizes 32 antennas). The RFSoC separates the frontend and backend of the
+    \caption[CHARTS signal chain]{\textbf{Update figure with new data rates}. Signal path for the 8 single polarization antennas (1 tile digitizes 32 antennas). The RFSoC separates the frontend and backend of the
     system (where ADCs are located). The complete CHARTS array is composed of 256 (A000–A255) single polarization antennas, 32 FDM boards, 8 RFSoC digitizers, a 16-port switch, a 4-port switch, 4 processing nodes (with CPU, GPU, and 512 GB of DDR4 RAM), and 1
-    search node. The entire system will process 8 $\times$ 51.2 \si{\giga\bit\per\second} = 409.6 \si{\giga\bit\per\second} of voltage data in the processing nodes, and 65 \si{\giga\bit\per\second}
+    search node. The entire system will process 8 $\times$ 51.6 \si{\giga\bit\per\second} = 412.8 \si{\giga\bit\per\second} of voltage data in the processing nodes, and 65 \si{\giga\bit\per\second}
     in the
     search node. Data output from processing nodes will scale depending on number of channels, number of beams, bits resolution, and sampling
     time. In this case, 16k, $n_b$ = 103
@@ -287,4 +299,5 @@ Several versions of the FDM board have been developed throughout the project. Fi
     beamform beams, upchannelize, downsample, square, and sum (I-Stokes) the dataset. Then the search node will efficiently dedisperse a set of DM
     values and perform a peak-find algorithm for potential candidates. Site communication will be done through a satellite remote connection, and
     remote monitoring will be done to system. Thick lines are analog connections and thin lines are digitized signals. Figure made by Dr. Tomás Cassanelli.}
+    \label{fig:charts_signal_chain}
   \end{figure}
