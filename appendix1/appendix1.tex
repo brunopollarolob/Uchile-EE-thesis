@@ -166,7 +166,7 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the 4-bit convergent quantizer with gain and dynamic shift.}, captionpos=b, label={lst:verilog_quantizer}]
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the 4-bit convergent quantizer with gain and dynamic shift.}, label={lst:verilog_quantizer}]
 module quantizer (
     input  wire          clk,
     input  wire          ce,
@@ -285,9 +285,7 @@ module quantizer (
 endmodule
 \end{lstlisting}
 
-\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the skid buffer module used in \texttt{packetizer\_top.v}.}, captionpos=b, label={lst:verilog_skid_buffer}]
-//`default_nettype none
-
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the skid buffer module used in \texttt{sipo.v}.}, label={lst:verilog_skid_buffer}]
 module skid_buffer #(
     parameter DIN_WIDTH = 64
 ) (
@@ -369,8 +367,7 @@ assign dout_valid = dout_valid_r;
 endmodule
 \end{lstlisting}
 
-\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for SIPO converter used in \texttt{packetizer\_top.v}.}, captionpos=b, label={lst:verilog_sipo_converter}]
-//`default_nettype none
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for SIPO converter used in \texttt{hge\_write\_packetizer.v}.}, label={lst:verilog_sipo_converter}]
 /* DIN --> time demultiplex --> FIFO --> DOUT */
 module sipo #(
     parameter DIN_WIDTH = 64,
@@ -531,5 +528,275 @@ assign almost_full = (occupancy >= (FIFO_DEPTH - CYCLES));
 assign dout_valid = ~empty;
 assign fifo_full = full;
 assign fifo_almost_full = almost_full;
+endmodule
+\end{lstlisting}
+
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the HGE write packetizer used in \texttt{packetizer\_top.v}.}, label={lst:verilog_hge_packetizer}]
+module hge_write_packetizer #(
+    parameter DIN_WIDTH = 64,
+    parameter FIFO_DEPTH = 2048
+) (
+    input wire clk,
+    input wire rst,
+    input wire [DIN_WIDTH-1:0] din,
+    input wire din_valid,
+    output wire din_ready,
+    
+    // Configuration signals
+    input wire [31:0] pkt_len,
+    input wire [31:0] idle_cycles,
+    
+    // To the 100GbE 
+    output wire [511:0] tx_data,
+    output wire tx_valid,
+    output wire tx_eof,
+    output wire fifo_full,
+    output wire fifo_empty
+);
+
+wire [511:0] tge_data;
+wire tge_data_valid;
+wire sipo_din_ready;
+
+// ==========================================
+// STATE MACHINE: IDLE -> HEADER -> DATA
+// ==========================================
+localparam IDLE   = 2'b00;
+localparam HEADER = 2'b01;
+localparam DATA   = 2'b10;
+
+reg [1:0] state = IDLE;
+reg [1:0] next_state;
+reg [31:0] counter = 0;
+reg [31:0] idle_counter = 0;
+reg [63:0] packet_counter = 0;
+
+reg [511:0] dout = 0;
+reg dout_valid = 0;
+reg header_valid = 0;
+reg eof = 0;
+reg sipo_ready_r = 0;
+
+wire valid_transfer_data = tge_data_valid & sipo_ready_r;
+
+// Build simple header: packet counter in LSB [63:0], rest zeros
+wire [511:0] header_word = {448'h0, packet_counter};
+
+// State machine (combinational)
+always@(*) begin
+    case(state)
+        IDLE: begin
+            if(idle_counter == (idle_cycles - 1))
+                next_state = HEADER;
+            else
+                next_state = IDLE;
+        end
+        
+        HEADER: begin
+            next_state = DATA;
+        end
+        
+        DATA: begin
+            if((counter == pkt_len) && valid_transfer_data)
+                next_state = IDLE;
+            else
+                next_state = DATA;
+        end
+        
+        default: next_state = IDLE;
+    endcase
+end
+
+// State register
+always@(posedge clk) begin
+    if(rst)
+        state <= IDLE;
+    else
+        state <= next_state;
+end
+
+// Counter logic
+always@(posedge clk) begin
+    if(rst) begin
+        counter <= 0;
+        idle_counter <= 0;
+    end
+    else begin
+        case(state)
+            IDLE: begin
+                counter <= 0;
+                if(idle_counter == (idle_cycles - 1))
+                    idle_counter <= 0;
+                else
+                    idle_counter <= idle_counter + 1;
+            end
+            
+            HEADER: begin
+                counter <= 0;
+                idle_counter <= 0;
+            end
+            
+            DATA: begin
+                if(valid_transfer_data) begin
+                    if(counter == pkt_len)
+                        counter <= 0;
+                    else
+                        counter <= counter + 1;
+                end
+            end
+        endcase
+    end
+end
+
+// Packet counter
+always@(posedge clk) begin
+    if(rst)
+        packet_counter <= 0;
+    else if((state == DATA) && (counter == pkt_len) && valid_transfer_data)
+        packet_counter <= packet_counter + 1;
+end
+
+// ==========================================
+// OUTPUT MUX: BYPASS HEADER, PASS DATA
+// ==========================================
+
+// Data register (only for header)
+reg [511:0] header_reg = 0;
+
+always@(posedge clk) begin
+    if(rst)
+        header_reg <= 0;
+    else if(next_state == HEADER)
+        header_reg <= header_word;
+    else if (state == DATA)
+        dout <= tge_data;
+end
+
+// Output valid
+always@(posedge clk) begin
+    if(rst) begin
+        dout_valid <= 0;
+    end
+    else begin
+        case(state)
+            IDLE: begin
+                dout_valid <= 0;
+            end
+            
+            HEADER: begin
+                dout_valid <= 0;
+            end
+            
+            DATA: begin
+                dout_valid <= valid_transfer_data;
+            end
+            
+            default: begin
+                dout_valid <= 0;
+            end
+        endcase
+    end
+end
+
+// EOF signal
+always@(posedge clk) begin
+    if(rst) begin
+        eof <= 0;
+    end
+    else begin
+        if((state == DATA) && (counter == pkt_len) && valid_transfer_data)
+            eof <= 1;
+        else
+            eof <= 0;
+    end
+end
+
+// Header valid
+always@(posedge clk) begin
+    if(rst)
+        header_valid <= 0;
+    else
+        header_valid <= (next_state == HEADER);  
+end
+
+// SIPO ready control
+always@(posedge clk) begin
+    if(rst)
+        sipo_ready_r <= 0;
+    else
+        sipo_ready_r <= (state == DATA);
+end
+
+sipo #(
+    .DIN_WIDTH(DIN_WIDTH),
+    .DOUT_WIDTH(512),
+    .FIFO_DEPTH(FIFO_DEPTH)
+) sipo_inst (
+    .clk(clk),
+    .rst(rst),
+    .din(din),
+    .din_valid(din_valid),
+    .din_ready(sipo_din_ready),
+    .dout(tge_data),
+    .dout_valid(tge_data_valid),
+    .dout_ready(sipo_ready_r),
+    .fifo_full(fifo_full)
+);
+
+assign din_ready = sipo_din_ready;
+
+// ==========================================
+// OUTPUT MUX: Select header or SIPO data
+// ==========================================
+assign tx_data = (state == HEADER) ? header_reg : dout;
+assign tx_valid = (state == HEADER) ? header_valid : dout_valid;
+assign tx_eof = eof;
+assign fifo_empty = ~tge_data_valid;
+
+endmodule
+\end{lstlisting}
+
+\begin{lstlisting}[style={prettyverilog}, caption={Verilog code for the top-level packetizer module used in the HGE write path.}, label={lst:verilog_packetizer_top}]
+`include "/home/bruno/f-engine/simulink_models/includes.v"
+module packetizer_top 
+ (
+    input wire clk,
+    input wire ce,
+    input wire rst,
+    input wire [63:0] din,
+    input wire din_valid,
+    
+    //configuration signals
+    input wire [31:0] pkt_len,
+   // input wire [31:0] sleep_cycles,
+    
+    //to the HGE 
+    output wire [511:0] tx_data,
+    output wire tx_valid,
+
+    output wire tx_eof,
+
+    output wire fifo_full,
+    output wire fifo_empty           
+);
+
+
+hge_write_packetizer #(
+    .DIN_WIDTH(64),
+    .FIFO_DEPTH(2048)
+) hge_write_packetizer_inst (
+    .clk(clk),
+    .rst(rst),
+    .din(din),
+    .din_valid(din_valid),
+    .pkt_len(pkt_len),
+   // .sleep_cycles(sleep_cycles),
+    .tx_data(tx_data),
+    .tx_valid(tx_valid),
+    .tx_eof(tx_eof),
+    .fifo_full(fifo_full),
+    .fifo_empty(fifo_empty) 
+);
+
 endmodule
 \end{lstlisting}

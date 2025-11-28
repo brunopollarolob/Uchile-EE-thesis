@@ -1,8 +1,7 @@
 \chapter{CHARTS overview}
 CHARTS is a compact, wide-field interferometer designed to explore the transient radio sky in the 300--500\,MHz. Its architecture prioritizes the number of elements and instantaneous field of view over raw bandwidth, aiming to maximize the detection rate of FRBs and other millisecond-duration transients.
 
-The system consists of 256 single-polarized antennas, a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation.
-
+The system consists of 256 dual-polarized antennas (only one polarization is currently implemented), a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation.
 
 The subsequent sections provide a detailed exploration of the CHARTS system. They begin with an overview of the scientific objectives and site characteristics. This is followed by a comprehensive description of the analog system, encompassing the antenna, LNA, and FDM. The digital backend and processing pipeline are also discussed. Design considerations specific to the F-engine are presented separately in Chapter~\ref{chap:fengine}.
 
@@ -54,7 +53,7 @@ The site offers sufficient space for a \numproduct{16x16} antenna array within a
 Laguna Carén also hosts a limited number of research projects from public and private institutions, most of them concentrated near the park entrance and away from the CHARTS site. The park’s mission emphasizes the promotion of interdisciplinary research (as its first strategic objective declares: \textit{fomento de la investigación transdisciplinaria}), which aligns closely with the scientific goals of CHARTS.
 
 
-The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. More details and results from these measurements are presented in Chapter \ref{chap:results} \S\ref{sec:rfi_measurements}.
+The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. More details and results from these measurements are presented in Chapter \ref{chap:results} (\S\ref{sec:rfi_measurements}).
 
 
 \section{Analog system}

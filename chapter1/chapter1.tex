@@ -12,6 +12,7 @@ The \gls{charts} project was conceived in this context. It aims to deploy a low-
 At the heart of CHARTS lies a modular signal processing architecture that integrates scalable analog front-ends with a flexible digital backend optimized for transient searches. Within this backend, the F-engine plays a central role: it digitizes and channelizes the signals from each antenna, producing frequency-domain data ready for correlation and transient search pipelines. The development of an efficient, high-throughput F-engine is therefore a key step toward enabling CHARTS to achieve its scientific objectives.
 
 \section{Objectives}
+\label{sec:objectives}
 The main objective of this work is to design and implement a spectrometer capable of demultiplexing multiple antenna signals over a \SI{200}{\mega\hertz} bandwidth, using the \glspl{adc} of the Xilinx AMD RFSoC 4x2 platform. This constitutes a fundamental component of the CHARTS digital backend, as it allows a single RFSoC board to digitize and compute the Fourier transform (hence the F in F-engine) for up to 32 analog signals from the array of 256 antennas.  
 
 In addition to this overarching goal, the specific objectives are:

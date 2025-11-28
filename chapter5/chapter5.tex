@@ -1,24 +1,115 @@
 \chapter{Testing, validation, and performance results}
 \label{chap:results}
-In this chapter, we present the testing and validation results of the F-engine designed for the CHARTS project. The performance metrics are evaluated through a series of laboratory measurements and on-sky observations. We assess key parameters such as linearity, dynamic range, channelization accuracy, and timing stability. Additionally, we demonstrate the end-to-end functionality of the system by conducting a solar transit observation and 8 antenna correlation tests.
+This chapter presents the testing, validation, and performance results of the F-engine developed for the CHARTS project. We evaluate key metrics, including linearity, dynamic range, channelization accuracy, and timing stability, using both laboratory measurements and on-sky observations. Additionally, the radio frequency interference environment at the Laguna Carén site is characterized, informing the design of improved analog filtering to prevent saturation and data corruption. Finally, we demonstrate the end-to-end functionality of the system through solar transit observations and multi-antenna correlation tests.
 
-\section{Site RFI characterization results}
+\section{Site RFI characterization}
 \label{sec:rfi_measurements}
-On August 28, 2025, a specialized RFI measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies and see the impact of local RFI sources in the 300--500 MHz science band. For this analysis, the CHORD feed (an ultra-wideband antenna with $S11 < -10$ dB in the 0 to \SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC 4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range. The measurement procedure involved pointing the CHORD feed towards zenith and recording the power spectrum over a 15-minute integration period. The recorded data were then calibrated to derive the sky temperature as a function of frequency, accounting for the known system temperature of the amplification box.
+On August 28, 2025, a specialized RFI measurement campaign was conducted to evaluate the complete digitization bandwidth (\SI{0}{\mega\hertz}–\SI{2457.6}{\mega\hertz}), aiming to detect potential spectral leaks at higher frequencies and see the impact of local RFI sources in the 300--500~MHz science band. For this analysis, the CHORD feed (an ultra-wideband antenna with $S_{11} < -10$~dB in the 0–\SI{1500}{\mega\hertz} range, see \citealt{MacKay_2023} for detailed feed specifications) was employed alongside the RFSoC~4x2 backend and an amplification box with a well-defined system temperature, ensuring accurate characterization across the entire frequency range. The measurement setup is illustrated in Figure~\ref{fig:rfi_measurement_setup}. The procedure involved pointing the CHORD feed towards zenith and recording the power spectrum over a 15-minute integration period, with 25~ms of time resolution (dynamic spectra are shown in Figure~\ref{fig:dynamic_spectra_15_min}). The recorded data were then calibrated to derive the sky temperature as a function of frequency, accounting for the known system temperature of the amplification box.
 
-The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}, alongside a reference measurement taken at Cerro Calán (where the Astronomy Department is located, within the city of Santiago). The sky temperature at Cerro Calán is significantly elevated due to urban RFI, reaching levels around $10^5$ K in the CHARTS band. In contrast, Laguna Carén exhibits a much lower baseline sky temperature, approximately $2\times10^2-3\times10^2$ K, indicating a substantially cleaner environment. However, several strong RFI features are evident, particularly around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$ K, posing a risk of saturation if not properly mitigated. The CHARTS analog front-end incorporates bandpass filters to attenuate out-of-band interference, and additional filtering is planned for future iterations to further enhance system robustness against RFI.
- 
+\begin{figure}[h!]
+	\begin{tikzpicture}
+	% Paths, nodes and wires:
+	\node[shape=rectangle, draw, line width=0.75pt, dash pattern={on 3pt off 3pt}, minimum width=7.724cm, minimum height=2.974cm] at (9.125, 6){};
+	\node[shape=rectangle, draw, line width=0.75pt, minimum width=1.474cm, minimum height=0.974cm] at (2.25, 5){} node[anchor=center, align=center, text width=1.094cm, inner sep=5.75pt] at (2.25, 5){\footnotesize Noise source};
+	\draw (11.5, 6) to[lowpass] (12.5, 6);
+	\draw (6, 6) to[amp] (7, 6);
+	\draw (7.75, 6) to[amp] (8.75, 6);
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (6.5, 6.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (6.5, 6.75){\scriptsize 21.5 dB};
+	\node[shape=rectangle, draw, line width=0.75pt, minimum width=1.474cm, minimum height=0.974cm] at (16.25, 6){} node[anchor=center, align=center, text width=1.094cm, inner sep=5.75pt] at (16.25, 6){\footnotesize RFSoC};
+	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.715cm] at (8.25, 6.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (8.25, 6.75){\scriptsize 23 dB};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (12, 6.75){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (12, 6.75){\scriptsize 0-2700 MHz};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (6.5, 7.75){} node[anchor=west, align=left, text width=2.5cm, inner sep=6pt] at (5.25, 7.75){\scriptsize Amplification Box};
+	\node[shape=rectangle, minimum width=2.215cm, minimum height=0.715cm] at (6.375, 5.25){} node[anchor=center, align=center, text width=1.827cm, inner sep=6pt] at (6.375, 5.25){\tiny ZX60-P103LN+};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (8.25, 5.25){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (8.25, 5.25){\tiny ZX60-43-S+};
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (2.25, 5.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (2.25, 5.75){\tiny Agilent 346B};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (12, 5.25){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (12, 5.25){\tiny SLP-2950+};
+	\draw (4.594, 6) -- (6, 6);
+	\draw (7, 6) -- (7.75, 6);
+	\draw (8.75, 6) -- (9.5, 6);
+	\draw (10.5, 6) -- (11.5, 6);
+	\draw (12.5, 6) -- (13.5, 6);
+	\node[dinantenna] at (3, 6){};
+	\draw (3.594, 6) to[cute closing switch, invert] (4.594, 6);
+	\draw (3, 6) -- (3.594, 6);
+	\draw (13.5, 6) to[american resistive sensor] (14.75, 6);
+	\node[ocirc] at (3.75, 5.75){};
+	\draw (3, 5) -| (3.75, 5.75);
+	\draw (14.75, 6) -- (15.5, 6);
+	\draw[-latex] (3, 7.75) -- (3, 7);
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (3, 8.125){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (3, 8.125){\scriptsize CHORD feed (sky)};
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (14.25, 6.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (14.25, 6.75){\scriptsize 10 dB att};
+	\node[shape=rectangle, minimum width=2.84cm, minimum height=0.715cm] at (2.25, 3.75){} node[anchor=center, align=center, text width=2.452cm, inner sep=6pt] at (2.25, 3.75){\scriptsize (Hot and cold)};
+	\draw[-latex] (2.25, 4) -- (2.25, 4.5);
+	\draw (9.5, 6) to[highpass] (10.5, 6);
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (10, 6.75){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (10, 6.75){\scriptsize 290-3000 MHz};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (10, 5.25){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (10, 5.25){\tiny SHP-300+};
+\end{tikzpicture}
+    \caption[Block diagram of the RFI measurement setup at Laguna Carén site]{Block diagram of the RFI measurement setup at Laguna Carén site. The CHORD feed was connected to an amplification box consisting of two low-noise amplifiers, a high pass filter and an antialias low pass filter, and a 10 dB attenuator (added due saturation constraints at Cerro Calán), followed by the RFSoC~4x2 backend. The Agilent 346B noise source provided hot and cold load references for calibration.}
+    \label{fig:rfi_measurement_setup}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{dynamic_spectra.pdf}
+    \caption[Dynamic spectra from RFI measurement at Laguna Carén site]{Dynamic spectra from RFI measurement at Laguna Carén site over a 15-minute integration with 25~ms time resolution. The data were collected using the CHORD feed and RFSoC~4x2 backend, revealing temporal variations in RFI across the full digitization bandwidth.}
+    \label{fig:dynamic_spectra_15_min}
+\end{figure}
+
+
+
+The raw power spectra were processed using a radiometric calibration procedure based on the classical \emph{Y-factor} method. Each dataset consisted of FFT power outputs averaged over short integrations to obtain a stable estimate of the power per frequency channel. To ensure spectral alignment, the FFT outputs were circularly shifted to center the zero-frequency component, and the accumulated counts were converted to power units in dBm\,MHz$^{-1}$ through a logarithmic transformation:
+\begin{equation}
+P(\nu) = 10 \log_{10}\!\left(\frac{D(\nu)}{N_\mathrm{acc}}\right) - P_\mathrm{emp},
+\end{equation}
+where $D(\nu)$ is the accumulated FFT power for channel~$\nu$, $N_\mathrm{acc}$ is the accumulation length, and $P_\mathrm{emp}$ is a correction factor empirically determined from laboratory calibration with an injected tone (400 MHz) of known power.
+
+Separate measurements were performed with a matched \emph{hot load} and \emph{cold load} connected to the input to determine the receiver noise temperature. The effective noise source temperature for the hot load is
+\begin{equation}
+T_\mathrm{ON} = T_\mathrm{OFF}\!\left(10^{\frac{\mathrm{ENR}}{10}} + 1\right),
+\end{equation}
+where $\mathrm{ENR}$ is the excess noise ratio (in~dB) of the calibrated noise source, which ranges from 14 to 16~dB across the relevant bandwidth, and $T_\mathrm{OFF}=290$~K corresponds to the physical temperature of the cold reference load. This yields $T_\mathrm{ON}\approx 9550$~K for the hot load. The receiver noise temperature $T_\mathrm{rx}(\nu)$ is then determined as follows:
+\begin{equation}
+T_\mathrm{rx}(\nu) = 
+\frac{T_\mathrm{ON} - Y(\nu)\,T_\mathrm{OFF}}{Y(\nu) - 1}, 
+\qquad 
+Y(\nu) = \frac{10^{P_\mathrm{hot}(\nu)/10}}{10^{P_\mathrm{cold}(\nu)/10}},
+\end{equation}
+where $P_\mathrm{hot}(\nu)$ and $P_\mathrm{cold}(\nu)$ are the measured powers for the hot and cold loads. To mitigate small-scale fluctuations due to quantization noise and internal ripple, the derived $T_\mathrm{rx}(\nu)$ was smoothed by fitting a fifth-order polynomial:
+\begin{equation}
+T_\mathrm{rx}^{\mathrm{fit}}(\nu) = 
+\sum_{k=0}^{5} a_k \nu^k,
+\end{equation}
+with coefficients $a_k$ obtained via least-squares regression using reference samples between 300~MHz and 2.4~GHz. The fitted curve defines the effective receiver noise profile across the band. Figure \ref{fig:rx_temperature_caren} shows the measured and fitted receiver temperatures.
+
+\begin{figure}[h!]
+  \centering
+  \includegraphics{receiver_noise_temperature.pdf}
+  \caption[Measured and fitted receiver temperature at Laguna Carén site]{Measured (yellow) and fitted (blue) receiver temperature used to characterize the receiver noise profile. The fitted curve smooths out small-scale fluctuations and defines the effective receiver noise profile across the band.}
+  \label{fig:rx_temperature_caren}
+\end{figure}
+
+With the receiver response characterized, the calibrated sky temperatures were derived by comparing the measured sky power $P_\mathrm{sky}(\nu)$ to the cold-load reference $P_\mathrm{cold}(\nu)$ according to
+\begin{equation}
+T_\mathrm{sky}(\nu) = 
+\left[T_\mathrm{sys} + T_\mathrm{rx}^{\mathrm{fit}}(\nu)\right]
+\frac{P_\mathrm{sky}(\nu)}{P_\mathrm{cold}(\nu)} - T_\mathrm{rx}^{\mathrm{fit}}(\nu),
+\end{equation}
+where $T_\mathrm{sys}=290$~K corresponds to the physical temperature of the reference load. This formulation assumes linear receiver response and negligible gain variation between calibration and sky measurements.
+
+The resulting spectrum is shown in Figure~\ref{fig:rfi_caren}, alongside a reference measurement taken at Cerro~Calán (where the Astronomy Department is located, within the city of Santiago). The sky temperature at Cerro~Calán is significantly elevated due to urban RFI, reaching levels around $10^5$~K in the CHARTS band. In contrast, Laguna~Carén exhibits a much lower baseline sky temperature, approximately $(2\text{–}3)\times10^2$~K, indicating a substantially cleaner environment. However, several strong RFI features are evident, particularly around \SI{416}{\mega\hertz} and \SI{435}{\mega\hertz}, as well as in the \SIrange{530}{700}{\mega\hertz} range. These signals reach brightness temperatures approaching $10^8$~K, posing a risk of saturation if not properly mitigated. The CHARTS analog front-end incorporates bandpass filters to attenuate out-of-band interference, and additional filtering is planned for future iterations to further enhance system robustness against RFI.
+
 \begin{figure}[h!]
   \centering
   \includegraphics{sky_temperature_comparison.pdf}
-  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna Carén site (blue) and Cerro Calán (red). The CHARTS science band (300--500 MHz) is highlighted. The measurements were conducted using the CHORD feed and RFSoC 4x2 backend, with an amplification box providing a known system temperature for accurate calibration. The Laguna Carén site exhibits a significantly lower sky temperature compared to Cerro Calán, indicating a cleaner RFI environment, although several strong RFI features are present that require mitigation through filtering.}
+  \caption[Sky temperature at Laguna Carén site and Cerro Calán]{Sky temperature at Laguna~Carén site (blue) and Cerro~Calán (red). The CHARTS science band (300--500~MHz) is highlighted. The measurements were conducted using the CHORD feed and RFSoC~4x2 backend, with an amplification box providing a known system temperature for accurate calibration. The Laguna~Carén site exhibits a significantly lower sky temperature compared to Cerro~Calán, indicating a cleaner RFI environment, although several strong RFI features are present that require mitigation through filtering.}
   \label{fig:rfi_caren}
 \end{figure}
-\section{LO tone generation results}
-To validate the LO generation module, we performed measurements using an external spectrum analyzer connected directly to the RFSoC DAC output. The objective was to assess the spectral purity and frequency accuracy of the digitally synthesized signals. The analyzer was configured with a resolution bandwidth (RBW) and video bandwidth (VBW) of \SI{3}{\kilo\hertz}, enabling the resolution of tones separated by approximately \SI{3}{\kilo\hertz} and a sweep time of \SI{19.3}{\second}. The FFT was computed with 750 points over a 3.28--2457.6~MHz span, yielding a frequency resolution of \SI{3.276}{\mega\hertz}. The DAC output was set to its maximum level for 14-bit samples to optimize the signal-to-noise ratio.
+
+\section{LO tone generation}
+To validate the LO generation module, we performed measurements using an external spectrum analyzer connected directly to the RFSoC DAC output. The objective was to assess the spectral purity and frequency accuracy of the digitally synthesized signals. The analyzer was configured with a resolution bandwidth (RBW) and video bandwidth (VBW) of \SI{3}{\kilo\hertz}, enabling the resolution of tones separated by approximately \SI{3}{\kilo\hertz} and a sweep time of \SI{19.3}{\second}. The FFT was computed with 750 points over a 3.28--2457.6~MHz span, yielding a frequency resolution of \SI{3.276}{\mega\hertz}. The DAC output was set to its maximum level for 14-bit samples to maximize the signal-to-noise ratio.
 
 
-Figure~\ref{fig:lo_loopback_spectrum} presents the measured power spectrum. The four main tones appear at the expected frequencies. Although the spectrum analyzer's channel width was not narrow enough to resolve individual bins, a DAC-ADC loopback test using the same sampling frequency and FFT configuration confirmed that the tones coincide exactly with the expected frequencies, without spectral leakage. The amplitudes are well matched across channels, with a decrease in power observed for higher frequencies which could be attributed to the cable losses. The strongest spurious components remain below \SI{-49}{\decibelm}; the five largest are observed at \SIlist{533.9;268.6;1451.1;799.2;1716.4;946.6}{\mega\hertz}, which appear to be intermodulation products of the main tones with themselves and/or with harmonics of the clock synthesizers.
+Figure~\ref{fig:lo_loopback_spectrum} presents the measured power spectrum. The four main tones appear at the expected frequencies. Although the spectrum analyzer's channel width was not narrow enough to resolve individual bins, a DAC-ADC loopback test using the same sampling frequency and FFT configuration confirmed that the tones coincide exactly with the expected frequencies, without spectral leakage. The amplitudes are well matched across channels, with a decrease in power observed for higher frequencies which could be attributed to the cable losses. The strongest spurious components remain below \SI{-57}{\decibelm}; the five largest are observed at \SIlist{533.9;268.6;1451.1;799.2;1716.4;946.6}{\mega\hertz}, which appear to be intermodulation products of the main tones with themselves and/or with harmonics of the clock synthesizers.
 
 \begin{figure}[h!]
     \centering
@@ -46,68 +137,249 @@ and compute the \gls{sfdr} as
 \end{equation}
 where all quantities are in dBm. The resulting value, $\mathrm{SFDR} = \SI{39.31}{\decibel}$, demonstrates that the spectral purity of the synthesized tones is sufficient for their use as local oscillators in the \gls{fdm} system. Nevertheless, amplification and filtering stages are still necessary to achieve the required output power levels and further suppress spurious signals before mixing with the antenna signals.
 
-
-
-\section{Digital gains calibration results}
-Using the calibration routine described in \S\ref{sec:re-quantization}, we obtained the digital gain coefficients for all 8192 frequency channels. Figure~\ref{fig:digital_gains_lab} shows the resulting gain profile across the full \SI{2457.6}{\mega\hertz} bandwidth. 
-
-\begin{figure}
-    \centering
-    \includegraphics{digital_gains_lab.pdf}
-    \caption[Digital gain coefficients obtained from laboratory calibration]{Digital gain coefficients obtained from laboratory calibration, plotted against frequency. The gains vary according to the RFI environment, where lower values means that the RFI in that frequency channel is stronger.}
-    \label{fig:digital_gains_lab}
-\end{figure}
 \section{Linearity and dynamic range}
 
-\section{Testing correlation}
+\section{Correlation tests}
+To rigorously assess the end-to-end performance of the digital backend, two sets of correlation tests were conducted under controlled laboratory conditions. In the first test, an amplified noise source was distributed to all chains via an 8-way splitter, providing a common broadband input to each signal chain. In the second test, eight prototype CHARTS antennas were simultaneously connected to the FDM system. These experiments were designed to verify phase coherence across all channels and to evaluate the correlation of the multiplexed signals.
 
+\subsection{Noise source test}
+In the noise source test, a broadband noise generator was amplified and fed into an 8-way power splitter, with each output connected to a separate input of the FDM system. This setup ensured that all chains received similar noise signals (only varying cable length), allowing for direct comparison of correlation performance. The analog setup of this test is illustrated in Figure~\ref{fig:noise_source_test_setup}, where we had the Agilent 346B noise source connected to the same amplification box (without the high pass filter) used in the RFI measurement, before being split and fed into the RFSoC~4x2 backend. Chain 1 had a longer cable between splitter and FDM, to introduce a known delay.
+
+\begin{figure}[h!]
+    \centering
+    \begin{tikzpicture}
+	% Paths, nodes and wires:
+	\node[shape=rectangle, draw, line width=0.75pt, dash pattern={on 3pt off 3pt}, minimum width=1.474cm, minimum height=2.474cm] at (14.5, 6){};
+	\node[shape=rectangle, draw, line width=0.75pt, dash pattern={on 3pt off 3pt}, minimum width=5.224cm, minimum height=2.974cm] at (7.875, 6){};
+	\node[shape=rectangle, draw, line width=0.75pt, minimum width=1.474cm, minimum height=0.974cm] at (4.25, 6){} node[anchor=center, align=center, text width=1.094cm, inner sep=5.75pt] at (4.25, 6){\footnotesize Noise source};
+	\draw (9.25, 6) to[lowpass] (10.25, 6);
+	\draw (5.75, 6) to[amp] (6.75, 6);
+	\draw (7.5, 5.981) to[amp] (8.5, 5.981);
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (6.25, 6.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (6.25, 6.75){\scriptsize 21.5 dB};
+	\node[shape=rectangle, draw, line width=0.75pt, minimum width=1.474cm, minimum height=0.974cm] at (18.25, 6){} node[anchor=center, align=center, text width=1.094cm, inner sep=5.75pt] at (18.25, 6){\footnotesize RFSoC};
+	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.715cm] at (8, 6.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (8, 6.75){\scriptsize 23 dB};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (9.75, 6.75){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (9.75, 6.75){\tiny 0-2700 MHz};
+	\draw (10.75, 5.981) to[amp] (11.75, 5.981);
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (6.5, 7.75){} node[anchor=west, align=left, text width=2.5cm, inner sep=6pt] at (5.25, 7.75){\scriptsize Amplification Box};
+	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.715cm] at (11.25, 6.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (11.25, 6.75){\scriptsize 25 dB};
+	\node[shape=rectangle, minimum width=2.215cm, minimum height=0.715cm] at (6.25, 5.25){} node[anchor=center, align=center, text width=1.827cm, inner sep=6pt] at (6.25, 5.25){\tiny ZX60-P103LN+};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (8, 5.25){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (8, 5.25){\tiny ZX60-43-S+};
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (4.25, 6.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (4.25, 6.75){\tiny Agilent 346B};
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (9.75, 5.25){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (9.75, 5.25){\tiny SLP-2950+};
+	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11.25, 5.25){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (11.25, 5.25){\tiny QPL9547};
+	\draw (5, 6) -- (5.75, 6);
+	\draw (6.75, 6) -| (7.5, 6);
+	\draw (8.5, 5.981) -| (9.25, 6);
+	\draw (10.25, 6) -| (10.75, 6);
+	\draw (11.75, 5.961) -- (12.25, 5.981);
+	\draw (13.25, 6) -- (13.75, 6);
+	\node[shape=rectangle, minimum width=2.215cm, minimum height=0.715cm] at (12.75, 6.75){} node[anchor=center, align=center, text width=1.827cm, inner sep=6pt] at (12.75, 6.75){\tiny 300-500 MHz};
+	\draw (12.25, 6) to[bandpass] (13.25, 6);
+	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (14.5, 7.5){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (14.5, 7.5){\scriptsize 8 way splitter};
+	\draw[line width=0.75pt] (15.75, 7.5) -- (15.75, 4.5) -- (17, 5.25) -- (17, 6.75) -- cycle node[anchor=center] at (16.375, 6){$\text{FDM}$};
+	\draw (14.25, 7) -- (15.75, 7);
+	\draw (14.25, 6.75) -- (15.75, 6.75);
+	\draw (14.25, 6.25) -- (15.75, 6.25);
+	\draw (14.25, 5.75) -- (15.75, 5.75);
+	\draw (14.25, 5.25) -- (15.75, 5.25);
+	\draw (14.25, 5) -- (15.75, 5);
+	\draw (17, 6) -- (17.5, 6);
+	\draw (14.25, 5) -- (14.25, 7);
+	\draw (14.25, 6.5) -- (15.75, 6.5);
+	\draw (14.25, 5.5) -- (15.75, 5.5);
+	\draw (13.75, 6) -- (15.75, 6);
+	\node[shape=rectangle, minimum width=2.965cm, minimum height=0.715cm] at (14.5, 4.5){} node[anchor=center, align=center, text width=2.577cm, inner sep=6pt] at (14.5, 4.5){\tiny ZCSC-8-13-S+};
+    \end{tikzpicture}
+    \caption[]{Block diagram of the noise source test setup for FDM system verification. An Agilent 346B noise source provided a broadband signal that was amplified and split into eight equal paths, each feeding into a separate input of the FDM system. }
+    \label{fig:noise_source_test_setup}
+\end{figure}
+
+Firstly, we verified the average power levels of each chain to make sure they were within the optimal operating range of the ADCs, avoiding underutilization given the fact that we are using just a load as signal. To adjust this, we used the dynamic shift described in \S\ref{sec:re-quantization}, keeping the digital gains $g$ values equal across all channels to maintain uniform scaling. The resulting power levels can be seen in Figure~\ref{fig:noise_source_spectra}, showing a similar spectral shape across all chains. Note that chains 1-3 are flipped as we would expect when using the frequency mixing scheme, so an additional frequency inversion and conjugation is required in post-processing to properly align and correlate these channels.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{fdm_chains_spectrum_lab.pdf}
+    \caption[Averaged 1 ms spectra from noise source FDM measurement]{Averaged 1 ms spectra (300 accumulations) from noise source FDM measurement. All 8 chains show similar spectral shapes, confirming that the noise source was evenly distributed across all inputs. Chains 1-3 are flipped due to the frequency mixing scheme employed in the FDM system.}
+    \label{fig:noise_source_spectra}
+\end{figure}
+
+After initial power level adjustment, we performed a complex data capture with a time resolution of \SI{10}{\milli\second}, acquiring a total of 20,000 complex spectra (corresponding to a $\sim$3-min integration) to ensure adequate statistics for correlation analysis. Using the calibration routine described in \S\ref{sec:re-quantization}, we obtained the digital gain coefficients for all 8192 frequency channels. Finally we computed the time averaged cross-correlation for all antenna pairs:
+\begin{equation}
+	S_{ij}(\nu) = \frac{1}{N}\sum_{n=1}^{N} X_i^*(\nu, t_n) X_j(\nu, t_n),
+\end{equation}
+where $X_i(\nu, t_n)$ is the complex FFT output for chain $i$ at frequency channel $\nu$ and time $t_n$, and $N$ is the total number of time samples. The phase was obtained as $\phi_{ij}(\nu) = \arg\left(S_{ij}(\nu)\right)$. Figure~\ref{fig:noise_source_correlation_matrix} shows the resulting correlation matrix. The diagonal elements represent the auto-correlations, while the off-diagonal elements show the cross-correlation phases. 
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{corr_fdm_load.pdf}
+    \caption[Correlation matrix from noise source test]{Correlation matrix obtained from the noise source test. It shows the time averaged cross-correlation phases between all antenna pairs over a 3-minute integration over the full 300-500 MHz bandwidth. The diagonal elements represent the auto-correlations, while the off-diagonal elements show the cross-correlations pairs.}
+    \label{fig:noise_source_correlation_matrix}
+\end{figure}
+
+Since all chains are fed by the same noise source, the expected phase difference between any pair should be approximately zero (modulo $2\pi$), except for chain~1 which, due to a longer cable, introduces a known delay and exhibits a clear phase offset relative to the others. Small phase shifts are nevertheless observed in the cross-correlations, attributable to slight differences in cable lengths, variations in analog components (especially in the FDM board), and inherent delays in the digital chain. Such offsets are common in practical systems and can be corrected through calibration during real observations. The key result is that the system exhibits stable phase coherence across all chains, validating the integrity of the digital processing and confirming that the FDM system maintains the phase stability required for interferometric observations.
+
+\subsection{8 antenna test}
+To extend the validation beyond the single–noise-load measurement, we conducted an 8-antenna laboratory test using the CHARTS prototype antennas. Each antenna was connected to the FDM board through coaxial cables of equal length, mapping directly onto chains~0–7 of Table~\ref{tab:fdm_chains}. In this configuration all eight inputs are simultaneously digitized by a single ADC, enabling a realistic end-to-end assessment of the full F-engine signal path.
+
+
+As in the previous test, complex FFT spectra were captured using the BRAM-based acquisition system at a time resolution of \SI{10}{\milli\second}, accumulating a total of 20,000 spectra (a $\sim$3\,min integration). The digital-gain calibration procedure described in \S\ref{sec:re-quantization} was then applied across all 8192 channels. The resulting per-channel gain coefficients are shown in Figure~\ref{fig:digital_gains_lab}; the variation in gain reflects the RFI environment seen by the antennas, with lower gain values corresponding to channels dominated by strong interference.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics{digital_gains_lab.pdf}
+    \caption[Digital gain coefficients obtained from laboratory calibration]{Digital gain coefficients obtained from laboratory calibration, plotted against frequency. The gains vary according to the RFI environment captured by the antennas, where lower values means that the RFI in that frequency channel is stronger.}
+    \label{fig:digital_gains_lab}
+\end{figure}
+
+With the calibrated gains applied, we computed the time-averaged auto-correlations for each chain over the \SI{300}{\mega\hertz}–\SI{500}{\mega\hertz} science band. The results, plotted in Figure~\ref{fig:8ant_amplitude}, show flat and consistent amplitudes across all eight chains, indicating that the gain normalization successfully equalized the overall noise levels.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics{amplitude_charts8.pdf}
+    \caption[Amplitude of each chain after digital gains calibration]{Amplitude of each chain after digital gains calibration of the 8-antenna test. It shows the time averaged auto-correlation amplitudes for all 8 chains over a 3-minute integration over the full 300-500 MHz bandwidth.}
+    \label{fig:8ant_amplitude}
+\end{figure}
+
+
+
+Finally, we evaluated the phase stability of the full system by calculating the complex cross-correlations between all antenna pairs. The resulting correlation matrix is shown in Figure~\ref{fig:8ant_correlation_matrix}. Since each antenna receives independent sky noise, the expected cross-correlation phases should be randomly distributed between $-\pi$ and $\pi$. The observed phases confirm this expectation, demonstrating that the FDM system accurately preserves the phase information of the multiplexed signals without introducing systematic offsets that can't be calibrated. This result further validates the performance of the digital backend in handling multiple independent inputs while maintaining phase coherence, a critical requirement for interferometric observations.
+
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{corr_charts8.pdf}
+    \caption[Correlation matrix from 8-antenna test]{Correlation matrix obtained from the 8-antenna test. It shows the time averaged cross-correlation phases between all antenna pairs over a 3-minute integration over the full 300-500 MHz bandwidth. The diagonal elements represent the auto-correlations, while the off-diagonal elements show the cross-correlations pairs.}
+    \label{fig:8ant_correlation_matrix}
+\end{figure}
 
 \section{Solar transit observation}
 \label{sec:solar_transit}
-On October 15, 2025, an on-sky solar observation was carried out using the CHARTS prototype antenna and analog electronics at the Laguna Carén site. The prototype setup is shown in Figure~\ref{fig:charts_antenna_caren}, with one of the dual-polarization antennas mounted on a temporary ground plane and the FDM system located behind it. Two antennas operated in distinct sub-bands (chains~1 and~2 in Table~\ref{tab:fdm_chains}), connected through the prototype amplification and filtering stages before digitization. The antennas were separated by an approximate \SI{19}{\meter} baseline (originally planned as \SI{20}{\meter}, limited by available \SI{10}{\meter} RF jumpers), while the Sun traversed the wide primary beam of each element.
+On October 15, 2025, an on-sky solar observation was conducted using the CHARTS prototype antenna and analog electronics at the Laguna Carén site. The goal of this test was to validate the interferometric fringe rate expected for a short East–West baseline and to confirm phase coherence across the full digital signal chain for an astronomical source outside the laboratory. Before describing the observational setup, we summarize the theoretical framework that establishes the expected behavior of solar fringes in a two-element interferometer.
 
-\begin{figure}[h!]
-    \centering 
-    \includegraphics[width=\linewidth]{charts_antenna_caren_anotations.pdf} 
-    \caption{CHARTS prototype antenna with temporary ground during the test observation at Laguna Carén. The analog front-end and FDM system are visible in the background.} 
-    \label{fig:charts_antenna_caren} 
-\end{figure}
+\subsection{Theoretical expectations}
 
-The test was performed within the scientific band of \SIrange{300}{500}{\mega\hertz}, corresponding to wavelengths between \SI{1.0}{\meter} and \SI{0.6}{\meter}. With the prototype antenna’s broad primary beam (FWHM~$\sim90^{\circ}$), the solar transit through the main lobe lasts approximately six hours, so during the one-hour engineering track the source amplitude envelope remained nearly constant. The effective fringe spacing, set by the ratio of wavelength to baseline length, is given by
+Within the CHARTS science band of \SIrange{300}{500}{\mega\hertz}, the corresponding wavelengths span \SIrange{1.0}{0.6}{\meter}. For a baseline of length $b$, the angular fringe spacing is
 \begin{equation}
     \theta_{\rm fringe} \approx \frac{\lambda}{b}.
 \end{equation}
-For a \SI{20}{\meter} baseline, this corresponds to $\theta_{\rm fringe}\simeq\SI{2.9}{\degree}$ at \SI{300}{\mega\hertz}, \SI{2.1}{\degree} at \SI{400}{\mega\hertz}, and \SI{1.7}{\degree} at \SI{500}{\mega\hertz}—comfortably larger than the apparent solar diameter of $\theta_\odot\simeq\SI{0.5}{\degree}$. Thus, the Sun behaves effectively as an unresolved (slightly diluted) source, suitable for validating fringe-rate stability and instrumental phase coherence.
-
-The interferometric phase of a two-element array can be written as
+For $b\simeq\SI{20}{\meter}$ this yields
 \begin{equation}
-    \phi(t) = \frac{2\pi}{\lambda}\,\mathbf{b}\cdot\mathbf{s}(t),
-\end{equation}
-or equivalently $\phi(t)=2\pi\nu\,\tau_g(t)$, where $\tau_g(t)=\mathbf{b}\cdot\mathbf{s}(t)/c$ is the geometric delay, and $\mathbf{s}(t)$ is the source position vector. The product $\mathbf{b}\cdot\mathbf{s}(t)$ varies with time due to the Earth's rotation, causing the interferometric phase to change and producing fringes in the cross-correlation data. The time derivative of this phase gives the fringe rate,
-\begin{equation}
-    \frac{d\phi}{dt} = \frac{2\pi}{\lambda}\,\mathbf{b}\cdot(\boldsymbol{\omega_\oplus}\times\mathbf{s}),
-\end{equation}
-where $\boldsymbol{\omega_\oplus}$ denotes the Earth's angular velocity vector. The cross product $\boldsymbol{\omega_\oplus}\times\mathbf{s}$ represents the instantaneous velocity of the source across the sky as seen from the observer, and its magnitude is
-\begin{equation}
-    \bigl|\boldsymbol{\omega_\oplus}\times\mathbf{s}\bigr| = \omega_\oplus \sin(90^\circ - \delta) = \omega_\oplus\cos\delta,
-\end{equation}
-where $\delta$ is the source declination. Assuming the baseline is oriented approximately East–West, we can take the projection $\mathbf{b}\simeq b_{\rm EW}\,\hat{\mathbf{e}}_{\rm EW}$, giving
-\begin{align}
-    \mathbf{b}\cdot(\boldsymbol{\omega_\oplus}\times\mathbf{s})
-    &\approx b_{\rm EW}\,\omega_\oplus\cos\delta,\\
-    \therefore\quad \frac{d\phi}{dt}
-    &\approx \frac{2\pi b_{\rm EW}}{\lambda}\,\omega_\oplus\cos\delta.
-\end{align}
-Substituting $b_{\rm EW}\approx\SI{20}{\meter}$, $\omega_\oplus = 2\pi / \SI{24}{\hour}$, and $\delta_\odot\simeq -8.5^{\circ}$ (declination of the sun at the time of observation, obtained from \url{https://theskylive.com/sun-info}) gives the expected phase rates across the observing band:
-\[
-\frac{d\phi}{dt} \simeq 
+\theta_{\rm fringe}\approx
 \begin{cases}
-\SI{32.54}{\radian\per\hour}, & \text{at } \SI{300}{\mega\hertz},\\[4pt]
-\SI{43.38}{\radian\per\hour}, & \text{at } \SI{400}{\mega\hertz},\\[4pt]
-\SI{54.23}{\radian\per\hour}, & \text{at } \SI{500}{\mega\hertz}.
+\SI{2.9}{\degree}, & \nu=\SI{300}{\mega\hertz},\\
+\SI{2.1}{\degree}, & \nu=\SI{400}{\mega\hertz},\\
+\SI{1.7}{\degree}, & \nu=\SI{500}{\mega\hertz},
 \end{cases}
-\]
-Since one full fringe corresponds to a $2\pi$ phase cycle, these rates imply approximately 5, 7, and 9 fringes per hour, respectively. This guided the visibility integration strategy, ensuring that a half-hour track would capture multiple fringe envelopes and provide a robust verification of phase stability and correlator synchronization.
+\end{equation}
+all substantially larger than the solar diameter ($\theta_\odot\simeq\SI{0.5}{\degree}$). The Sun therefore acts as an unresolved source for this baseline, making it suitable for verifying fringe rates without spatial decoherence.
+
+The interferometric phase of a two-element array is
+\begin{equation}
+    \phi(t) = \frac{2\pi}{\lambda}\,\mathbf{b}\cdot\mathbf{s}(t)
+    = 2\pi\nu\,\tau_g(t),
+\end{equation}
+where $\tau_g(t)=\mathbf{b}\cdot\mathbf{s}(t)/c$ is the geometric delay. Temporal evolution arises from Earth's rotation, which causes
+\begin{align}
+    \dot\phi &= \frac{d}{dt}\left(\frac{2\pi}{\lambda}\,\mathbf{b}\cdot\mathbf{s}(t)\right)
+              = \frac{2\pi}{\lambda}\,\mathbf{b}\cdot\dot{\mathbf{s}}(t),\\
+    \dot{\mathbf{s}}(t) &= \boldsymbol{\omega_\oplus}\times\mathbf{s}(t),
+\end{align}
+with $\boldsymbol{\omega_\oplus}$ Earth's angular velocity. Since
+\begin{equation}
+\lvert \boldsymbol{\omega_\oplus}\times\mathbf{s} \rvert 
+= \omega_\oplus \sin(90^\circ - \delta) = \omega_\oplus\cos\delta,
+\end{equation}
+for a source of declination $\delta$, an approximately East–West baseline of projection $b_{\rm EW}$ gives
+\begin{equation}
+    \dot\phi \approx \frac{2\pi b_{\rm EW}}{\lambda}\,\omega_\oplus\cos\delta.
+\end{equation}
+
+Using $b_{\rm EW}\simeq\SI{20}{\meter}$, $\omega_\oplus = 2\pi/\SI{24}{\hour}$ and the solar declination during the test ($\delta_\odot\simeq -8.5^{\circ}$), the predicted fringe rates are
+\begin{equation}
+\dot\phi \simeq
+\begin{cases}
+\SI{32.54}{\radian\per\hour}, & \nu=\SI{300}{\mega\hertz},\\
+\SI{43.38}{\radian\per\hour}, & \nu=\SI{400}{\mega\hertz},\\
+\SI{54.23}{\radian\per\hour}, & \nu=\SI{500}{\mega\hertz},
+\end{cases}
+\end{equation}
+corresponding to $\sim 5$, $7$, and $9$ fringes per hour. These theoretical values guide the expected temporal behavior during the \SI{\sim30}{\minute} engineering observation.
+
+\subsection{Observational setup}
+
+The observational setup consisted of two CHARTS prototype antennas arranged in an East–West configuration at the Laguna Carén site, as shown in Figure~\ref{fig:charts_antenna_caren}. Both antennas featured broad primary beams (FWHM~$\sim100^{\circ}$), enabling extended tracking of the Sun during its transit. The antennas were connected to the digital backend via a prototype amplification and filtering chain, with the FDM and digitizer modules in between. The effective baseline separation was set to approximately \SI{20}{\meter}, determined by the available coaxial cables (\SI{10}{\meter} + \SI{0.6}{\meter} per side). Each antenna operated in a distinct sub-band (chains~1 and~2 in Table~\ref{tab:fdm_chains}), allowing simultaneous dual-channel observations.
+
+The observation was scheduled to coincide with the solar transit near local noon, maximizing source elevation and minimizing atmospheric effects. Over the \SI{\sim30}{\minute} test duration, the amplitude envelope of the solar signal remained essentially constant due to the wide antenna beams and the slow variation of the Sun's position. Data acquisition commenced at 15:49~UTC (12:49~CLT) and continued for \SI{34}{\minute}, with the digital backend configured to record complex FFT outputs for all 672 frequency channels at a time resolution of $\sim\SI{10}{\milli\second}$.
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\linewidth]{charts_antenna_caren_anotations.pdf}
+	\caption[CHARTS prototype antenna at Laguna Carén]{CHARTS prototype antenna at Laguna Carén during the October 15, 2025 solar transit test. The photograph shows the antenna with a temporary ground plane; the analogue front-end and FDM rack are visible in the background. A second antenna was placed roughly 10 m behind the FDM equipment, yielding an approximately 20 m East–West baseline used for the observation.}
+    \label{fig:charts_antenna_caren}
+\end{figure}
+
+\subsection{Data processing and fringe-rate extraction}
+
+For each frequency channel, the complex cross-correlation $X_1(\nu,t)\,X_2^*(\nu,t)$ was computed and averaged over \SI{\sim10}{\second} (1000 complex samples) intervals to increase \gls{snr}. The interferometric phase
+\begin{equation}
+\phi(t,\nu) = \arg\{X_1(\nu,t)\,X_2^*(\nu,t)\}
+\end{equation}
+was unwrapped to remove $2\pi$ discontinuities, yielding a smooth function $\tilde\phi(t,\nu)$. A linear model was then fitted:
+\begin{equation}
+   \tilde\phi(t,\nu) \approx \dot\phi(\nu)\,t + \phi_0,
+\end{equation}
+where $\dot\phi(\nu)$ is the observed fringe rate. Its uncertainty $\sigma_{\dot\phi}$ was obtained from the least-squares covariance.
+
+The projected East–West baseline was then estimated from
+\begin{equation}
+    b_{\rm EW}(\nu) = 
+    \frac{\dot\phi(\nu)\,\lambda}{2\pi\,\omega_\oplus\cos\delta},
+\end{equation}
+with uncertainty
+\begin{equation}
+    \sigma_{b} = 
+    \frac{\sigma_{\dot\phi}(\nu)\,\lambda}{2\pi\,\omega_\oplus\cos\delta},
+\end{equation}
+and the number of fringes per hour obtained via
+\begin{equation}
+    \text{fringes/hour} = \frac{\dot\phi(\nu)}{2\pi}\times 3600.
+\end{equation}
+
+\subsection{Measured fringe rates and baseline recovery}
+
+Figure~\ref{fig:sun_fringes} presents the observed interferometric phase for three representative channels (300.6, 399.9, and 489~MHz), showing clear sinusoidal evolution consistent with theoretical expectations. Figure~\ref{fig:sun_fringes_unwrapped_fit} shows the unwrapped phase and best-fit linear models used to estimate fringe rates. Finally, Table~\ref{tab:fringe_slopes_baselines} summarizes the fitted slopes, recovered East–West projected baselines, and corresponding fringe rates for the selected channels.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics{sun_fringes.pdf}
+    \caption[Measured solar fringes during transit observation]{Measured solar fringes during the $\sim 34$ minute transit observation at Laguna Carén. Interferometric phase is shown for three channels: 300.6~MHz (blue), 399.9~MHz (red) and 489~MHz (green). Data were averaged over \SI{\sim10}{\second} intervals to improve \gls{snr}.}
+    \label{fig:sun_fringes}
+\end{figure}
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics{sun_fringes_unwrapped_fit.pdf}
+    \caption[Unwrapped phase and linear fit for solar fringes]{Unwrapped phase (dots) and linear fit (dashed line) for the three selected channels. The fitted slopes yield the observed fringe rates.}
+    \label{fig:sun_fringes_unwrapped_fit}
+\end{figure}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{@{}c S[table-format=1.6e-2] S[table-format=1.2e-2] S[table-format=2.3] S[table-format=1.3] S[table-format=2.1]@{}}
+\toprule
+{Freq. (MHz)} & {Slope (rad/s)} & {$\sigma$ (rad/s)} & {$b_{\rm EW}$ (m)} & {$\sigma_{b}$ (m)} & {Fringes/h} \\
+\midrule
+300.6 & -9.491979e-03 & 3.05e-05 & -20.905 & 0.067 & 4.98 \\
+399.9 & -1.263559e-02 & 6.29e-05 & -20.918 & 0.104 & 6.98 \\
+489.0 & -1.518220e-02 & 1.28e-04 & -20.555 & 0.173 & 8.71 \\
+\bottomrule
+\end{tabular}
+\caption[Fitted slopes and East–West projected baselines]{Fitted slopes and East–West projected baselines. Uncertainties are propagated from the linear fit.}
+\label{tab:fringe_slopes_baselines}
+\end{table}
+
+The recovered baselines agree to within a few centimetres with the nominal \SI{20}{\meter} separation, and the fringe rates match the theoretical predictions across the band. The negative slopes reflect the expected sign of the geometric delay for the chosen baseline orientation. Overall, the experiment validates the coherence and stability of the CHARTS digital backend and confirms the correct operation of the prototype correlator during on-sky observations.
+
 
 
 

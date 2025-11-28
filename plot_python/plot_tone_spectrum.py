@@ -56,7 +56,7 @@ print(f"Noise floor: {noise_floor:.2f} dBm")
 
 # Plot
 plt.figure(figsize=(7, 3.5))
-plt.plot(faxis, power_dBm, color="navy", lw=0.8)
+plt.plot(faxis, power_dBm, lw=0.8)
 plt.xlabel("Frequency (MHz)")
 plt.ylabel("Power (dBm)")
 plt.xlim(0, stop_freq / 1e6)

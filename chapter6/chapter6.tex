@@ -1,1 +1,60 @@
 \chapter{Conclusions and future work}
+\label{ch:conclusions}
+This work successfully detailed the design and implementation of the F-engine for the \gls{charts} project, fulfilling all major objectives defined for the digital backend’s first stage.
+
+The implementation integrates several innovations over the state of the art, including the use of a complex FFT for I/Q sampling and the demultiplexing of multiple antennas with a single ADC via the \gls{fdm} scheme. The system is capable of digitizing and channelizing up to 32 antenna signals across an input bandwidth of approximately 2.5 GHz. Regarding the specifics objectives declared at the beginning of this thesis, here are the achievements of each of them:
+
+\begin{itemize}
+    \item The implementation of a quadrature digitization scheme operating over a bandwidth of 2457.6 MHz, encompassing the full band delivered by the FDM stage.
+    \item The digital generation of the four local oscillators required by the \gls{fdm} mixers using a single RFSoC DAC port, avoiding the need for external frequency synthesizers and providing real-time configurability. The LO generation module achieved SFDR of 39.31 dB, enough to operate the mixers in the FDM without significant leaks.
+    \item The output spectra were successfully requantized to a compact 4+4 bit format after applying digital gains calibration. This enabled efficient data throughput while minimizing quantization bias.
+    \item Development of a high-throughput packetizer that enables data transmission via a QSFP28 optical interface, transmitting data streams at 51.6~Gbit~s$^{-1}$ per board, discarding in between FDM chains channels.
+\end{itemize}
+
+Validation tests confirmed the integrity and coherence of the system. Laboratory tests, including the 8-antenna correlation test, validated the phase stability and effectiveness of the digital gain calibration procedure necessary for interferometric observations. Furthermore, the successful solar transit observation confirmed the expected interferometric fringe rates and demonstrated phase coherence across the full digital chain in an on-sky environment. The recovered projected baseline matched the nominal separation of 20 meters to within a few centimeters.
+
+The results of this work validate the architectural approach of CHARTS and its F-engine component, providing a flexible, modular, and scalable foundation for the array to achieve its scientific objectives.
+
+\section{Future work}
+
+While the current F-engine meets its primary performance requirements, several developments are necessary to scale the system toward a full CHARTS deployment. The most critical areas involve board synchronization, timing infrastructure, and multi-board data routing for the X-engine.
+
+\subsection{Integration with the X-engine}
+
+A major next step is the full integration of the F-engine output with the \texttt{kotekan} \citep{kotekan} X-engine pipeline. This requires ensuring compatibility in packet structure, metadata, and timing conventions, as well as adapting the 512-bit UDP payloads to the high-performance \texttt{dpdk}\footnote{\url{https://www.dpdk.org/}} based ingest layer. Proper alignment of timestamps and frequency-bin ordering will be essential for seamless operation.
+
+\subsection{Synchronization across multiple RFSoC boards}
+
+Scaling beyond a single F-engine requires tight timing synchronization between several RFSoC boards so that all ADCs sample with a common time and frequency reference. The planned approach is to use a GPS disciplined timing system, such as the TCG 01-G\footnote{\url{https://www.microchip.com/en-us/product/tcg_01-g}} or the SyncServer S650\footnote{\url{https://www.microchip.com/en-us/products/clock-and-timing/systems/gnss-timing-instruments/syncserver-s650}}, which provides:
+
+\begin{itemize}
+    \item a 10 MHz frequency reference,
+    \item a 1 PPS timing pulse, and
+    \item an IRIG-B timecode stream.
+\end{itemize}
+
+The 10~MHz signal would discipline all RFSoC clocks, ensuring identical ADC sampling rates across boards. Achieving this requires modifying the configuration of the LMK04828 clock synthesizer: the device must be reprogrammed (via TI’s TICS PRO) to use CLKIN0 as the primary reference input, replacing the current internal SI5395B clock routing through CLKIN1 (see Figure~\ref{fig:rfsoc_clocking_scheme}).
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[width=\textwidth]{rfsoc_clocking_cheme.png}
+    \caption[Default RFSoC 4x2 clocking scheme]{Default RFSoC 4x2 clocking scheme, where the SI5395B provides the reference clock to the LMK04828 synthesizer through CLKIN1. The proposed modification involves reconfiguring the LMK04828 to use an external 10~MHz reference connected to CLKIN0, ensuring synchronized sampling across multiple boards. Extracted from the RFSoC 4x2 datasheet \citep{RealDigital_RFSoC4x2_RefMan_A3}.}
+    \label{fig:rfsoc_clocking_scheme}
+\end{figure}
+
+The PPS and IRIG-B streams would then enable high-precision timestamping of each spectrum frame. Using an approach similar to the timing system developed in \citet{jorquera2020voltimetro}, the IRIG-decoded timestamp could be embedded at the start of every UDP packet, providing absolute timing tags compatible with distributed backends and offline correlation.
+
+\subsection{Corner-turn expansion and multi-board networking}
+
+Another major development step is the implementation of the second stage of the corner turn, enabling data from all RFSoC boards to be shuffled so that each processing node receives the full set of antennas for a specific portion of the frequency band.
+
+In the 256-antenna CHARTS configuration, this requires a network architecture in which:
+
+\begin{itemize}
+    \item Each RFSoC streams its sub-band through a high-capacity switch.
+    \item The switch routes packets so that each backend node receives exactly one quarter of the total processed bandwidth ($\sim$50~MHz).
+    \item Every node therefore obtains all antennas for its assigned frequency slice, satisfying the X-engine’s frequency-domain correlation requirements.
+\end{itemize}
+
+This stage will also require maintaining packet ordering, sequence continuity, and timing coherence across boards, reinforcing the need for the GPSDO based synchronization scheme described above.
+

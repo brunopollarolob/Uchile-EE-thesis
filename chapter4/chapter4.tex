@@ -3,27 +3,40 @@
 
 The development of the F-engine firmware for this project utilized the Xilinx System Generator for DSP \citep{Xilinx_UG948_2020}. This process combined Simulink and Xilinx blocks with components from the \gls{casper}\footnote{\url{https://casper.berkeley.edu/wiki/Main_Page}} framework, enabling an efficient and modular design approach. CASPER offers a library of pre-built modules for common DSP operations, such as FFTs, PFBs, and filtering, that can be easily combined to implement complex signal processing pipelines for radio astronomy applications \citep{hickish2016decadedevelopingradioastronomyinstrumentation,Parsons_2008}.
 
-This methodology enables the design of digital architectures through functional blocks and visual connections, simplifying development compared to traditional hardware description languages such as VHDL or Verilog. The System Generator toolflow also includes a simulation and compilation process that translates the Simulink designs into synthesizable \gls{hdl} code, which can then be implemented on \glspl{fpga}. Nevertheless, some custom \gls{hdl} coding was necessary to implement specific functionalities not covered by existing CASPER/Xilinx blocks.
+This methodology allows digital architectures to be designed using functional blocks and visual interconnections, greatly simplifying development compared to traditional hardware description languages such as VHDL or Verilog. The System Generator toolchain provides simulation and compilation capabilities that automatically translate Simulink designs into synthesizable \gls{hdl} code for FPGA implementation. However, certain functionalities not available in the standard CASPER or Xilinx block libraries required the development of custom \gls{hdl} modules.
 
 This chapter details the design of the F-engine for the \gls{charts} telescope, covering the overall architecture, the digitization and channelization chain, spectral reordering, data transmission to the X-engine and generation of local oscillators for the mixers in the FDM stage. 
 
 \section{F-engine architecture and requirements}
 \label{sec:f_engine_architecture}
+To address the specific requirements declared in \S\ref{sec:objectives}, the F-engine architecture was carefully structured to support the overall FX correlator approach adopted in the CHARTS digital backend (see \S\ref{sec:charts_digital_backend}) and meet the requirements above. In this architecture, the F-engine is responsible for the initial channelization of the digitized antenna signals multiplexed by the \gls{fdm} boards.
 
-As described in \S\ref{sec:charts_digital_backend}, the CHARTS digital backend employs an FX correlator architecture, where the F-engine performs initial channelization of the digitized antenna signals multiplexed by the \gls{fdm} boards. A general block diagram of the F-engine architecture is shown in Figure~\ref{fig:f_engine_block_diagram}. The design processes 32 antenna signals, each sampled at \SI{4.9152}{\giga\hertz} in quadrature mode I/Q by the RFSoC ADCs. The digitized data is first channelized using a biplex \gls{pfb} with 4 taps, producing 8192 frequency channels per stream. The outputs are then fed into a 4-stream FFT block, which computes the Fourier transform for each stream in parallel. The resulting spectra are re-quantized to a compact 4+4 bit format before being transmitted via a QSFP28 optical interface at \SI{51.6}{\giga\bit\per\second}. The design also includes custom blocks for spectral reordering which performs the corner turn and data formatting to ensure compatibility with the X-engine.
+A general block diagram of the F-engine architecture is shown in Figure~\ref{fig:f_engine_block_diagram}. The design processes 32 antenna signals using the four RFSoC ADCs, each sampled at \SI{4.9152}{\giga\hertz} in quadrature I/Q mode. The digitized data is first channelized using a biplex \gls{pfb} with 4 taps, producing 8192 frequency channels per stream. These outputs are then fed into a 4-stream FFT block, which computes the Fourier transform for each stream in parallel. The resulting spectra are re-quantized to a compact 4+4 bit format before being transmitted via a QSFP28 optical interface at \SI{51.6}{\giga\bit\per\second}. Additionally, the design incorporates custom blocks for spectral reordering, which perform the initial stage of the corner turn and data formatting to ensure compatibility with the X-engine.
 
-The design specifications (as stated in the objectives) for the F-engine were established as follows:
+The total resource usage of this model on the RFSoC 4x2 is summarized in Table~\ref{tab:f_engine_resource_usage}, showing that the design fits comfortably within the available resources of the device, leaving room for future expansions or additional functionalities.
 
-\begin{itemize}
-    \item Operate over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the full band delivered by the FDM stage. 
-    \item Internally generate local oscillators for the FDM mixers, using the \gls{rfsoc} DAC ports. 
-    \item Quantize spectral outputs into a compact 4+4 bit format, representing the real and imaginary components of each frequency channel.  
-    \item Provide high-throughput data transmission using a QSFP28 optical interface, supporting \SI{100}{\giga\bit\per\second} links.  
-    \item Implement spectral reordering logic to discard non-useful channels (e.g., below \SI{300}{\mega\hertz} or in the guard regions between FDM sub-bands).  
-\end{itemize}
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Resource & Utilization (\%) & \\
+\midrule
+LUT      & 38\% \\
+LUTRAM   & 15\% \\
+FF       & 20\% \\
+BRAM     & 27\% \\
+DSP      & 25\% \\
+IO       & 2\%  \\
+GT       & 25\% \\
+BUFG     & 1\%  \\
+MMCM     & 13\% \\
+\bottomrule
+\end{tabular}
+\caption[FPGA resource utilization for the F-engine design]{FPGA resource utilization for the F-engine design, showing the percentage of each major resource consumed on the RFSoC 4x2 device.}
+\label{tab:f_engine_resource_usage}
+\end{table}
 
-These requirements shaped the architecture, and each design decision is discussed in detail in the following sections. 
-
+In the following sections, we delve into the specific components of the F-engine, detailing their implementation and how they contribute to fulfilling the system requirements outlined above.
 
 \begin{figure}[htbp]
 	\centering
@@ -70,7 +83,7 @@ These requirements shaped the architecture, and each design decision is discusse
 	\node[shape=rectangle, minimum width=1.506cm, minimum height=0.465cm] at (3.563, 2.083){} node[anchor=west, align=left, text width=1.118cm, inner sep=6pt] at (2.792, 2.083){\scriptsize Tile 226};
 	\draw (15.5, 6) to[multiwire] (16.5, 6);
 	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (16, 6.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (15.583, 6.75){\scriptsize 8x8b};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=3.798cm] at (17.75, 4.583){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (17.75, 4.583){\small Corner-turn\\Packetizer};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=3.798cm] at (17.75, 4.583){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (17.75, 4.583){\small Packetizer};
 	\draw (15.5, 5) to[multiwire] (16.5, 5);
 	\draw (15.5, 4) to[multiwire] (16.5, 4);
 	\draw (15.5, 3) to[multiwire] (16.5, 3);
@@ -85,7 +98,7 @@ These requirements shaped the architecture, and each design decision is discusse
 
 \section{Digitization}
 \label{sec:digitization}
-The digitization strategy for CHARTS was carefully designed to meet the system requirements while ensuring architectural compatibility. To achieve this, the RFSoC 4x2's \gls{rfdc} was configured in quadrature (I/Q) mode. This approach was chosen because real sampling would have required a rate exceeding twice the target bandwidth ($ \SI{2366.4}{\mega\hertz}$), which, although within the ADC's maximum capability of 5 Gsps, would not allow a power-of-two number of parallel samples, something that is crucial for the posterior PFB/FFT. Quadrature sampling with decimation provided an efficient solution, as it enables the effective processed bandwidth to match the sampling frequency, fully capturing the required band while adhering to the RFDC's architectural constraints.
+The digitization strategy for CHARTS was carefully designed to meet the system requirements while ensuring architectural compatibility. To achieve this, the RFSoC 4x2's \gls{rfdc} was configured in quadrature I/Q mode. This approach was chosen because real sampling would have required a rate exceeding twice the target bandwidth ($ \SI{2366.4}{\mega\hertz}$), which, although within the ADC's maximum capability of 5 GSPS, would not allow a power-of-two number of parallel samples, something that is crucial for the posterior PFB/FFT. Quadrature sampling with decimation provided an efficient solution, as it enables the effective processed bandwidth to match the sampling frequency, fully capturing the required band while adhering to the RFDC's architectural constraints.
 
 The sampling rate was therefore fixed at $\nu_s=\SI{4.9152}{\giga\hertz}$, comfortably covering the $\sim$\SI{2366}{\mega\hertz} input band produced by the FDM stage. An internal NCO at \SI{-1.2288}{\giga\hertz} ($-\nu_s/4$) downconverts the signal to baseband, producing complex I/Q outputs centered at 0 Hz. To reduce the data rate and allow a power-of-two number of parallel samples, a decimation factor of 2 was applied, resulting in a usable baseband bandwidth of \SI{2457.6}{\mega\hertz}. This configuration is illustrated in Figure~\ref{fig:quadrature_sampling_rfdc}, which shows how the input spectrum is progressively shifted and decimated into the final baseband representation.
 
@@ -322,47 +335,56 @@ Chain & Frequency Range (MHz) & Bin Range & Flipped \\
 
 The FFT output produces complex samples with a precision of 31+31 bits per channel, which must be reduced before transmission to the X-engine. To achieve this, the system applies a re-quantization step that truncates the data stream to 4+4 bits. Although this quantization inevitably leads to some information loss, in practice the effect is small for typical radio astronomy signals and is compensated by the advantages of reducing the data volume. The lower bit depth enables higher bandwidth coverage and efficient real-time processing, while keeping quantization-induced biases within negligible levels.
 
-Quantization, however, introduces systematic effects in both amplitude and phase of the measured correlations, which in turn impact calibration accuracy and the fidelity of reconstructed images. To minimize these effects, the system applies a digital gain and scaling stage prior to truncation. The calibration aims to adjust each frequency channel such that the signal level is close to 1 bit RMS (approximately two quantization steps). In this regime, the correlation between the signal and the quantization error becomes vanishingly small, the increase in output variance is only about 4\%, and the resulting bias in correlation measurements falls below $10^{-6}$ in magnitude and $10^{-11}$ degrees in phase (see \citealt{menaparra2018quantizationbiasdigitalcorrelators} for a detailed analysis of quantization effects in radio interferometry).
+Nevertheless, this introduces systematic effects in both amplitude and phase of the measured correlations, which in turn impact calibration accuracy and the fidelity of reconstructed images. To minimize these effects, the system applies a digital gain and scaling stage prior to truncation. The calibration aims to adjust each frequency channel such that the signal level is close to 1 bit RMS (corresponding to two quantization steps). In this regime, the correlation between the signal and the quantization error becomes vanishingly small, the increase in output variance is only about 4\%, and the resulting bias in correlation measurements falls below $10^{-6}$ in magnitude and $10^{-11}$ degrees in phase (see \citealt{menaparra2018quantizationbiasdigitalcorrelators} for a detailed analysis of quantization effects in radio interferometry).
 
-The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the 31+31 bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a 48+48\footnote{The additional bit for real and imaginary parts comes from the signed extension of the gain value to 17 bits.} bit word, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even following the UG901 guidelines \citep{Xilinx_UG901_2025} for hardware efficiency coding, yielding a compact 4+4 bit representation per channel. A clipping flag is raised whenever a value with integer part equal to 0111 (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
+The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the 31+31 bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a 48+48\footnote{The additional bit comes from the signed extension of the gain value to 17 bits.} bit word, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even following the UG901 guidelines \citep{Xilinx_UG901_2025} for hardware efficiency coding, yielding a compact 4+4 bit representation per channel. A clipping flag is raised whenever a value with integer part equal to 0111 (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
+
 
 \begin{figure}[htbp]
-    \centering
-    \begin{tikzpicture}
-	% Paths, nodes and wires:
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (5.983, 2.4){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (5.983, 2.4){$g$};
-	\node[mixer] at (6, 4){};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=1.215cm, minimum height=0.965cm] at (8.375, 4){} node[anchor=center, align=center, text width=0.827cm, inner sep=6pt] at (8.375, 4){$<<$};
-	\draw[-latex] (6, 2.667) -- (6, 3.51);
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (4.75, 4.917){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (4.75, 4.917){\small 31+31};
-	\node[shape=rectangle, minimum width=0.765cm, minimum height=0.298cm] at (6.35, 3){} node[anchor=center, align=center, text width=0.377cm, inner sep=6pt] at (6.35, 3){\small 16};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (7.25, 4.917){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (7.25, 4.917){\small 48+48};
-	\node[shape=rectangle, minimum width=0.565cm, minimum height=0.365cm] at (4.8, 3.8){} node[anchor=center, align=center, text width=0.177cm, inner sep=6pt] at (4.8, 3.8){\scriptsize 8};
-	\node[shape=rectangle, minimum width=0.565cm, minimum height=0.365cm] at (7.2, 3.8){} node[anchor=center, align=center, text width=0.177cm, inner sep=6pt] at (7.2, 3.8){\scriptsize 8};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (8.333, 2.167){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (8.333, 2.167){dynamic\\shifter};
-	\draw[-latex] (8.375, 2.657) -- (8.375, 3.5);
-	\node[shape=rectangle, minimum width=0.565cm, minimum height=0.365cm] at (9.8, 3.8){} node[anchor=center, align=center, text width=0.177cm, inner sep=6pt] at (9.8, 3.8){\scriptsize 8};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=1.455cm, minimum height=0.765cm] at (11.255, 4){} node[anchor=center, align=center, text width=1.067cm, inner sep=6pt] at (11.255, 4){round};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (9.75, 4.917){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (9.75, 4.917){\small 48+48};
-	\draw (4, 4) to[multiwire] (5.51, 4);
-	\draw (6.49, 4) to[multiwire] (7.75, 4);
-	\draw (9, 4) to[multiwire] (10.51, 4);
-	\draw (12, 4) to[multiwire] (13.5, 4);
-	\node[ocirc] at (13.5, 4){};
-	\node[shape=rectangle, minimum width=0.565cm, minimum height=0.365cm] at (12.8, 3.8){} node[anchor=center, align=center, text width=0.177cm, inner sep=6pt] at (12.8, 3.8){\scriptsize 8};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (12.667, 4.917){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (12.667, 4.917){\small 4+4};
-	\node[shape=rectangle, minimum width=0.765cm, minimum height=0.298cm] at (8.75, 3){} node[anchor=center, align=center, text width=0.377cm, inner sep=6pt] at (8.75, 3){\small 5};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=1.215cm, minimum height=0.965cm] at (3.375, 4){} node[anchor=center, align=center, text width=0.827cm, inner sep=6pt] at (3.375, 4){FFT};
-\end{tikzpicture}
-    \caption[Schematic of the quantization process]{Schematic of the quantization process. The 31+31 bit FFT output is first multiplied by a 16-bit programmable gain factor $g$, resulting in a 48+48 bit word. This is then shifted left by a configurable number of bits (up to 5 bits) to optimize dynamic range. Finally, the most significant 4 bits of the real and imaginary components are selected, with convergent rounding-to-even applied to yield a compact 4+4 bit representation per channel. A clipping flag is raised if saturation occurs during rounding.}
+	\centering
+	\includegraphics[width=0.7\linewidth]{quantizer_diag.png}
+	\caption[Schematic of the quantization process]{Schematic of the quantization process. The 31+31 bit FFT output is first multiplied by a 16-bit programmable gain factor $g$, resulting in a 48+48 bit word. This is then shifted left by a configurable number $k$ (up to $2^5=32$ bits positions) to optimize dynamic range. Finally, the most significant 4 bits of the real and imaginary components are selected, with convergent rounding-to-even applied to yield a compact 4+4 bit representation per channel. A clipping flag is raised if saturation occurs during rounding.}
     \label{fig:quantizer_architecture}
 \end{figure}
 
 
+The combination of the programmable per-channel gain and the global left shift defines the effective digital gain applied in the calibration stage. These parameters are software-configurable, allowing flexible tuning of the re-quantization pipeline. The calibration gains are initially computed by measuring the RMS power of the channelized data for each input and frequency channel, ensuring that the levels are brought close to the desired 1 bit RMS target. After the initial power equalization, a digital calibration loop refines the per-channel gain coefficients to ensure that the amplitude of each frequency bin approaches the target level of 1~bit~RMS within a predefined tolerance. This process is iterative and operates directly on the FPGA through a closed feedback scheme. The following subsection details the calibration procedure.
 
-The combination of the programmable per-channel gain and the global left shift defines the effective digital gain applied in the calibration stage. These parameters are software-configurable, allowing flexible tuning of the re-quantization pipeline. The calibration gains are initially computed by measuring the RMS power of the channelized data for each input and frequency channel, ensuring that the levels are brought close to the desired 1 bit RMS target. Subsequently, the per-channel gains are smoothed across frequency using an iterative algorithm that combines polynomial fitting with Fourier-based filtering, which is described in detail in \citet{Hsyu2016}. This smoothing suppresses unphysical channel-to-channel variations while preserving real spectral structure.
+\subsection{Digital gains calibration procedure}
+
+At each iteration $k$, the system measures the average RMS power of the channelized spectra across $N_{\mathrm{avg}}$ short integrations:
+\begin{equation}
+P_i^{(k)} = \sqrt{\frac{1}{N_{\mathrm{avg}}} \sum_{n=1}^{N_{\mathrm{avg}}} |X_i(n)|^2},
+\end{equation}
+where $X_i(n)$ denotes the complex FFT output of channel $i$ in accumulation $n$.  
+
+
+The algorithm compares each channel’s measured RMS value $P_i^{(k)}$ to the target RMS $P_\mathrm{t}$ (nominally $2$ quantization steps or 1 bit RMS). If the deviation exceeds a user-defined tolerance $\epsilon$, the digital gain coefficient $G_i$ associated with that channel is incremented or decremented by a small step $\Delta G$ according to:
+\begin{align}
+G_i^{(k+1)} &=
+\begin{cases}
+G_i^{(k)} + \Delta G, & \text{if } P_i^{(k)} < P_\mathrm{t} - \epsilon,\\[4pt]
+G_i^{(k)} - \Delta G, & \text{if } P_i^{(k)} > P_\mathrm{t} + \epsilon,\\[4pt]
+G_i^{(k)}, & \text{otherwise.}
+\end{cases}
+\end{align}
+This rule ensures that channels with lower-than-desired RMS are amplified, while channels exceeding the target are attenuated.  
+A global convergence condition is defined by the fraction of frequency channels satisfying
+\begin{equation}
+|P_i^{(k)} - P_\mathrm{t}| \le \epsilon.
+\end{equation}
+When more than $98\%$ of the active channels meet this criterion, the calibration is considered complete and the iterative process terminates early.
+
+In practice, the calibration operates only over active frequency bands defined by a binary mask that excludes out-of-chain channels (which are set to zero). This avoids biasing the gain statistics with noise-dominated regions where there isn't an antenna signal. The step size $\Delta G$ and the tolerance $\epsilon$ can be dynamically adjusted to switch between a coarse and a fine-tuning mode, typically halving $\epsilon$ and reducing $\Delta G$ during the latter to refine convergence around the optimal value.
+
+Once the iterative loop converges, the final per-channel gain vector $\mathbf{G} = [G_1, G_2, \dots, G_{N_\nu}]$ is stored in non-volatile memory for subsequent use during system initialization. 
+
+
+However, the raw per-channel gains obtained from the iterative calibration process can display unphysical fluctuations, often caused by measurement noise, RFI, or other systematic effects. To mitigate this, a smoothing step is applied to the gain vector to enforce spectral continuity and suppress spurious variations. This is achieved by applying an iterative algorithm that combines polynomial fitting with Fourier-based filtering, as described in \citet{Hsyu2016}. The result is a set of per-channel gains that are smooth across frequency, effectively suppressing channel-to-channel noise while preserving genuine spectral features.
 
 In practice, the digital gain calibration needs to be performed only once for each input and frequency channel under stable observing conditions. Updates may be required if instrumental responses drift significantly over time or if the RFI environment changes.
+
+The described procedure ensures that the digital re-quantization operates within its optimal dynamic range, minimizing quantization bias and preventing clipping, while maintaining uniform sensitivity across all frequency channels.
 
 \section{Data streaming and packetization}
 \label{sec:data_streaming}
@@ -371,27 +393,58 @@ Following channelization, the spectral data must be efficiently transmitted to d
 
 \subsection{Data format and requirements}
 
-For the streaming implementation, only selected channels from the complete 8192-channel spectrum are transmitted to reduce data rate requirements. Specifically, 672 channels per antenna (corresponding to one complete FDM chain, as described in Table~\ref{tab:fdm_chains}) are extracted from each \SI{3.33}{\micro\second} spectrum frame, while intermediate guard bands and the 0--300~MHz region are discarded. For the 8-antenna CHARTS configuration, this results in a total of 5376 transmitted channels per frame.
+The data streaming implementation is designed to efficiently transmit only the relevant subset of the full 8192-channel spectrum, thereby reducing the required data rate and optimizing downstream processing. Rather than sending all channels, the system selects 672 channels per antenna (corresponding to a complete FDM chain as defined in Table~\ref{tab:fdm_chains}) from each \SI{3.33}{\micro\second} spectrum frame. Channels outside the science bands, such as those in the 0--300~MHz region and the guard bands between FDM chains, are discarded. Therefore, for each ADC this results in 5376 transmitted channels per frame.
 
-The FFT outputs 8 parallel samples per clock cycle, each sample consisting of complex data with 4-bit real and imaginary components after requantization (as described in \S\ref{sec:re-quantization}). The data format per cycle is therefore:
+Each FFT output delivers 8 parallel samples per clock cycle, with each sample represented as a complex number in a 4+4 bit format after requantization (as described in \S\ref{sec:re-quantization}). This yields a per-cycle data width of:
 \begin{equation}
 \text{Word width} = 8~\text{samples} \times (4 + 4)~\text{bits/sample} = 64~\text{bits}
 \end{equation}
+At the system clock frequency of \SI{307.2}{\mega\hertz}, the peak input data rate is \SI{19.66}{\giga bit/s}. However, due to the bursty nature of the channelized data—where valid samples are produced in groups of 84 consecutive cycles per chain, separated by idle periods—the sustained average data rate is lower.
 
-At the system clock frequency of \SI{307.2}{\mega\hertz}, this yields a peak input data rate of \SI{19.66}{\giga bit/s}. However, due to the bursty nature of the channelized data---where valid samples arrive in groups of 84 consecutive cycles per chain, followed by idle periods between chains---the sustained average data rate is lower. This average rate can be calculated as:
+The average data rate can be calculated as:
 \begin{equation}
 R = \frac{N_{\text{chan/ant}} \times N_{\text{ant}} \times \text{Bits}_{\text{chan}}}{T_{\text{frame}}}
 \end{equation}
-where $N_{\text{chan/ant}} = 672$ is the number of transmitted channels per antenna, $N_{\text{ant}}$ is the number of antennas, $\text{Bits}_{\text{chan}} = 8$ represents the 4+4 bit complex format, and $T_{\text{frame}} = \SI{3.33}{\micro\second}$ is the spectrum frame period. For the 8-antenna configuration this results in:
+where $N_{\text{chan/ant}} = 672$ is the number of transmitted channels per antenna, $N_{\text{ant}}$ is the number of antennas, $\text{Bits}_{\text{chan}} = 8$ is the bit width per channel, and $T_{\text{frame}} = \SI{3.33}{\micro\second}$ is the spectrum frame period. For the 8-antenna configuration:
 \begin{equation}
 R_{\text{CHARTS-8}} = \frac{672 \times 8 \times 8~\text{bits}}{\SI{3.33}{\micro\second}} \approx \SI{12.90}{\giga\bit\per\second}
 \end{equation}
-The architecture is designed to scale to the 32-antenna system, where the data rate increases linearly:
+For the full 32-antenna system:
 \begin{equation}
 R_{\text{CHARTS-32}} = 4 \times R_{\text{CHARTS-8}} \approx \SI{51.61}{\giga\bit\per\second}
 \end{equation}
 
-This burst pattern poses specific challenges for the streaming architecture: the system must buffer incoming data during transmission periods and maintain backpressure to prevent overflow while ensuring zero data loss.
+To ensure contiguous transmission of FDM chains—especially for those that wrap around the FFT output frame boundary, such as chain 3—a dedicated FFT reordering module is implemented in hardware. The FFT core outputs frequency bins in a fixed order: first the positive frequencies (bins 4096-8191, 1228.8–2457.3~MHz), then the negative frequencies (bins 0–4095, 0–1228.5~MHz), over 1024 cycles per frame. However, some FDM chains (e.g., chain 3) span the end and beginning of this frame, resulting in discontinuous data if streamed directly.
+
+To address this, the system employs a double-buffering scheme using two \glspl{bram}. Incoming FFT data is written sequentially into one buffer over a full frame. Once the frame is complete, the buffer switches, and the filled buffer is read out in a reordered fashion: the negative frequencies (second half of the frame) are output first, followed by the positive frequencies (first half). This ``FFT shift'' operation ensures that chains crossing the frame boundary are transmitted as contiguous blocks, simplifying downstream packetization and avoiding gaps in the data stream.
+
+The reordering logic operates as follows: while one buffer is being written with incoming FFT data, the other buffer is read out and streamed. The readout sequence is controlled so that for each frame, the output starts from address 512 (negative frequencies) up to 1023, then continues from address 0 to 511 (positive frequencies). This guarantees that all FDM chains, regardless of their position in the FFT output, are delivered in continuous bursts, with no discontinuities at the frame boundary.
+
+The timing of valid data transmission for each FDM chain within the 1024-cycle FFT output frame is summarized in Table~\ref{tab:streaming_bands}. Each chain's data is transmitted over 84 consecutive cycles, corresponding to its 672 frequency channels, with idle periods in between.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{cc}
+\toprule
+Chain & Cycle Range \\
+\midrule
+0 & 125--209  \\
+1 & 235--319  \\
+2 & 346--430  \\
+3 & 458--542   \\
+4 & 569--653   \\
+5 & 680--764  \\
+6 & 792--876 \\
+7 & 902--986  \\
+\bottomrule
+\end{tabular}
+\caption[Cycle ranges for FDM chain streaming]
+{Cycle ranges (within the 1024-cycle FFT output frame) during which \texttt{din\_valid} is asserted for each FDM chain. Each chain occupies 84 consecutive cycles, corresponding to 672 frequency channels.}
+\label{tab:streaming_bands}
+\end{table}
+
+This burst-mode transmission pattern introduces specific challenges for the streaming architecture. The system must buffer incoming data during active transmission periods, manage backpressure to prevent buffer overflow, and ensure zero data loss despite the non-uniform arrival of valid data. The subsequent streaming and packetization stages are designed to address these requirements.
+
 
 \subsection{Streaming architecture}
 
@@ -400,15 +453,17 @@ The streaming system consists of three cascaded modules that perform data width 
 \begin{enumerate}
     \item \textbf{Skid Buffer}: Provides a single-stage pipeline register with backpressure support, decoupling input timing from downstream processing. This module prevents combinational loops in the ready/valid handshake protocol that would otherwise create critical timing paths. When valid input data arrives but the downstream module is stalled, the skid buffer captures the incoming word in an internal register and asserts backpressure by deasserting \texttt{din\_ready}. This design tolerates single-cycle pipeline bubbles while maintaining throughput of one word per cycle during normal operation, adding one clock cycle of latency.
     
-    \item \textbf{Serial-to-Parallel Converter (SIPO)}: Accumulates eight 64-bit words into single 512-bit words matching the 100GbE native interface width. The SIPO employs a time-division multiplexing approach where incoming data is sequentially placed into different segments of a 512-bit parallel register according to a modulo-8 counter. After accumulating all eight segments, the complete word is written to an internal \gls{fifo} block implemented using \gls{bram}.
+    \item \textbf{Serial-to-Parallel Converter (SIPO)}: Accumulates eight 64-bit words into single 512-bit words matching the 100GbE native interface width. The SIPO employs a time-division multiplexing approach where incoming data is sequentially placed into different segments of a 512-bit parallel register according to a modulo-8 counter. After accumulating all eight segments, the complete word is written to an internal \gls{fifo} implemented using \gls{bram}.
     
     The FIFO depth was configured to 512 entries (262~kbit total capacity), providing buffering for four complete spectrum frames. This depth ensures adequate margin to absorb variations in packet transmission rate while preventing overflow during burst periods. The FIFO uses separate read and write pointers with an extra MSB ``wrap-around'' bit to distinguish between full and empty conditions when pointer addresses are equal. An \texttt{almost\_full} threshold provides early backpressure before the FIFO completely fills, preventing deadlock conditions where the accumulator cannot complete a 512-bit word due to insufficient buffer space.
     
     The SIPO propagates backpressure upstream through the \texttt{din\_ready} signal, which is asserted only when the FIFO has space to accept a complete 512-bit word. This ensures zero-loss operation by never accepting data that cannot be buffered. The output operates using a ready/valid protocol where \texttt{dout\_valid} indicates data availability and \texttt{dout\_ready} (from the downstream packetizer) controls FIFO consumption.
     
-    \item \textbf{Packetizer}: Frames the 512-bit words into Ethernet packets by adding protocol metadata (destination IP address and port) and generating end-of-frame (EOF) markers. The packetizer implements a two-state finite state machine (IDLE and READ) that counts transmitted words and asserts EOF after a configurable packet length. For this application, the packet length was set to 84 words to match the number of valid words per FDM chain, resulting in 5376-byte packets. This exceeds the standard Ethernet MTU of 1500 bytes but is supported by jumbo frame configurations in modern 100GbE infrastructure.
+    \item \textbf{Packetizer}: Frames the 512-bit words into Ethernet packets by adding a header word and generating end-of-frame (EOF) markers. The packetizer implements a three-state finite state machine (IDLE, HEADER, and DATA) that inserts a single header word at the beginning of each packet, followed by the payload data from the SIPO.
     
-    The packetizer continuously reads from the SIPO FIFO whenever data is available, incrementing an internal counter with each transfer. When the counter reaches the configured packet length, the module asserts \texttt{tx\_eof} for one cycle to mark the packet boundary and returns to IDLE. The design eliminates forced idle periods between packets in favor of continuous operation with backpressure-based flow control. The packetizer asserts \texttt{sipo\_ready} = 1 whenever in the READ state, allowing data to flow continuously as long as valid data is available. This approach prevents FIFO overflow that would occur with fixed inter-packet delays mismatched to the burst pattern, enabling the system to automatically adapt to varying downstream conditions.
+    The header word currently contains a 64-bit packet sequence counter in the least significant bits, with the remaining 448 bits reserved for future metadata expansion (timestamp, configuration parameters, status flags, etc.). This minimal header enables packet loss detection at the receiver while maintaining low overhead. Each packet consists of 1 header word plus 84 data words (corresponding to one complete FDM chain), resulting in 5440-byte packets that exceed the standard Ethernet MTU but are supported by jumbo frame configurations in modern 100GbE infrastructure.
+    
+    The state machine operates as follows: after an IDLE period of configurable duration, the packetizer transitions to HEADER state for one cycle to transmit the header word. It then enters DATA state and continuously reads from the SIPO FIFO, incrementing an internal counter with each transfer. When the counter reaches the configured packet length (84 words), the module asserts \texttt{tx\_eof} for one cycle to mark the packet boundary, increments the packet sequence counter, and returns to IDLE. The \texttt{sipo\_ready} signal is asserted only during the DATA state, preventing FIFO consumption during header transmission or idle periods.
 \end{enumerate}
 
 \begin{figure}[htbp]
@@ -461,6 +516,8 @@ The streaming system consists of three cascaded modules that perform data width 
 \end{figure}
 
 The packetizer outputs interface directly with CASPER's 100GbE core that handles lower-layer Ethernet framing (preamble, headers, FCS calculation) and physical layer transmission. The configurable IP address and port allow runtime reconfiguration of the data destination without FPGA reprogramming. 
+
+
 
 
 \begin{table}[htbp]

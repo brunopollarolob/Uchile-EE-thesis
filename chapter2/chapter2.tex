@@ -210,7 +210,7 @@ Figure \ref{fig:sim_galactic_magnetar} illustrates how these effects shape the o
 \begin{figure}[h!]
 	\centering
 	\includegraphics{../figures/galactic_magnetar_effects.png}
-	\caption[Simulated pulse profile of the Galactic magnetar SGR 1935+2154]{Simulation of the Galactic magnetar SGR 1935+2154 within the 400-800 MHz observing band, illustrating the combined effects of dispersion and scattering. The dynamic spectrum was generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, using parameters from \citet{Galactic_magnetar}. The model assumes a dispersion measure (DM) of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz} for two components with different spectral properties (spectral index, spectral running, etc). The left panel shows the dispersed signal extending over several seconds across frequency, while the right panel presents the de-dispersed pulse profile, where the intrinsic shape modified by scattering becomes visible specially at lower frequencies.}
+	\caption[Simulated pulse profile of the Galactic magnetar SGR 1935+2154]{Simulation of the Galactic magnetar SGR 1935+2154 within the 400-800 MHz observing band, illustrating the combined effects of dispersion and scattering. The dynamic spectrum was generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, using parameters from \citet{Galactic_magnetar}. The model assumes a \gls{dm} of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz} for two components with different spectral properties (spectral index, spectral running, etc). The left panel shows the dispersed signal extending over several seconds across frequency, while the right panel presents the de-dispersed pulse profile, where the intrinsic shape modified by scattering becomes visible specially at lower frequencies.}
 	\label{fig:sim_galactic_magnetar}
 \end{figure}
 
@@ -525,7 +525,7 @@ where $w_N \triangleq e^{-\mathrm{j}2\pi/N}$, and $X_e[k]$ and $X_o[k]$ denote t
 	\label{fig:fft_algorithm}
 \end{figure}
 
-For streaming hardware, pipelined radix architectures organize these stages so that one sample can be accepted each clock once the pipeline is filled. Two widely used forms are the single-path delay-feedback (R2SDF) and the multi-path delay-commutator (R2MDC) pipelines. Design issues include scaling/rounding for fixed-point, twiddle scheduling and data ordering (bit-reversed vs.\ natural order) \citep{Parsons2009}. These FFT engines are the workhorses of real-time spectrometers and correlators in radio astronomy.
+For streaming hardware, pipelined radix architectures organize these stages so that one sample can be accepted each clock once the pipeline is filled. Two widely used forms are the single-path delay-feedback (R2SDF) and the multi-path delay-commutator (R2MDC) pipelines. Design issues include scaling/rounding for fixed-point, twiddle scheduling and data ordering (bit-reversed vs.\ natural order\citealt{Parsons2009}). These FFT engines are the workhorses of real-time spectrometers and correlators in radio astronomy.
 
 
 \subsection{Window functions and spectral leakage}
@@ -1049,7 +1049,7 @@ Ethernet has become the standard interconnect technology in modern radio astrono
 
 A key design choice in these systems is the adoption of the \gls{udp} as the transport layer. UDP is lightweight and connectionless, avoiding the complexity and latency penalties of TCP. Since astronomical signal processing prioritizes sustained throughput over guaranteed delivery, packet loss is tolerated at a low level, with robustness ensured by packet formats that embed sufficient metadata. Typical headers include a master counter (MCNT), antenna or ADC identifier, frequency channel indices, and payload data. This design allows receiving nodes to reassemble the data stream even in the presence of dropped or out-of-order packets.  
 
-UDP-based transmission thus enables efficient implementation of the \emph{corner turn}, where data must be reorganized from time-major to frequency-major order for correlation or further spectral analysis. By leveraging Ethernet switches, this operation can be distributed across the network without requiring custom interconnects. The combination of Ethernet and UDP has therefore become a defining feature of current large-scale radio interferometers.  
+UDP-based transmission thus enables efficient implementation of the corner turn, where data must be reorganized from time-major to frequency-major order for correlation or further spectral analysis. By leveraging Ethernet switches, this operation can be distributed across the network without requiring custom interconnects. The combination of Ethernet and UDP has therefore become a defining feature of current large-scale radio interferometers.  
 
 
 \subsection{RFSoC 4x2}
@@ -1059,15 +1059,15 @@ The RFSoC 4x2\footnote{\url{https://www.realdigital.org/hardware/rfsoc-4x2}}, de
 \begin{figure}[h!]
 \centering
 \includegraphics[scale=0.58]{../figures/rfsoc.png}
-\caption[RFSoC 4x2 principal components]{Top view of the RFSoC 4x2 FPGA board. SMA connectors provide access to four ADCs and two DACs, while high-speed ports such as QSFP28 enable fast data offload. Extracted from \citet{RealDigital_RFSoC4x2_RefMan_A3}.}
+\caption[RFSoC 4x2 principal components]{Top view of the RFSoC 4x2 FPGA board. SMA connectors provide access to four ADCs and two DACs, while high-speed ports such as QSFP28 enable fast data offload. Extracted from the RFSoC 4x2 datasheet \citep{RealDigital_RFSoC4x2_RefMan_A3}.}
 \label{fig:rfsoc_top_view}
 \end{figure}
-The board supports up to 5 Gsps sampling for 14-bit ADCs and up to 9.85 Gsps for 14-bit DACs, enabling wideband direct RF sampling without the need for external downconversion stages. Four ADC SMA ports and two DAC SMA ports are available, complemented by a MABA-011118 balun (10~MHz–10~GHz) that allows single-ended antenna or signal source connections with no additional circuitry. Each converter is organized into tiles: ADCs A and B belong to tile 224, ADCs C and D to tile 226, while DACs A and B are part of tiles 228 and 230, respectively. Every tile includes a PLL, clock distribution logic, and digital up/down converters (DUC/DDC) for flexible data-path configurations. Figure~\ref{fig:rfsoc_tiles} illustrates the arrangement of the ADC and DAC tiles on the board.
+The board supports up to 5 GSPS sampling for 14-bit ADCs and up to 9.85 GSPS for 14-bit DACs, enabling wideband direct RF sampling without the need for external downconversion stages. Four ADC SMA ports and two DAC SMA ports are available, complemented by a MABA-011118 balun (10~MHz–10~GHz) that allows single-ended antenna or signal source connections with no additional circuitry. Each converter is organized into tiles: ADCs A and B belong to tile 224, ADCs C and D to tile 226, while DACs A and B are part of tiles 228 and 230, respectively. Every tile includes a PLL, clock distribution logic, and digital up/down converters (DUC/DDC) for flexible data-path configurations. Figure~\ref{fig:rfsoc_tiles} illustrates the arrangement of the ADC and DAC tiles on the board.
 
 \begin{figure}[h!]
 \centering
 \includegraphics[scale=0.7]{rfsoc_tiles.png}
-\caption[RFSoC4x2 ADC and DAC tiles]{RFSoC4x2 ADC and DAC tiles. The board contains two ADC and two DAC tiles, each with integrated PLLs, mixers, and digital up/down converters. A MABA-011118 balun is connected between each SMA and ADC, supporting single-ended antenna connections. Extracted from \citet{RealDigital_RFSoC4x2_RefMan_A3}.}
+\caption[RFSoC4x2 ADC and DAC tiles]{RFSoC4x2 ADC and DAC tiles. The board contains two ADC and two DAC tiles, each with integrated PLLs, mixers, and digital up/down converters. A MABA-011118 balun is connected between each SMA and ADC, supporting single-ended antenna connections. Extracted from the RFSoC 4x2 datasheet \citep{RealDigital_RFSoC4x2_RefMan_A3}.}
 \label{fig:rfsoc_tiles}
 \end{figure}
 
