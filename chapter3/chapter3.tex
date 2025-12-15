@@ -1,7 +1,33 @@
 \chapter{CHARTS overview}
 CHARTS is a compact, wide-field interferometer designed to explore the transient radio sky in the 300--500\,MHz. Its architecture prioritizes the number of elements and instantaneous field of view over raw bandwidth, aiming to maximize the detection rate of FRBs and other millisecond-duration transients.
 
-The system consists of 256 dual-polarized antennas (only one polarization is currently implemented), a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation.
+The system consists of 256 dual-polarized antennas (only one polarization is currently implemented), a modular analog chain with low-noise amplifiers and FDM to reduce the number of physical ADCs, and RFSoC nodes that perform digitization, PFB, and FFT in real time. Correlation and beamforming are handled by GPU nodes running transient search pipelines with DM de-dispersion and real-time classification. The chosen site (Laguna Carén) offers relatively favorable RFI conditions and allows for continuous remote operation. A summary of the main specifications is provided in Table~\ref{tab:charts_specifications}.
+
+\begin{table}
+      \centering
+      
+      \label{tab:params}
+      \begin{tabular}{lll}
+        \hline
+        \textbf{Parameter} & \textbf{Value} \\ \hline
+        Bandpass & $\nu=\qtyrange{300}{500}{\mega\hertz}$ \\
+        Bandwidth & $\Delta\nu=\qty{201.6}{\mega\hertz}$ \\
+        Antenna half-power beamwidth & $\text{HPBW}_\text{a}\approx\qty{\sim100}{\degree}$ \\
+        Antenna gain (at zenith) & \num{\sim7} dBi \\
+        Polarizations  & $n_\text{p}=\num{1}$\\
+        Field-of-view (FoV) & $\Omega_\text{a}\approx\qty{100}{\degree}\times\qty{100}{\degree}$ \\ 
+        % System equivalent flux density (SEFD; $S_\text{sys}$) & \\
+        System temperature & $T_\text{sys}\leq\qty{100}{\kelvin}$ \\
+        Sample time (realtime search) & $t_\text{s}\lesssim\qty{1}{\milli\s}$ \\
+        % Channel width & \\
+        Number of antennas & $n_\text{a}=\num{256}$ \\
+        Number of beams & $n_\text{b}\approx\num{1000}$ \\
+        Maximum DM & $\text{DM} < \qty{1000}{\parsec\per\centi\m\cubed}$ \\
+        \hline
+      \end{tabular}
+      \caption{CHARTS parameters and specifications.}
+      \label{tab:charts_specifications}
+    \end{table}
 
 The subsequent sections provide a detailed exploration of the CHARTS system. They begin with an overview of the scientific objectives and site characteristics. This is followed by a comprehensive description of the analog system, encompassing the antenna, LNA, and FDM. The digital backend and processing pipeline are also discussed. Design considerations specific to the F-engine are presented separately in Chapter~\ref{chap:fengine}.
 
@@ -26,7 +52,7 @@ Beyond its discovery potential, CHARTS will contribute to several key areas of t
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{../figures/instantaneous_fov.pdf}
-  \caption[Comparison of CHARTS FoV with other radio transient detectors]{Comparison of the field-of-view (FoV) of CHARTS with CHIME/FRB far sidelobe \citep{Lin2024} and BURSTT \citep{Ling_2022}. CHARTS uniquely covers southern latitudes, complementing existing facilities. Its FoV includes the Galactic center, enabling daily monitoring of transient events in the Galaxy and local extragalactic Universe. The gray scale represents the synchrotron background at 300 MHz \citep{BeyondPlanck2023}, with scatter sources indicating magnetars \citep{MagnetarCatalog2014}. Figure made by Dr. Tomás Cassanelli.}
+  \caption[Comparison of CHARTS FoV with other radio transient detectors]{Comparison of the field-of-view (FoV) of CHARTS with CHIME/FRB far sidelobe \citep{Lin2024} and BURSTT \citep{Ling_2022}. CHARTS uniquely covers southern latitudes, complementing existing facilities. Its FoV includes the Galactic center, enabling daily monitoring of transient events in the Galaxy and local extragalactic Universe. The gray scale represents the synchrotron background at 300 MHz \citep{BeyondPlanck2023}, with scatter sources indicating magnetars \citep{MagnetarCatalog2014}. Figure made by Prof. Tomás Cassanelli.}
   \label{fig:instantaneous_fov}
 \end{figure}
 
@@ -37,7 +63,7 @@ The selection of the CHARTS site began in 2023 with measurements at several cand
 \begin{figure}[!ht]
   \centering
   \includegraphics[width=\textwidth]{caren_site.pdf}
-  \caption[Site location compared to other observatories]{Left: Chile and Argentina above Santiago's latitude \qty{-30}{\degree}. Major observatories in Chile will share same instantaneous FoV with CHARTS, enabling local follow-up collaborations. Right: Zoom-in at the Laguna Carén site. Laguna Carén site and its location respect to Chile's main city Santiago (where the city are located to the right of the map). The site is located in a reserved area from Universidad de Chile where private and public research institutions have projects. The CHARTS site will be placed deep in the reserved area closed by several gates and away from the public (roughly \qty{2}{\kilo\m}). Figure made by Dr. Tomás Cassanelli.}
+  \caption[Site location]{Location of Laguna Carén relative to Santiago, Chile, and comparison with other major observatories in Chile and Argentina. The CHARTS site is situated in a reserved area approximately \qty{2}{\kilo\m} from public access. Figure made by Prof. Tomás Cassanelli.}
   \label{fig:caren_site}
 \end{figure}
 
@@ -45,12 +71,12 @@ The site offers sufficient space for a \numproduct{16x16} antenna array within a
 \begin{figure}[h!]
   \centering
   \includegraphics[width=\textwidth]{charts_location.pdf}
-  \caption[Site layout and infrastructure]{(A) Front view of the future CHARTS site, facing northwest. (B) Aerial view of Laguna Carén, highlighting the CHARTS location, which spans an area of approximately \qty{35}{\m} in diameter. The power grid, located about \qty{25}{\m} away, is sufficient to supply all necessary systems and equipment. The receiver hut (a container) is positioned between the power line and the array site. Note: The aerial image predates the installation of the receiver hut. Figure made by Dr. Tomás Cassanelli.}
+  \caption[Site layout and infrastructure]{(A) Front view of the CHARTS site looking northwest. (B) Aerial view showing the CHARTS location in Laguna Carén, covering approximately \qty{35}{\m} in diameter. The receiver hut is positioned between the power grid (\qty{25}{\m} away) and the array. Figure made by Prof. Tomás Cassanelli.}
   \label{fig:charts_location}
 \end{figure}
 
 
-Laguna Carén also hosts a limited number of research projects from public and private institutions, most of them concentrated near the park entrance and away from the CHARTS site. The park’s mission emphasizes the promotion of interdisciplinary research (as its first strategic objective declares: \textit{fomento de la investigación transdisciplinaria}), which aligns closely with the scientific goals of CHARTS.
+Laguna Carén also hosts a limited number of research projects from public and private institutions, most of them concentrated near the park entrance and away from the CHARTS site. The park’s mission emphasizes the promotion of interdisciplinary research (as its first strategic objective declares: \textit{fomento de la investigación transdisciplinaria}, promotion of interdisciplinary research), which aligns closely with the scientific goals of CHARTS.
 
 
 The RFI characterization at the CHARTS site in Laguna Carén was revisited following the installation of the receiver container. More details and results from these measurements are presented in Chapter \ref{chap:results} (\S\ref{sec:rfi_measurements}).
@@ -73,7 +99,7 @@ Each CHARTS antenna is a dual-polarized, differential patch designed to operate 
 
 Each polarization integrates a first-stage ultra-low noise amplifier (ULNA) directly at the antenna feed (see Figure \ref{fig:amp_ulna}) to minimize cable losses and thermal noise contribution. The integrated amplifier employs four QPL9547 devices (two per polarization), delivering a gain of \SI{19.3}{\decibel} and a noise figure of approximately \SI{0.3}{\decibel} when powered at \SI{3.3}{\volt} and \SI{80}{\milli\ampere}. This configuration provides a low overall system temperature while simplifying cabling and assembly.
 
-The antenna outputs are differential and interfaced through standard RJ45 connectors, which serve both signal transmission and DC power delivery. Future versions will include integrated low-pass filters to improve rejection of out-of-band interference and prevent saturation in subsequent amplification stages.
+Two versions of the antenna have been developed, both differential. The first version uses SMA cables for signal transmission, while the second version employs RJ45 connectors that serve both signal transmission and DC power delivery. All tests presented in this thesis were performed using the SMA version. The RJ45 version, currently under development, will include integrated low-pass filters to improve rejection of out-of-band interference and prevent saturation in subsequent amplification stages.
 
 \subsection{Amplification chain}
 After the antennas, the signals are further amplified by a second-stage \gls{lna} (Figure \ref{fig:amp_second}), housed in the frontend electronics. This module employs two PSA4-5043+ amplifiers followed by an internal voltage regulator, providing roughly \SI{20}{\decibel} of gain and a noise figure near \SI{0.65}{\decibel} at \SI{400}{\mega\hertz}. The amplifiers operate at \SI{3.3}{\volt} and \SI{70}{\milli\ampere}, and their placement close to the antennas ensures sufficient drive power for the FDM mixers while maintaining a high signal-to-noise ratio.
@@ -118,7 +144,7 @@ For specific subsystems, additional amplifier types are used. A high-power ampli
 \end{figure}
 
 \subsection{Frequency division multiplexing board}
-The FDM board is a critical component that allows CHARTS to efficiently utilize the \SI{4.9152}{\giga\hertz} sampling capability of the RFSoC by combining multiple antenna signals into a single digitizer input. This is achieved by upconverting each sub-band to a distinct \gls{if} using independent \glspl{lo}. Each board processes eight input signals—one per antenna—and combines them into a single wideband output channel covering the range from \SI{300}{\mega\hertz} to \SI{2366.4}{\mega\hertz}.
+The FDM board is a critical component that allows CHARTS to efficiently utilize the \SI{4.9152}{\giga\hertz} sampling capability of the RFSoC by combining multiple antenna signals into a single digitizer input. This is achieved by upconverting each sub-band to a distinct \gls{if} using independent \glspl{lo}. Each board processes eight input signals, one per antenna, and combines them into a single wideband output channel covering the range from \SI{300}{\mega\hertz} to \SI{2366.4}{\mega\hertz}.
 
 The FDM architecture uses four digitally generated LO tones (see \S \ref{sec:lo_generation} for specific details regarding LO generation), which are distributed to the mixers with carefully controlled power levels between -15 dBm and -5 dBm (nominally \SI{-10}{\decibelm}). These tones correspond to the center frequencies of the upconverted sub-bands, effectively partitioning the overall spectrum into eight adjacent frequency chains. Each chain spans \SI{201.6}{\mega\hertz}, with $\sim\SI{66}{\mega\hertz}$ guard bands between them to minimize inter-chain interference. The choice of LO frequencies was made to align each band with an integer multiple of the FFT channel spacing, simplifying later channelization and data organization. Figure \ref{fig:fdm_block_diagram} illustrates the FDM block diagram and Table \ref{tab:fdm_lo_tones} summarizes the frequency allocation for each antenna input, including the LO frequencies and resulting IF bands.
 
@@ -233,7 +259,7 @@ The FDM architecture uses four digitally generated LO tones (see \S \ref{sec:lo_
 
 The FDM employs active mixers, which require a stable \SI{3.3}{\volt} DC supply at around \SI{140}{\milli\ampere}. The upconverted output of each mixer is then combined into a single differential signal, transmitted via coaxial cables to the RFSoC digitizer. Post-mixing, narrowband analog bandpass filters are used to isolate each LO product and suppress unwanted intermodulation terms.
 
-Several versions of the FDM board have been developed throughout the project. Figure \ref{fig:fdm_board_diff} shows the differential-input FDM board with SMA connectors, which will be used in the CHARTS-8 implementation. Figure \ref{fig:fdm_board_rj45} shows the RJ45 version, which incorporates most of the improvements identified from the previous differential design while adding RJ45 connectors. This latest board is still under development.
+Several versions of the FDM board have been developed throughout the project. Figure \ref{fig:fdm_board_diff} shows the differential-input protoype FDM board with SMA connectors, which was used in the solar transit experiment. Figure \ref{fig:fdm_board_rj45} shows the RJ45 version, which incorporates most of the improvements identified from the previous differential design while adding RJ45 connectors. This latest board is still under development.
 
 \begin{figure}[h!]
   \centering
@@ -263,13 +289,13 @@ After demodulation and digitization by the RFSoC boards, each of the eight F-eng
 \end{equation}
 In total, the 8 boards deliver a combined throughput of \SI{412.8}{\giga\bit\per\second} (\SI{51.6}{\giga\byte\per\second}) to the real-time processing cluster.
 
-This data is transferred through a \SI{100}{\giga\bit\per\second} optical Ethernet switch, which performs the first ``corner-turn’’ operation, redistributing frequency sub-bands to four GPU-based processing nodes. Each node thus receives one quarter of the processed bandwidth (\(\Delta\nu/4 \approx \SI{50}{\mega\hertz}\)) from all antennas. The F-engine firmware, based on the \gls{casper} toolflow, formats and packetizes the channelized data, while the downstream nodes run the \texttt{kotekan} framework \citep{kotekan} for real-time data management and GPU kernel execution.
+This data is transferred through a \SI{100}{\giga\bit\per\second} optical Ethernet switch, which performs the first corner turn operation, redistributing frequency sub-bands to four GPU-based processing nodes. Each node thus receives one quarter of the processed bandwidth (\(\Delta\nu/4 \approx \SI{50}{\mega\hertz}\)) from all antennas. The F-engine firmware, based on the \gls{casper} toolflow, formats and packetizes the channelized data, while the downstream nodes run the \texttt{kotekan} framework \citep{kotekan} for real-time data management and GPU kernel execution.
 
-The GPU cluster constitutes the CHARTS X-engine, comprising four processing nodes, one search node, and one analysis node. Each processing node hosts an NVIDIA RTX~5090 GPU and \SI{512}{\giga\byte} of DDR4 RAM, sufficient to maintain a \SI{40}{\second} ring buffer of baseband data. The main processing stages are as follows:
+The GPU cluster constitutes the CHARTS X-engine, comprising four processing nodes, one search node, and one analysis node. Each processing node hosts an NVIDIA RTX~5090 GPU and \SI{512}{\giga\byte} of DDR4 RAM, sufficient to maintain a $\sim$\SI{40}{\second} ring buffer of baseband data. The main processing stages are as follows:
 \begin{itemize}
-    \item \textbf{Beamforming:} Each node forms $n_b = 103$ coherent beams using a real-time beamforming kernel. The process includes calibration, frequency upchannelization (from 1k to 4k channels per sub-band), and accumulation of intensity (Stokes~I) data.
-    \item \textbf{Downsampling and data reduction:} The beamformed data are squared, integrated to a time resolution of $t_s \approx \SI{1}{\milli\second}$, and reduced to 4-bit I-Stokes values, resulting in an output rate of \SI{16.25}{\giga\bit\per\second} per node.
-    \item \textbf{Search and detection:} The GPU-based search node performs incoherent dedispersion over a fixed bank of \glspl{dm} up to \SI{1e3}{\parsec\per\centi\meter^3}, followed by a peak-finding kernel that identifies statistically significant transient candidates in beam, time, DM, and S/N space.
+    \item \textbf{Beamforming:} Each node forms $n_b = 1000$ coherent beams using a real-time beamforming kernel. The process includes calibration, frequency upchannelization (from 672 to 16k channels per sub-band, resulting in a frequency resolution of \SI{12.3}{\kilo\hertz}), and accumulation of intensity (Stokes~I) data.
+    \item \textbf{Downsampling and data reduction:} The beamformed data are squared, integrated to a time resolution of $t_s \approx \SI{1}{\milli\second}$, and reduced to 4-bit I-Stokes values.
+    \item \textbf{Search and detection:} The GPU-based search node performs incoherent dedispersion over a fixed bank of \glspl{dm} up to $\sim$\SI{800}{\parsec\per\centi\meter^3}, followed by a peak-finding kernel that identifies statistically significant transient candidates in beam, time, DM, and SNR space.
 \end{itemize}
 
 Candidates with $\text{SNR}>12$ trigger a baseband dump of \SI{100}{\milli\second} of full-voltage data from the ring buffer, while those with $8<\text{SNR}<12$\footnote{The SNR threshold will be further studied once the system is up and running.} are stored as incoherent beam data for offline verification. The dedispersion and search pipeline achieves a total latency below \SI{10}{\second}, ensuring that transient detections remain within the buffer window.
@@ -278,25 +304,53 @@ The final analysis is carried out on a CPU-based node, which cross-matches event
 
 RFI mitigation will be incorporated at both firmware and GPU stages, including statistical outlier rejection, variance-based detection, and reference-antenna subtraction \citep{taylor2019spectralkurtosisbasedrfimitationchime, Li_2025}. Environmental monitoring and automatic safety controls will be implemented using Prometheus\footnote{\url{https://prometheus.io/}} and Grafana\footnote{\url{https://grafana.com/}} metrics, ensuring safe operation during high-temperature conditions.
 
-In summary, the CHARTS digital backend combines high-throughput FPGA-based channelization with GPU-accelerated beamforming and transient search, achieving a sustained data processing rate of over \SI{400}{\giga\bit\per\second} with a total end-to-end latency below \SI{10}{\second}. This architecture provides the necessary computational performance to enable real-time detection of fast radio transients while maintaining modularity and scalability for future array expansions.
 
-\begin{figure}[h!]
+\begin{figure}
     \centering
-    \includegraphics[width=\textwidth]{../figures/CHARTS_signal_chain.pdf}
-    \caption[CHARTS signal chain]{\textbf{Update figure with new data rates}. Signal path for the 8 single polarization antennas (1 tile digitizes 32 antennas). The RFSoC separates the frontend and backend of the
-    system (where ADCs are located). The complete CHARTS array is composed of 256 (A000–A255) single polarization antennas, 32 FDM boards, 8 RFSoC digitizers, a 16-port switch, a 4-port switch, 4 processing nodes (with CPU, GPU, and 512 GB of DDR4 RAM), and 1
-    search node. The entire system will process 8 $\times$ 51.6 \si{\giga\bit\per\second} = 412.8 \si{\giga\bit\per\second} of voltage data in the processing nodes, and 65 \si{\giga\bit\per\second}
-    in the
-    search node. Data output from processing nodes will scale depending on number of channels, number of beams, bits resolution, and sampling
-    time. In this case, 16k, $n_b$ = 103
-    , 4 bit (since we only keep intensity), and $t_s$ = 1 ms, therefore 16.25 \si{\giga\bit\per\second}
-    . The acronym NIC stands for network
-    interface controller, and it allows a full network protocol stack at a high speed rate. The basic configuration for 8 antennas has been drawn where
-    the signal gets multiplexed (300–500 MHz to 300–2366 MHz) and then fed to the RFSoC. From each RFSoC board 51.2 \si{\giga\bit\per\second}
-    are generated
-    and then distributed to a switch to feed then the 4 processing nodes (each of them processing 1/4 of the band). Each processing node will calibrate,
-    beamform beams, upchannelize, downsample, square, and sum (I-Stokes) the dataset. Then the search node will efficiently dedisperse a set of DM
-    values and perform a peak-find algorithm for potential candidates. Site communication will be done through a satellite remote connection, and
-    remote monitoring will be done to system. Thick lines are analog connections and thin lines are digitized signals. Figure made by Dr. Tomás Cassanelli.}
+    \begin{tikzpicture}[font=\footnotesize, scale=.99, auto]
+      \coordinate (O) at (0, 0);
+      \def\spacing{4.5};
+      
+      \node[black, draw, align=center, fill=gray!20] (an) at ($(O) + ({\spacing*3}, 0)$) {Analysis node}; 
+      \node[black, draw, align=center, fill=gray!20] (sn) at ($(O) + ({\spacing*2}, 0)$) {Search node};
+      \draw (sn.east) -- (an.west);
+      
+      \foreach \x [count=\xi, evaluate={\labeli={int(4 - \xi)}}]  in {-3, -1, 1, 3}{
+        \node[black, draw, align=center, fill=gray!20] (pn\xi) at ($(O) + ({\spacing}, {\x * .6})$) {Processing node \labeli  \\ Ring buffer \faIcon{sync}};
+        \draw (sn.west) -- (pn\xi.east);
+      }
+  
+      \foreach \x [count=\xi, evaluate={\labeli={int(8 - \xi)}}] in {-3.5, -2.5, ..., 3.5}{
+        \node[draw,fill=white] (rfsoc\xi) at ($(O) + (0, {\x * .75})$) {RFSoC-\labeli};
+        \foreach \j/\angpos in {1/172.5, 2/177.5, 3/182.5, 4/187.5}{
+          \draw (pn\j.west) -- (rfsoc\xi.east);
+          \draw[line width=1pt] (rfsoc\xi.\angpos) -- ++ (-.25, 0);
+        }
+      }
+
+      % top labels
+      \node[align=center] at ($(O) + (0, 3.5)$) {Digitization \\ PFB/FFT (demodulation)};
+      \node[align=center] at ($(O) + ({\spacing}, 3.5)$) {Multiply \& square \\ Downsample \\ Beamforming $n_\text{b}$ \\ Upchannelize (\num{16}k) \\ Stokes-$I$};
+  
+      \node[align=center] at ($(O) + ({\spacing*2}, 3.5)$) {RFI sifter \\ Incoherent dedispersion \\ Peak-finding \\ ($n_\text{b}$, time, time window, DM, SNR)};
+  
+      \node[align=center] at ($(O) + ({\spacing*3}, 3.5)$) {Flux estimation \\ Source identification \\ Extragalactic DM check \\ Trigger action \\ Database \\ Offline analyses};
+  
+      % callabacks
+      \path (rfsoc1.east) -- (pn1.west) node[midway, below, gray] {$\Delta\nu / 4$};
+      \draw[dashed,gray] (an.80) |- (pn4.east) node[midway, above] {Baseband \& intensity callback};
+      \draw[dashed,gray] (an.100) |- (pn3.east);
+      \draw[dashed,gray] (an.-100) |- (pn2.east);
+      \draw[dashed,gray] (an.-80) |- (pn1.east);
+  
+      % bottom labels
+      \path let \p1=(pn1.west) in (\x1, -3) coordinate (rtl);
+      \path let \p1=(an.east) in (\x1, -3) coordinate (rtr);
+      \draw[|<->|] (rtl) -- (rtr) node[midway,above] (rt) {$\text{Realtime processing} \lesssim \qty{10}{\s}$};
+      % \draw[|<-] (rtl) -- (rt);
+      % \draw[->|] (rt) -- (rtr);
+      
+    \end{tikzpicture}
+    \caption[CHARTS digital signal chain from RFSoC to real-time analysis cluster]{CHARTS digital signal chain from RFSoC to real-time analysis cluster. The system consists of eight RFSoC boards (F-engines) that digitize and channelize the signals from the FDM boards. The data is then distributed to four GPU-based processing nodes (X-engines) that perform beamforming, downsampling, upchannelization, and transient search. A dedicated search node identifies candidates, while an analysis node handles source identification and follow-up actions. Real-time processing latency is kept below 10 seconds to ensure timely detection and response. Figure made by Prof. Tomás Cassanelli.}
     \label{fig:charts_signal_chain}
   \end{figure}

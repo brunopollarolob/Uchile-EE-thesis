@@ -64,7 +64,8 @@ for i in range(8):
 
         ax = axes[i, j]
         ax.scatter(frequencies, phase, s=0.25)
-        ax.set_ylim(-np.pi, np.pi)  
+        ax.set_ylim(-np.pi, np.pi) 
+        ax.set_title(r"$S_{{" + f"{i}{j}" + "} }$")
 
         if i == 7:
             ax.set_xlabel("Frequency (MHz)", fontsize=12)

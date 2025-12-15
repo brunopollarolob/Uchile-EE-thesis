@@ -241,7 +241,7 @@ The observational landscape has grown rapidly: while most FRBs appear as one-off
 	\label{fig:frb_sky_distribution}
 \end{figure}
 
-Detecting FRBs instrumentally demands backends with high time and frequency resolution, capable of performing real-time de-dispersion. Large-scale surveys conducted by facilities such as the \gls{chime}, the \gls{askap}, and the \gls{fast} have collectively identified thousands of FRBs. These detections have facilitated population studies and host galaxy associations, as demonstrated in the first CHIME/FRB catalog \citep{CHIMEcatalog2021} and the Commensal Real-time ASKAP Fast Transient (CRAFT) incoherent-sum survey \citep{Shannon_2025}. Additionally, open-access datasets, such as FAST-FREX \citep{FAST-FREX}, provide dynamic spectra open to the community.
+Detecting FRBs instrumentally demands backends with high time and frequency resolution, capable of performing real-time de-dispersion. Large-scale surveys conducted by facilities such as \gls{chime} with its FRB backend \citep{CHIME/FRB_2018}, the Australian square kilometre array pathfinder (ASKAP; \citealt{ASKAPsystem2021}), and the Five-hundred-meter aperture spherical telescope (FAST; \citealt{fast2011}) have collectively identified thousands of FRBs. These detections have facilitated population studies and host galaxy associations, as demonstrated in the first CHIME/FRB catalog \citep{CHIMEcatalog2021} and the commensal real-time ASKAP fast transient (CRAFT) incoherent-sum survey \citep{Shannon_2025}. Additionally, open-access datasets, such as FAST-FREX \citep{FAST-FREX}, provide dynamic spectra open to the community.
 
 Cosmologically, FRBs are promising probes of the ionized baryon content of the universe. The observed DM can be decomposed as
 \begin{equation}
@@ -251,7 +251,7 @@ Cosmologically, FRBs are promising probes of the ionized baryon content of the u
 Each term captures a distinct electron column along the line of sight, with contributions from the Milky Way disk and halo, the \gls{igm}, intervening galaxies, and the immediate environment of the source \citep{Macquart_2020}. The \gls{igm} component, in particular, encodes the distribution of baryons and the history of reionization and large-scale magnetization. Consequently, localizing FRBs to their host galaxies and securing redshift measurements is essential for cosmological applications, as it enables separation of the individual contributions and calibration of the DM-redshift relation. Despite rapid progress, only a few dozen FRBs have been precisely localized to date, including some one-off events via \gls{vlbi} \citep{Cassanelli_2024}.
 
 
-Nevertheless, fundamental questions remain open: the nature of progenitors, the emission mechanisms, and the influence of local environments. Next-generation facilities such as the Square Kilometre Array (SKA; \citealt{Weltman_2020}), the Deep Synoptic Array 2000 (DSA-2000; \citealt{hallinan2019dsa2000radiosurvey}) and the Canadian Hydrogen Observatory and Radio-transient Detector (CHORD; \citealt{CHORD}) are expected to dramatically expand the FRB sample and deliver sub-arcsecond localizations, consolidating their role as astrophysical and cosmological probes.
+Nevertheless, fundamental questions remain open: the nature of progenitors, the emission mechanisms, and the influence of local environments. Next-generation facilities such as the square kilometre array (SKA; \citealt{Weltman_2020}), the deep synoptic array 2000 (DSA-2000; \citealt{hallinan2019dsa2000radiosurvey}) and the Canadian hydrogen observatory and radio-transient detector (CHORD; \citealt{CHORD}) are expected to dramatically expand the FRB sample and deliver sub-arcsecond localizations, consolidating their role as astrophysical and cosmological probes.
 
 
 \section{Digital signal processing fundamentals}
@@ -375,7 +375,7 @@ When $\nu_s$ is insufficient, higher-frequency components fold into the first Ny
 
 \subsection{Quadrature sampling}
 \label{sec:quadrature_sampling}
-Quadrature sampling is a technique used to digitize a band-limited signal by shifting its spectrum so that it is centered at 0 Hz. Unlike conventional (real-valued) Nyquist sampling, quadrature sampling produces a complex-valued signal. In this representation, the sampling rate equals the signal bandwidth ($\nu_s = B$), meaning each complex sample contains the information of two real samples. This approach allows the representation of both positive and negative frequency components. To convert a real, Nyquist-sampled signal $x[n]$ centered at 0 Hz into a quadrature-sampled signal, it can be multiplied by a complex exponential $e^{\mathrm{j}2\pi \nu_0 n}$, resulting in
+Quadrature sampling is a technique used to digitize a band-limited signal by shifting its spectrum so that it is centered at 0 Hz. Unlike conventional (real-valued) Nyquist sampling, quadrature sampling produces a complex-valued signal. In this representation, the sampling rate equals the signal bandwidth ($\nu_s = B$), meaning each complex sample contains the information of two real samples. This approach allows the representation of both positive and negative frequency components \citep{Price2016spectrometers}. To convert a real, Nyquist-sampled signal $x[n]$ centered at 0 Hz into a quadrature-sampled signal, it can be multiplied by a complex exponential $e^{\mathrm{j}2\pi \nu_0 n}$, resulting in
 \begin{equation}
 	\label{eq:quadrature_sampling}
 	x'[n] = x[n] e^{\mathrm{j}2\pi \nu_0 n}
@@ -799,13 +799,13 @@ In the following subsections, we explore the theoretical foundations that underp
 There are two primary methods for calculating the PSD, also referred to as the power spectrum, of a signal. The power spectrum, denoted as $S_{xx}$, and the autocorrelation function, $R_{xx}$, of a waveform are connected through the Wiener-Khinchin theorem. This theorem establishes that for a stationary (constant mean and variance) and ergodic (statistically consistent over time) signal $x(t)$, the PSD and autocorrelation are related by
 
 \begin{equation}
-	S_{xx}(\nu) = \int_{-\infty}^{\infty} R_{xx}(\tau) e^{- \mathrm{j} 2\pi \nu \tau} d\tau
+	S_{xx}(\nu) = \int_{-\infty}^{\infty} R_{xx}(\tau) e^{- \mathrm{j} 2\pi \nu \tau} \, \mathrm{d}\tau
 	\label{eq:continous-wiener-khinchin}
 \end{equation}
 
 where $\nu$ represents frequency and $\tau$ denotes the time lag. The autocorrelation function of an ergodic process is defined as \citep{Gubner_2006}
 \begin{equation}
-	R_{xx}(\tau) =  \langle x(t) x^*(t - \tau)\rangle = \lim_{T \to \infty} \frac{1}{2T} \int_{0}^{T} x(t) x^*(t - \tau) dt
+	R_{xx}(\tau) =  \langle x(t) x^*(t - \tau)\rangle = \lim_{T \to \infty} \frac{1}{2T} \int_{0}^{T} x(t) x^*(t - \tau) \, \mathrm{d}t
 	\label{eq:continous_autocorrelation}
 \end{equation}
 where $^*$ denotes the complex conjugate and $\langle \cdot \rangle$ denotes the expectation value, which is the average over time for a stationary signal. For discrete signals, which are far more common in practice due to the increasing use of digital systems such as the spectrometer developed in this thesis, the theorem can be expressed as
@@ -862,13 +862,13 @@ where $X(\nu)$ is the DTFT output at frequency $\nu$. This result shows that the
 In radio interferometers, multiple antennas observe the same astronomical source, each recording its individual response. To derive the system's overall response, the signals from all antennas must be combined. This is accomplished by computing the cross-correlation function between pairs of signals, effectively cross-correlating the responses from different antennas.
 The cross-correlation operation is often denoted by the pentagram symbol ($\star$) and is defined as:
 \begin{equation}
-	R_{xy}(\tau)=\left[x(t) \star y(t)\right](\tau) = \lim_{T \to \infty} \frac{1}{2T} \int_{-T}^{T} x(t) y^*(t - \tau) dt
+	R_{xy}(\tau)=\left[x(t) \star y(t)\right](\tau) = \lim_{T \to \infty} \frac{1}{2T} \int_{-T}^{T} x(t) y^*(t - \tau) \, \mathrm{d}t
 \end{equation}
 This integral can also be expressed as a convolution:
 \begin{align}
 	\left[x(t) \star y(t)\right](\tau) 
-	&= \int_{-\infty}^{\infty} x(t)\, y^*(t - \tau)\, dt \\
-	&= \int_{-\infty}^{\infty} x(t)\, y^*(-(\tau - t))\, dt \\
+	&= \int_{-\infty}^{\infty} x(t)\, y^*(t - \tau) \, \mathrm{d}t \\
+	&= \int_{-\infty}^{\infty} x(t)\, y^*(-(\tau - t)) \, \mathrm{d}t \\
 	&= \left[x(t) * y^*(-t)\right](\tau)
 	\label{eq:cross_correlation}
 \end{align}
@@ -881,9 +881,9 @@ where $X(\nu)$ and $Y(\nu)$ are the Fourier transforms of $x(t)$ and $y(t)$, res
 
 \subsection{Correlator architectures}
 \label{sec:spectrometer_architectures}
-Correlators are generally divided into two main categories. In a lag (or XF) correlator, the cross-correlation operation is performed first, followed by a Fourier transform (analogous to an ACS system). An example of radiotelescopes using this architecture is the WIDAR correlator in the \Gls{vla} \citep{Perley_2009} and \Gls{alma} correlator \citep{ALMA_correlator}.
+Correlators are generally divided into two main categories. In a lag (or XF) correlator, the cross-correlation operation is performed first, followed by a Fourier transform (analogous to an ACS system). An example of radiotelescopes using this architecture is the WIDAR correlator in the very large array (VLA; \citealt{Perley_2009}) and \gls{alma} correlator \citep{ALMA_correlator}.
 
-Conversely, in an FX correlator, the Fourier transform is applied before the cross-correlation. In this type of correlator, the digitized data stream from each antenna is first transformed into a frequency spectrum using a real-time FFT. For every antenna pair, the resulting complex frequency components are then multiplied to obtain the cross power spectrum. The computational load is dominated by the Fourier transform stage, and the total number of operations scales with the number of antennas. In contrast, for a lag correlator, the computational effort is mainly determined by the number of antenna pairs. Therefore, the FX architecture is more hardware-efficient, particularly as the number of antennas increases (see Section 8.8.5 of \citealt{thompson2017interferometry}). Examples of contemporary radio telescopes employing FX correlators for FRB detection include \gls{chime} \citep{CHIME/FRB_2018}, \gls{askap} \citep{Shannon_2025}, MeerKAT \citep{MeerKAT}, Galactic Radio Explorer (GReX; \citealt{GReX}) and Bustling Universe Radio Survey (BURSTT; \citealt{BURSTT}).
+Conversely, in an FX correlator, the Fourier transform is applied before the cross-correlation. In this type of correlator, the digitized data stream from each antenna is first transformed into a frequency spectrum using a real-time FFT. For every antenna pair, the resulting complex frequency components are then multiplied to obtain the cross power spectrum. The computational load is dominated by the Fourier transform stage, and the total number of operations scales with the number of antennas. In contrast, for a lag correlator, the computational effort is mainly determined by the number of antenna pairs. Therefore, the FX architecture is more hardware-efficient, particularly as the number of antennas increases (see Section 8.8.5 of \citealt{thompson2017interferometry}). Examples of contemporary radio telescopes employing FX correlators for FRB detection include CHIME/FRB \citep{CHIME/FRB_2018}, ASKAP \citep{Shannon_2025}, MeerKAT \citep{MeerKAT}, DSA-110 \citep{DSA110_Ravi_2023}, galactic radio explorer (GReX; \citealt{GReX}), bustling universe radio survey telescope in Taiwan (BURSTT; \citealt{BURSTT}), etc.
 
 Figure \ref{fig:corr_methods} illustrates the two correlator architectures, analogous to the methods for computing the PSD shown in Figure \ref{fig:psd_methods}.
 \begin{figure}
@@ -957,7 +957,7 @@ To reduce bandwidth and storage requirements, the spectra are re-quantized to a 
 			\draw[arrow] (requant) -- (corner);
 			\draw[arrow] (corner) -- (packet);
 		\end{tikzpicture}
-	\caption[Block diagram of the F-engine processing chain]{Block diagram of the F-engine processing chain in an FX correlator. The input signal is digitized by the ADC, then undergoes coarse delay correction, filtering through a polyphase filterbank, and transformation to the frequency domain via FFT. Fine delay adjustment and re-quantization prepare the data for the corner turn operation, which rearranges data by frequency rather than by antenna before packetization for transmission to the X-engine.}
+	\caption[Block diagram of the F-engine processing chain]{Block diagram of the F-engine processing chain in an FX correlator. The input signal is digitized by the ADC, filtering through a polyphase filterbank, and transformation to the frequency domain via FFT.  Re-quantization prepares the data for the corner turn operation, which rearranges data by frequency rather than by antenna before packetization for transmission to the X-engine.}
 	\label{fig:f-engine}
 \end{figure}
 
@@ -987,7 +987,7 @@ The digital signal processing required by modern radio telescopes relies primari
 \begin{itemize}
 	\item \Glspl{asic} are custom-designed circuits optimized for a specific task. They powered major facilities such as the JVLA and ALMA correlators \citep{Perley_2009,ALMA_correlator}. Although their fabrication is costly and inflexible, they provide unmatched power efficiency, making them attractive for large-scale projects such as the SKA \citep{D_Addario_2016}.  
 
-	\item \Glspl{gpu}, originally developed for graphics rendering, have become widely used in high-performance computing. Their highly parallel architecture makes them ideal for large matrix operations and real-time data processing, often serving as backends for cross-correlation and imaging pipelines. An example of a pipeline specifically dedicated to \glspl{gpu} is the X-engine of \gls{chime} \citep{recnik2015efficientrealtimedatapipeline, Denman_2015}. 
+	\item \Glspl{gpu}, originally developed for graphics rendering, have become widely used in high-performance computing. Their highly parallel architecture makes them ideal for large matrix operations and real-time data processing, often serving as backends for cross-correlation and imaging pipelines. An example of a pipeline specifically dedicated to \glspl{gpu} is the X-engine of CHIME \citep{recnik2015efficientrealtimedatapipeline, Denman_2015}. 
 
 	\item \Glspl{fpga} occupy a middle ground between flexibility and efficiency. They interface directly with \glspl{adc} and high-speed links, handling tasks such as channelization and packetization before passing data downstream. Their role in radio astronomy has been facilitated by open-source initiatives like \Gls{casper} \citep{hickish2016decadedevelopingradioastronomyinstrumentation}, and they remain the dominant choice for first-stage DSP. A dedicated discussion is provided in \S~\ref{sec:fpgas}. 
 	\item \glspl{cpu} retain a central role as general-purpose processors. While less efficient for massively parallel tasks, they provide the control logic, coordination, and post-processing capabilities required in heterogeneous architectures that combine multiple platforms. 
@@ -1045,9 +1045,9 @@ FPGA architecture grants a compelling trade-off: designers can implement custom 
 
 \subsection{Ethernet interconnects}
 
-Ethernet has become the standard interconnect technology in modern radio astronomy backends, providing a scalable and cost-effective solution for transporting high data rates between FPGAs, GPUs, and storage systems \citep{Price_2020}. Commercial high-speed variants such as 10~GbE, 40~GbE, and 100~GbE (QSFP28) are routinely employed, enabling real-time redistribution of digitized signals in FX correlators and spectrometers.  
+Ethernet has become the standard interconnect technology in modern radio astronomy backends, providing a scalable and cost-effective solution for transporting high data rates between FPGAs, GPUs, and storage systems \citep{Price_2020}. Commercial high-speed variants such as 10~GbE (SFP+), 40~GbE (QSFP+), and 100~GbE (QSFP28; \citealt{IEEE8023bm2015}) are routinely employed, enabling real-time redistribution of digitized signals in FX correlators and spectrometers.  
 
-A key design choice in these systems is the adoption of the \gls{udp} as the transport layer. UDP is lightweight and connectionless, avoiding the complexity and latency penalties of TCP. Since astronomical signal processing prioritizes sustained throughput over guaranteed delivery, packet loss is tolerated at a low level, with robustness ensured by packet formats that embed sufficient metadata. Typical headers include a master counter (MCNT), antenna or ADC identifier, frequency channel indices, and payload data. This design allows receiving nodes to reassemble the data stream even in the presence of dropped or out-of-order packets.  
+A key design choice in these systems is the adoption of the \gls{udp} as the transport layer. UDP is lightweight and connectionless, avoiding the complexity and latency penalties of TCP. Since astronomical signal processing prioritizes sustained throughput over guaranteed delivery, packet loss is tolerated at a low level, with robustness ensured by packet formats that embed sufficient metadata. Typical headers include a sequence number, antenna or ADC identifier, frequency channel indices, and payload data. This design allows receiving nodes to reassemble the data stream even in the presence of dropped or out-of-order packets.  
 
 UDP-based transmission thus enables efficient implementation of the corner turn, where data must be reorganized from time-major to frequency-major order for correlation or further spectral analysis. By leveraging Ethernet switches, this operation can be distributed across the network without requiring custom interconnects. The combination of Ethernet and UDP has therefore become a defining feature of current large-scale radio interferometers.  
 

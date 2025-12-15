@@ -64,14 +64,17 @@ for i in range(8):
 
         ax = axes[i, j]
         ax.scatter(frequencies, phase, s=0.25)
-        ax.set_ylim(-np.pi, np.pi)  
+        ax.set_ylim(-np.pi, np.pi)
+
+        # Title S_{i,j}
+        ax.set_title(r"$S_{{" + f"{i}{j}" + "} }$", fontsize=10)
 
         if i == 7:
             ax.set_xlabel("Frequency (MHz)", fontsize=12)
             ax.tick_params(axis='x', labelsize=12)
         else:
             ax.set_xticks([])
-            
+
         if j == 0:
             ax.set_ylabel("Phase (rad)", fontsize=12)
             ax.set_yticks([-np.pi/2, 0, np.pi/2])

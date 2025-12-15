@@ -20,7 +20,7 @@ In addition to this overarching goal, the specific objectives are:
     \item Implement a digitization chain capable of operating over a bandwidth of at least \SI{2366}{\mega\hertz}, covering the entire set of chains allocated through the \gls{fdm} board.
     \item Quantize the spectral outputs into a compact 4+4~bit format, representing the real and imaginary parts of each frequency channel.
     \item Internally generate the local oscillators required for the FDM mixers, using the DAC ports of the RFSoC.
-    \item Integrate the output system with a QSFP28 optical module, enabling data transmission at \SI{100}{\giga\bit\per\second} via optical fiber.
+    \item Integrate the output system with a QSFP28 optical module, enabling data transmission via optical fiber.
     \item Implement spectral reordering logic to automatically discard unused channels, such as those below \SI{300}{\mega\hertz} or between active FDM chains.
 \end{itemize}
 
@@ -30,6 +30,6 @@ This thesis is structured as follows:
     \item Chapter 2 provides a comprehensive theoretical background, introducing key concepts in radio and time domain astronomy, including the nature of transient phenomena and their significance. It also delves into the principles of digital signal processing, including Fourier transforms, sampling theory, and quantization, as well as the fundamentals of radio interferometry and its implementation in modern arrays, including a description of the hardware platforms used in this work and other arrays.
     \item Chapter 3 offers an in-depth overview of the CHARTS instrument, detailing its scientific objectives and system architecture. It describes the analog front-end design, the digital backend components, and the overall signal processing workflow, highlighting how CHARTS is optimized specifically to achieve its scientific goals.
     \item Chapter 4 focuses on the design and implementation of the F-engine, the first digital signal processing component of the CHARTS digital backend. It describes the firmware and software architecture, the integration of the RFSoC platform, and the methods used to achieve high-throughput, low-latency processing. Key design choices, challenges encountered, and solutions implemented are discussed in detail.
-    \item Chapter 5 presents the testing and validation process for the F-engine, including laboratory experiments and simulations. It evaluates the system's performance in terms of bandwidth and data integrity, and discusses the results in the context of CHARTS' scientific requirements.
-    \item Chapter 6 concludes the thesis by summarizing the key findings and contributions of this work. It reflects on the implications for the CHARTS project and the broader field of time-domain radio astronomy, and outlines potential directions for future research and development.
+    \item Chapter 5 presents the testing and validation process for the F-engine, including laboratory experiments and on-sky observations. It details the RFI environment measurement campaign, the correlation tests with multiple antennas, and the solar transit observation. The results are analyzed to assess the performance of the F-engine in terms of phase coherence and data integrity.
+    \item Chapter 6 concludes the thesis by summarizing the key findings and contributions of this work, and discusses future improvements for scaling the system toward full CHARTS deployment.
 \end{itemize}

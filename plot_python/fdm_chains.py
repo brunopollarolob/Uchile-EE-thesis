@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 plt.style.use("thesis_sty.mplstyle")
 frequencies = np.linspace(0, 2457.6, 8192, endpoint=False, dtype=np.float32) 
 fdm_chains_spectrum = np.load('spectrum_fdm_load_shift21_gain150.npy')
-fdm_chains_spectrum_dB = 10 * np.log10(np.fft.fftshift(fdm_chains_spectrum) )
+fdm_chains_spectrum_dB = 10 * np.log10(np.fft.fftshift(fdm_chains_spectrum/300) )
 bands = [(1000, 1672), (1880, 2552), (2768, 3440), (3664, 4336),
          (4552, 5224), (5440, 6112), (6336, 7008), (7216, 7888)]
 

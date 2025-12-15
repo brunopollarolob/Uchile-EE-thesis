@@ -8,7 +8,7 @@ The implementation integrates several innovations over the state of the art, inc
     \item The implementation of a quadrature digitization scheme operating over a bandwidth of 2457.6 MHz, encompassing the full band delivered by the FDM stage.
     \item The digital generation of the four local oscillators required by the \gls{fdm} mixers using a single RFSoC DAC port, avoiding the need for external frequency synthesizers and providing real-time configurability. The LO generation module achieved SFDR of 39.31 dB, enough to operate the mixers in the FDM without significant leaks.
     \item The output spectra were successfully requantized to a compact 4+4 bit format after applying digital gains calibration. This enabled efficient data throughput while minimizing quantization bias.
-    \item Development of a high-throughput packetizer that enables data transmission via a QSFP28 optical interface, transmitting data streams at 51.6~Gbit~s$^{-1}$ per board, discarding in between FDM chains channels.
+    \item Development of a high-throughput packetizer that enables data transmission via a QSFP28 optical interface, transmitting data streams with a $\sim$5\% packet loss and discarding in between FDM chains channels.
 \end{itemize}
 
 Validation tests confirmed the integrity and coherence of the system. Laboratory tests, including the 8-antenna correlation test, validated the phase stability and effectiveness of the digital gain calibration procedure necessary for interferometric observations. Furthermore, the successful solar transit observation confirmed the expected interferometric fringe rates and demonstrated phase coherence across the full digital chain in an on-sky environment. The recovered projected baseline matched the nominal separation of 20 meters to within a few centimeters.
@@ -19,9 +19,39 @@ The results of this work validate the architectural approach of CHARTS and its F
 
 While the current F-engine meets its primary performance requirements, several developments are necessary to scale the system toward a full CHARTS deployment. The most critical areas involve board synchronization, timing infrastructure, and multi-board data routing for the X-engine.
 
-\subsection{Integration with the X-engine}
+\subsection{Integration with the X-engine and header formatting}
 
-A major next step is the full integration of the F-engine output with the \texttt{kotekan} \citep{kotekan} X-engine pipeline. This requires ensuring compatibility in packet structure, metadata, and timing conventions, as well as adapting the 512-bit UDP payloads to the high-performance \texttt{dpdk}\footnote{\url{https://www.dpdk.org/}} based ingest layer. Proper alignment of timestamps and frequency-bin ordering will be essential for seamless operation.
+An important step for the next phase is the full integration of the F-engine output with the \texttt{kotekan} based X-engine \citep{kotekan}. This requires ensuring compatibility in packet structure, metadata, and timing conventions, as well as adapting 512 bit UDP payloads to the high performance DPDK-based ingestion engine\footnote{\url{https://www.dpdk.org/}}. Each packet header must therefore unambiguously convey the data origin and organization, provide precise timestamps for synchronization, and specify the data format so the receiver software can reconstruct the channel and antenna layout without ambiguity.
+
+Table~\ref{tab:udp_packet_format} proposes a header layout that collects the minimum fields required to meet these needs; each field is explained below and its implementation should be tested jointly with the X-engine to verify interoperability and performance.
+
+\begin{table}[htbp]
+\centering
+\begingroup
+\footnotesize
+\setlength{\tabcolsep}{6pt} % reduce column separation
+\renewcommand{\arraystretch}{0.95} % slightly tighter rows
+\begin{tabularx}{\linewidth}{@{}l c X@{}}
+\toprule
+Field & Size (bytes) & Description \\
+\midrule
+Sequence number & 4 & Incremental packet counter for loss detection and reordering. \\
+Timestamp & 8 & Time of the first sample in the packet (IRIG/UTC). \\
+Board ID & 1 & Identifier of the RFSoC board generating the packet (0–7). \\
+Sub‑band ID & 1 & Identifier of the frequency portion carried by this stream (0–3). \\
+ADC ID & 4 & Identifier of the ADC and input chain associated with the data. \\
+Number of channels & 2 & Number of frequency channels included per chain (672). \\
+Geometry ID & 32 & Index/table mapping channels to antennas and array topology. \\
+Flipped chains & 1 & State bits indicating FDM chains that are flipped. \\
+Payload & 5376 & Requantized spectrum data corresponding to~$\sim$50\,MHz of channels. \\
+\bottomrule
+\end{tabularx}
+\endgroup
+\caption[Proposed UDP packet format for F‑engine output]{Proposed UDP packet format for the F‑engine output to the X‑engine, including essential metadata fields and the data block.}
+\label{tab:udp_packet_format}
+\end{table}
+
+The fields above, together with bytes reserved for alignment and future extensions, constitute the packet header; in the current proposal the header occupies 64 bytes in total and is followed by a 5376‑byte payload. Considering link headers (Ethernet/IP/UDP), the combined packet size is on the order of 5482 bytes. Finally, this structure must be validated with end-to-end tests to verify timestamp integrity, correct antenna assignment, and tolerance to packet loss or reordering.
 
 \subsection{Synchronization across multiple RFSoC boards}
 
@@ -33,7 +63,7 @@ Scaling beyond a single F-engine requires tight timing synchronization between s
     \item an IRIG-B timecode stream.
 \end{itemize}
 
-The 10~MHz signal would discipline all RFSoC clocks, ensuring identical ADC sampling rates across boards. Achieving this requires modifying the configuration of the LMK04828 clock synthesizer: the device must be reprogrammed (via TI’s TICS PRO) to use CLKIN0 as the primary reference input, replacing the current internal SI5395B clock routing through CLKIN1 (see Figure~\ref{fig:rfsoc_clocking_scheme}).
+The 10~MHz signal would discipline all RFSoC clocks, ensuring identical ADC sampling rates across boards. Achieving this requires modifying the configuration of the LMK04828 clock synthesizer: the device must be reprogrammed (via TI’s TICS PRO\footnote{\url{https://www.ti.com/tool/TICSPRO-SW}}) to use CLKIN0 as the primary reference input, replacing the current internal SI5395B clock routing through CLKIN1 (see Figure~\ref{fig:rfsoc_clocking_scheme}).
 
 \begin{figure}[h!]
     \centering
@@ -42,19 +72,10 @@ The 10~MHz signal would discipline all RFSoC clocks, ensuring identical ADC samp
     \label{fig:rfsoc_clocking_scheme}
 \end{figure}
 
-The PPS and IRIG-B streams would then enable high-precision timestamping of each spectrum frame. Using an approach similar to the timing system developed in \citet{jorquera2020voltimetro}, the IRIG-decoded timestamp could be embedded at the start of every UDP packet, providing absolute timing tags compatible with distributed backends and offline correlation.
+Using an approach similar to the timing system developed in \citet{jorquera2020voltimetro}, this IRIG decoded timestamp will be embedded at the start of every UDP packet as described in Table \ref{tab:udp_packet_format}, enabling high-precision timestamping of each spectrum frame. The 1 PPS signal will be used to align the internal frame counters of all RFSoC boards, ensuring that each board’s data frames are synchronized to within a few nanoseconds.
 
 \subsection{Corner-turn expansion and multi-board networking}
 
-Another major development step is the implementation of the second stage of the corner turn, enabling data from all RFSoC boards to be shuffled so that each processing node receives the full set of antennas for a specific portion of the frequency band.
-
-In the 256-antenna CHARTS configuration, this requires a network architecture in which:
-
-\begin{itemize}
-    \item Each RFSoC streams its sub-band through a high-capacity switch.
-    \item The switch routes packets so that each backend node receives exactly one quarter of the total processed bandwidth ($\sim$50~MHz).
-    \item Every node therefore obtains all antennas for its assigned frequency slice, satisfying the X-engine’s frequency-domain correlation requirements.
-\end{itemize}
-
-This stage will also require maintaining packet ordering, sequence continuity, and timing coherence across boards, reinforcing the need for the GPSDO based synchronization scheme described above.
+A crucial point to emphasize is that each RFSoC board is only capable of digitizing up to 32 antennas. For the X‑engine to operate correctly, a second-stage corner turn is therefore required so that each outgoing packet contains channels from all 256 antennas. Concretely, this implies additional networking and aggregation logic: a high‑capacity switch (or dedicated backplane) must collect sub‑band streams from multiple RFSoC boards and reassemble them so that each backend node receives the full set of antennas for its assigned frequency slice. This requires packet aggregation logic that merges packets from distinct RFSoC sources into unified frames, preserves sequence numbers and timing, and handles reordering and loss recovery. The architecture and functionality would then be similar to the CHIME corner turn backplane \citep{CHIME_cornerturn_2016}, but adapted to the specific requirements and scale of CHARTS.
+This multi-board networking and aggregation layer is essential for scaling the F-engine to the full CHARTS array, ensuring that the X-engine receives correctly formatted data streams for correlation and beamforming across all antennas.
 

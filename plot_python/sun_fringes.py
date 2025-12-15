@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.constants import c as speed_of_light
 
 plt.style.use("thesis_sty.mplstyle")
 
@@ -24,7 +25,7 @@ delta = -8.5 * deg2rad         # source declination in radians
 
 freqs_mhz = np.array([300.6, 399.9, 489.0])
 freqs_hz  = freqs_mhz * 1e6
-lambdas   = 3e8 / freqs_hz     
+lambdas   = speed_of_light / freqs_hz     
 
 # fit phases to get slope and covariance (slope in rad / s)
 
@@ -45,8 +46,8 @@ slopes = np.array([slope_300, slope_400, slope_500])
 slope_errs = np.array([slope_err_300, slope_err_400, slope_err_500])
 
 # compute b_EW and its uncertainty by simple linear error propagation
-b_EW = (slopes * lambdas) / (2*np.pi * omega_earth * np.cos(delta))
-b_EW_err = (slope_errs * lambdas) / (2*np.pi * omega_earth * np.cos(delta))
+b_EW = (slopes * lambdas) / (2*np.pi * omega_earth * np.cos(delta) )
+b_EW_err = (slope_errs * lambdas) / (2*np.pi * omega_earth * np.cos(delta) )
 
 for f_mhz, s, ds, b, db in zip(freqs_mhz, slopes, slope_errs, b_EW, b_EW_err):
     print(f"{f_mhz:7.1f} MHz : slope = {s:.6e} rad/s ± {ds:.2e}  =>  b_EW = {b:.3f} m ± {db:.3f} m")
@@ -90,9 +91,9 @@ amplitude_300 = np.abs(averaged_corr_12_300mhz)
 
 
 plt.figure(figsize=(6.8, 3.5))
-plt.plot(time_axis, real_300, 'b-', label='Re 300.6 MHz')
-plt.plot(time_axis, imag_300, 'b--', label='Im 300.6 MHz')
-plt.plot(time_axis, amplitude_300, 'b:', label='|300.6 MHz|')
+plt.scatter(time_axis, real_300, c='b', s=7, label='Re')
+plt.scatter(time_axis, imag_300, c='r', marker='x', s=7, label='Im')
+plt.scatter(time_axis, amplitude_300, c='g', marker='o', s=7, label='Amplitude')
 plt.legend(loc='upper right', fontsize='small')
 plt.xlabel("Time (s + 2025-10-15 15:49:49.870 UTC)")
 plt.ylabel("Correlation components")
