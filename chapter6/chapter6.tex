@@ -21,7 +21,7 @@ While the current F-engine meets its primary performance requirements, several d
 
 \subsection{Integration with the X-engine and header formatting}
 
-An important step for the next phase is the full integration of the F-engine output with the \texttt{kotekan} based X-engine \citep{kotekan}. This requires ensuring compatibility in packet structure, metadata, and timing conventions, as well as adapting 512 bit UDP payloads to the high performance DPDK-based ingestion engine\footnote{\url{https://www.dpdk.org/}}. Each packet header must therefore unambiguously convey the data origin and organization, provide precise timestamps for synchronization, and specify the data format so the receiver software can reconstruct the channel and antenna layout without ambiguity.
+An important step for the next phase is the full integration of the F-engine output with the \texttt{kotekan} based X-engine. This requires ensuring compatibility in packet structure, metadata, and timing conventions, as well as adapting 512 bit UDP payloads to the high performance \texttt{DPDK} ingestion engine. Each packet header must therefore unambiguously convey the data origin and organization, provide precise timestamps for synchronization, and specify the data format so the receiver software can reconstruct the channel and antenna layout without ambiguity.
 
 Table~\ref{tab:udp_packet_format} proposes a header layout that collects the minimum fields required to meet these needs; each field is explained below and its implementation should be tested jointly with the X-engine to verify interoperability and performance.
 
@@ -35,11 +35,10 @@ Table~\ref{tab:udp_packet_format} proposes a header layout that collects the min
 \toprule
 Field & Size (bytes) & Description \\
 \midrule
-Sequence number & 4 & Incremental packet counter for loss detection and reordering. \\
+Sequence number & 8 & Incremental packet counter for loss detection and reordering. \\
 Timestamp & 8 & Time of the first sample in the packet (IRIG/UTC). \\
 Board ID & 1 & Identifier of the RFSoC board generating the packet (0–7). \\
 Sub‑band ID & 1 & Identifier of the frequency portion carried by this stream (0–3). \\
-ADC ID & 4 & Identifier of the ADC and input chain associated with the data. \\
 Number of channels & 2 & Number of frequency channels included per chain (672). \\
 Geometry ID & 32 & Index/table mapping channels to antennas and array topology. \\
 Flipped chains & 1 & State bits indicating FDM chains that are flipped. \\
@@ -60,7 +59,7 @@ Scaling beyond a single F-engine requires tight timing synchronization between s
 \begin{itemize}
     \item a 10 MHz frequency reference,
     \item a 1 PPS timing pulse, and
-    \item an IRIG-B timecode stream.
+    \item an \gls{irigb} stream.
 \end{itemize}
 
 The 10~MHz signal would discipline all RFSoC clocks, ensuring identical ADC sampling rates across boards. Achieving this requires modifying the configuration of the LMK04828 clock synthesizer: the device must be reprogrammed (via TI’s TICS PRO\footnote{\url{https://www.ti.com/tool/TICSPRO-SW}}) to use CLKIN0 as the primary reference input, replacing the current internal SI5395B clock routing through CLKIN1 (see Figure~\ref{fig:rfsoc_clocking_scheme}).
