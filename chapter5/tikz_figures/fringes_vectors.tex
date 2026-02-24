@@ -1,0 +1,95 @@
+\documentclass[border=3pt]{standalone}
+
+\usepackage{tikz}
+\usepackage{tikz-3dplot}
+\usetikzlibrary{arrows.meta,calc,decorations.markings}
+
+\usepackage{physics}
+\usepackage{bm}
+
+% Styles
+\tikzset{axis/.style={thick,-{Latex[length=3.2mm]}}}
+\tikzset{vec/.style={very thick,-{Latex[length=3.2mm]}}}
+\tikzset{svec/.style={vec,black}}
+\tikzset{bvec/.style={vec,black}}
+\tikzset{sdot/.style={vec,red!75!black}}
+
+\begin{document}
+
+\tdplotsetmaincoords{70}{110}
+
+% Angles for the point on the sphere
+\pgfmathsetmacro{\thetavec}{48.17} % polar angle (from +z)
+\pgfmathsetmacro{\phivec}{63.5}    % azimuth (from +x in xy)
+
+\begin{tikzpicture}[tdplot_main_coords, line cap=round, line join=round, font=\Large]
+
+% Parameters
+\def\R{5}
+\def\OmegaLen{1.4}
+
+% Origin
+\coordinate (O) at (0,0,0);
+
+% Axes (optional)
+%\draw[axis] (O) -- (6.5,0,0) node[pos=1.05] {$x$};
+%\draw[axis] (O) -- (0,6,0) node[pos=1.05] {$y$};
+%\draw[axis] (O) -- (0,0,6) node[pos=1.05] {$z$};
+
+% --- 3D sphere outline (projected circle)
+\begin{scope}[tdplot_screen_coords]
+  \draw[line width=1.2pt] (0,0) circle (\R);
+\end{scope}
+
+% --- Single 3D ellipse: great circle in the xy-plane (equator)
+\draw[line width=1.2pt] (0,0,0) circle (\R);
+
+% --- Rotation axis (z) and omega
+\draw[dashed, line width=1.1pt] (0,0,-\R) -- (0,0,\R);
+\draw[vec] (0,0,\R) -- ++(0,0,\OmegaLen) node[above] {$\omega_{\oplus}$};
+
+
+
+% --- Point P on sphere giving s(t) (first quadrant)
+\tdplotsetcoord{P}{\R}{\thetavec}{\phivec}
+\pgfmathsetmacro{\zP}{\R*cos(\thetavec)}
+\pgfmathsetmacro{\rSmall}{\R*sin(\thetavec)}
+
+% Small circle (parallel to xy) passing through P
+\draw[line width=1.1pt] (0,0,\zP) circle (\rSmall);
+
+\fill (P) circle (1.2pt);
+
+% --- Vector s(t)
+\draw[svec] (O) -- (P) node[midway, below right] {$\mathbf{s}(t)$};
+
+% --- Declination $\delta$ (measured from the xy-plane upward)
+\pgfmathsetmacro{\deltavec}{90-\thetavec}
+\tdplotsetcoord{Pxy}{\R}{90}{\phivec}
+\draw[dashed] (O) -- (Pxy);
+\draw[dashed] (P) -- (Pxy);
+
+\tdplotsetthetaplanecoords{\phivec}
+\tdplotdrawarc[tdplot_rotated_coords]{(O)}{1.2}{90}{48}{anchor=east}{$\delta$}
+
+% --- b: midpoint at the intersection of the meridian circle with the xy-plane
+% (choose the intersection in the direction of azimuth \phivec)
+\pgfmathsetmacro{\bx}{\R*cos(\phivec)}
+\pgfmathsetmacro{\by}{\R*sin(\phivec)}
+\coordinate (bMid) at (\bx,\by,0);
+
+% tangent direction in the xy-plane (same as \dot{s}(t))
+\pgfmathsetmacro{\tx}{-sin(\phivec)}
+\pgfmathsetmacro{\ty}{cos(\phivec)}
+
+\coordinate (bTail) at ($(bMid)+(-1.8*\tx,-1.8*\ty,0)$);
+\coordinate (bHead) at ($(bMid)+(1.8*\tx,1.8*\ty,0)$);
+\draw[bvec] (bTail) -- (bHead) node[midway, below right] {$\mathbf{b}$};
+
+% --- \dot{s}(t): tangent to the motion of s(t) (parallel to b), starting at P
+\coordinate (sdotHead) at ($(P)+(2.6*\tx,2.6*\ty,0)$);
+\draw[sdot] (P) -- (sdotHead)
+  node[near end, above right, black] {$\dot{\mathbf{s}}(t)=\omega_{\oplus}\times\mathbf{s}(t)$};
+
+\end{tikzpicture}
+\end{document}

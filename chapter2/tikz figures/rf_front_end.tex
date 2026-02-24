@@ -131,15 +131,10 @@
     node[at={(lo.south)}](){LO}
     ([yshift=-100pt]mixer1.south);
 
-%%% AGC
-\draw (if-bpf.east)+(0.8,0) % starts a new drawing command at coordinate (0,3)
-    node[shape=buffer,scale=0.8](agc){} % adds a node at the current coordinate with the shape buffer and a scaling factor of 0.8. The lna label is assigned to this node, which can be used later to reference it.
-    node[below=0.6cm]{AGC}; %  adds a label "LNA" above the buffer node, positioned 0.8 cm above the node's center.
-
 %%% ADC
-\path (agc.out)+(2,0)
+\path (if-bpf.east)+(2.8,0)
     to[sV,color=white,name=adc]
-    (agc.out)+(3,0);
+    (if-bpf.east)+(3.8,0);
 \ADC{adc.center}{0}
 
 %%% mixer2
@@ -180,16 +175,13 @@
 \draw[ar] (lna.out)--(rf-bpf);
 \draw[ar] (rf-bpf)--(mixer1);
 \draw[ar] (lo.west)--(mixer1); % `lo' is rotated, `lo.west' actually means its top
-\draw[ar] (lo.west)-- +(0pt,15pt) |- +(-55pt,15pt) |- +(-55pt,35pt) -- +(-20pt,58pt);
 \draw[ar] (mixer1) -- (if-bpf);
-\draw[] (if-bpf) -- (agc.in);
-\draw[ar] (agc.out) -- (sampler.west);
+\draw[ar] (if-bpf) -- (sampler.west);
 \draw[ar] (sampler.east) -- (quantizer.west);
 \draw[ar] (quantizer.east) -- (mixer2.west);
 \draw[ar] (nco.north) -- (mixer2.south);
 \draw[ar] (mixer2.east) -- (digital-lpf.west);
 \draw[ar] (digital-lpf.east) -- (decimator.west);
-\draw[ar] (digital-lpf.east) -- +(10pt,0pt) |- +(0pt,-100pt) -- +(-220pt,-100pt) -- +(-220pt,-10pt) -- ([yshift=-5pt, xshift=6pt]agc.north);
 \draw[ar] (decimator.east) --
     node[pos=0.5, above]() {\(r\left[ n \right]\)}
     (digital-processing.west);
@@ -198,4 +190,3 @@
 
 
 
-1000 -17

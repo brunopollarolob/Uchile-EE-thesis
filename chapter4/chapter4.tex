@@ -3,15 +3,13 @@
 
 The development of the F-engine firmware for this project utilized the Xilinx System Generator for DSP \citep{Xilinx_UG948_2020}. This process combined MATLAB Simulink and Xilinx blocks with components from the CASPER\footnote{\url{https://casper.berkeley.edu/wiki/Main_Page}} framework, enabling an efficient and modular design approach. CASPER offers a library of pre-built modules for common DSP operations, such as FFTs, PFBs, and filtering, that can be easily combined to implement complex signal processing pipelines for radio astronomy applications. An important advantage of this approach is that CASPER blocks have been extensively verified and validated through years of deployment in operational radio astronomy instruments worldwide \citep{hickish2016decadedevelopingradioastronomyinstrumentation,Parsons_2008}. This established track record means that the core signal processing functionality does not require re-verification from first principles, allowing development efforts to focus on system integration and application-specific requirements.
 
-This methodology allows digital architectures to be designed using functional blocks and visual interconnections, greatly simplifying development compared to traditional \glspl{hdl} as VHDL or Verilog. The System Generator toolchain provides simulation and compilation capabilities that automatically translate Simulink designs into synthesizable \gls{hdl} code for FPGA implementation. However, certain functionalities not available in the standard CASPER or Xilinx block libraries required the development of custom \gls{hdl} modules.
+This approach allows digital architectures to be designed using functional blocks and visual interconnections, greatly simplifying development compared to traditional \glspl{hdl} design. The System Generator toolchain provides integrated simulation and compilation capabilities that automatically translate Simulink designs into synthesizable \gls{hdl} code for FPGA implementation. When functionalities not available in the standard CASPER or Xilinx block libraries were required, custom \gls{hdl} modules written in Verilog were developed (listed in Annex~\ref{appendix:verilog_codes}) and integrated into the Simulink model using System Generator's \textit{Black Box} feature, which allows external \gls{hdl} code to be incorporated seamlessly into the overall design flow.
 
-This chapter details the design of the F-engine for the \gls{charts} telescope, covering the overall architecture, the digitization and channelization chain, spectral reordering, data transmission to the X-engine and generation of local oscillators for the mixers in the FDM stage. 
-
-\section{F-engine architecture and requirements}
+\section{F-engine architecture}
 \label{sec:f_engine_architecture}
 The F-engine architecture was carefully structured to support the overall FX correlator approach adopted in the CHARTS digital backend (see \S\ref{sec:charts_digital_backend}) and meet the system requirements declared in \S\ref{sec:objectives}. In this architecture, the F-engine is responsible for the initial channelization of the digitized antenna signals multiplexed by the \gls{fdm} boards.
 
-A general block diagram of the F-engine architecture is shown in Figure~\ref{fig:f_engine_block_diagram}. The design processes 32 antenna signals using the four RFSoC ADCs, each sampled at \SI{4.9152}{\giga\hertz} in quadrature I/Q mode. The digitized data is first channelized using a biplex \gls{pfb} with 4 taps, producing 8192 frequency channels per stream. These outputs are then fed into a 4-stream FFT block, which computes the \gls{ft} for each stream in parallel. The resulting spectra are re-quantized to a compact $4+4$ bit format before being transmitted via a QSFP28 optical interface. Additionally, the design incorporates custom blocks for spectral reordering, which facilitates data formatting to ensure compatibility with the X-engine and \texttt{kotekan}.
+A general block diagram of the F-engine architecture is shown in Figure~\ref{fig:f_engine_block_diagram}. The design processes 32 antenna signals using the four RFSoC ADCs, each sampled at \SI{4.9152}{\giga\hertz} in quadrature I/Q mode (see \S\ref{sec:quadrature_sampling}). The digitized data is first channelized using a biplex \gls{pfb} with 4 taps, producing 8192 frequency channels per stream. These outputs are then fed into a 4-stream FFT block, which computes the \gls{fft} for each stream in parallel. The resulting spectra are re-quantized to a compact $4+4$ bit format before being transmitted via a QSFP28 optical interface. Additionally, the design incorporates custom blocks for spectral reordering, which facilitates data formatting to ensure compatibility with the X-engine and \texttt{kotekan}.
 
 The total resource usage of this model on the RFSoC 4x2 is summarized in Table~\ref{tab:f_engine_resource_usage}, showing that the design fits comfortably within the available resources of the device, leaving room for future expansions or additional functionalities.
 
@@ -20,7 +18,7 @@ The total resource usage of this model on the RFSoC 4x2 is summarized in Table~\
 \caption[FPGA resource utilization for the F-engine design]{FPGA resource utilization for the F-engine design for 32 antennas on the RFSoC 4x2 device. LUT: \glspl{lut}; LUTRAM: LUT configured as RAM; FF: flip-flops; BRAM: block RAM; URAM: UltraRAM; DSP: digital signal processing blocks; IO: input/output pins; GT: Gbit transceivers; BUFG: global clock buffers; MMCM: mixed-mode clock manager.}
 \begin{tabular}{lcc}
 \toprule
-Resource & Utilization & \\
+\textbf{Resource} & \textbf{Utilization} & \\
 \midrule
 LUT      & 38\% \\
 LUTRAM   & 27\% \\
@@ -84,7 +82,7 @@ In the following sections, we delve into the specific components of the F-engine
 	\node[shape=rectangle, minimum width=1.506cm, minimum height=0.465cm] at (3.563, 2.083){} node[anchor=west, align=left, text width=1.118cm, inner sep=6pt] at (2.792, 2.083){\scriptsize Tile 226};
 	\draw (15.5, 6) to[multiwire] (16.5, 6);
 	\node[shape=rectangle, minimum width=0.798cm, minimum height=0.465cm] at (16, 6.5){} node[anchor=north west, align=left, text width=0.41cm, inner sep=6pt] at (15.583, 6.75){\scriptsize 8x8b};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=3.798cm] at (17.75, 4.583){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (17.75, 4.583){\small Packetizer};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=3.798cm] at (17.75, 4.583){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (17.75, 4.583){\small Reordering \\ Packetizer};
 	\draw (15.5, 5) to[multiwire] (16.5, 5);
 	\draw (15.5, 4) to[multiwire] (16.5, 4);
 	\draw (15.5, 3) to[multiwire] (16.5, 3);
@@ -101,25 +99,25 @@ In the following sections, we delve into the specific components of the F-engine
 \label{sec:digitization}
 The digitization strategy for CHARTS was carefully designed to meet the system requirements while ensuring architectural compatibility. To achieve this, the RFSoC 4x2's \gls{rfdc} was configured in quadrature I/Q mode. This approach was chosen because real sampling would have required a rate exceeding twice the target bandwidth ($\SI{2366.4}{\mega\hertz}$), which, although within the ADC's maximum capability of 5 GSPS, would not allow a power-of-two number of parallel samples, something that is crucial for the posterior PFB/FFT. Quadrature sampling with decimation provided an efficient solution, as it enables the effective processed bandwidth to match the sampling frequency, fully capturing the required band while adhering to the RFDC's architectural constraints.
 
-The sampling rate was therefore fixed at $\nu_s=\SI{4.9152}{\giga\hertz}$, comfortably covering the $\sim$\SI{2366}{\mega\hertz} input band produced by the FDM stage. An internal NCO at \SI{-1.2288}{\giga\hertz} ($-\nu_s/4$) downconverts the signal to baseband, producing complex I/Q outputs centered at 0 Hz. To reduce the data rate and allow a power-of-two number of parallel samples, a decimation factor of 2 was applied, resulting in a usable baseband bandwidth of \SI{2457.6}{\mega\hertz}. This configuration is illustrated in Figure~\ref{fig:quadrature_sampling_rfdc}, which shows how the input spectrum is progressively shifted and decimated into the final baseband representation.
+The sampling rate was therefore fixed at $\nu_s=\SI{4.9152}{\giga\hertz}$, comfortably covering the $\sim\SI{2366}{\mega\hertz}$ input band produced by the FDM stage. An internal NCO at \SI{-1.2288}{\giga\hertz} ($-\nu_s/4$) downconverts the signal to baseband, producing complex I/Q outputs centered at 0 Hz. To reduce the data rate and allow a power-of-two number of parallel samples, a decimation factor of 2 was applied, resulting in a usable baseband bandwidth of \SI{2457.6}{\mega\hertz}. This configuration is illustrated in Figure~\ref{fig:quadrature_sampling_rfdc}, which shows how the input spectrum is progressively shifted and decimated into the final baseband representation.
 
-\begin{figure}[!t]
+Since the system must simultaneously digitize 32 antennas, with 8 signals multiplexed per ADC, all converters available in the RFSoC 4x2 are used. In particular, the dual tiles 224 and 226 were enabled and configured for quadrature sampling (see Figure \ref{fig:rfsoc_tiles} for tile organization of ADCs). Table \ref{tab:rfdc_config} summarizes the configuration parameters for each ADC.
+
+With these configurations, the output data rate is \SI{256}{bits} per clock cycle, corresponding to 8 complex I/Q samples of \SI{32}{bits} each (16 + 16 signed), giving a required AXI4-Stream clock frequency of \SI{307.2}{\mega\hertz} to sustain the \SI{2457.6}{\mega\hertz} bandwidth. In order to produce this sample clock in the ADC tiles of the RFSoC, the Texas Instruments LMX2594 RF synthesizer \citep{LMX2594} was configured to generate a \SI{307.2}{\mega\hertz} reference, used by the ADC tile. This frequency is different from the \SI{491.52}{\mega\hertz} default reference clock provided in every CASPER image instance (\texttt{rfsoc4x2rfsoc4x2\_LMX\_REF\_245M76\_OUT\_491M52.txt} file), but due to harmonics of this clock appearing after channelization, it was changed to \SI{307.2}{\mega\hertz} so that the spurious tone falls exactly on an FFT bin, simplifying its removal in later stages.
+
+\begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth]{../figures/quadrature_sampling_rfdc.pdf}
     \caption[Illustration of the frequency-domain behavior of the signal across processing stages done by the RFDC]{Illustration of the frequency-domain behavior of the signal across processing stages done by the RFDC. The top panel shows the original analog signal obtained through FDM (with each rectangle representing an antenna signal), occupying the first Nyquist zone between $0$ and $\nu_s/2$. The second panel corresponds to the digitized signal, where aliasing replicas appear both in the negative Nyquist zone ($-\nu_s/2$ to $0$) and in the second Nyquist zone ($\nu_s/2$ to $\nu_s$), as expected from sampling. The third panel illustrates the effect of mixing with a NCO at $-\nu_s/4$ (see Figure \ref{fig:quadrature_sampling}), which shifts the spectrum and redistributes its content symmetrically across the Nyquist regions. The bottom panel shows the result after decimation by a factor of two, where the spectrum is compressed into half the bandwidth, now spanning from $-\nu_s/4$ to $+\nu_s/4$.}
     \label{fig:quadrature_sampling_rfdc}
 \end{figure}
 
-
-
-Since the system must simultaneously digitize 32 antennas, with 8 signals multiplexed per ADC, all converters available in the RFSoC 4x2 are used. In particular, the dual tiles 224 and 226 were enabled and configured for quadrature sampling (see Figure \ref{fig:rfsoc_tiles} for tile organization of ADCs). Table \ref{tab:rfdc_config} summarizes the configuration parameters for each ADC.
-
-
 \begin{table}[t]
 \centering
+\caption{Configuration parameters of the RFSoC 4x2 RFDC ADC dual tiles (224 and 226).}
 \begin{tabular}{lc}
 \toprule
-Parameter & Value \\
+\textbf{Parameter} & \textbf{Value} \\
 \midrule
 Sampling rate $\nu_s$ & 4915.2 MSPS \\
 Reference clock & 307.2 MHz \\
@@ -134,28 +132,64 @@ Nyquist Zone & Zone 1 \\
 Calibration Mode & Mode 2 \\
 \bottomrule
 \end{tabular}
-\caption{Configuration parameters of the RFSoC 4x2 RFDC ADC dual tiles (224 and 226).}
 \label{tab:rfdc_config}
 \end{table}
 
+Since for dual-tile platforms (such as the RFSoC 4x2) in I/Q digital output modes the in-phase and quadrature data are produced from different ports, before channelization the data stream is reordered using the CASPER \texttt{munge} block. This ensures the stream is formatted as interleaved complex pairs starting from the oldest sample $[I_0, Q_0, I_1, Q_1, \dots, I_7, Q_7]$, compatible with the specific input requirements of the downstream FFT blocks. The real ($I$) and imaginary ($Q$) parts of the 8 parallel samples coming from the output of the RFDC are first combined with a \texttt{bus\_create} block. The resulting concatenated input bus is organized with all in-phase samples first (from newest $I_7$ to oldest $I_0$), followed by all quadrature samples (from newest $Q_7$ to oldest $Q_0$). To achieve the desired temporal ordering (oldest samples in MSB), the \texttt{munge} block is configured with the division packing order \texttt{[7, 15, 6, 14, 5, 13, 4, 12, 3, 11, 2, 10, 1, 9, 0, 8]}. As detailed in Table~\ref{tab:munge_reorder}, this configuration picks the specific slices from the input bus to construct an output where the time index increases from MSB to LSB.
 
-With these configurations, the output data rate is \SI{256}{bits} per clock cycle, corresponding to 8 complex I/Q samples of \SI{32}{bits} each (16 + 16 signed), giving a required AXI4-Stream clock frequency of \SI{307.2}{\mega\hertz} to sustain the \SI{2457.6}{\mega\hertz} bandwidth. In order to produce this sample clock in the ADC tiles of the RFSoC, the Texas Instruments LMX2594 RF synthesizer \citep{LMX2594} was configured to generate a \SI{307.2}{\mega\hertz} reference, used by the ADC tile. This frequency is different from the \SI{491.52}{\mega\hertz} default reference clock provided in every CASPER image instance (\texttt{rfsoc4x2rfsoc4x2\_LMX\_REF\_245M76\_OUT\_491M52.txt} file), but due to harmonics of this clock appearing after channelization, it was changed to \SI{307.2}{\mega\hertz} so that the spurious tone falls exactly on an FFT bin, simplifying its removal in later stages.
-
-Since for dual-tile platforms in I/Q digital output modes the in-phase and quadrature data are produced from different ports, before channelization the data stream is reordered using the CASPER \texttt{munge} block into the format $[I_1, Q_1, I_2, Q_2, \dots]$, ensuring compatibility with downstream processing blocks.
+\begin{table}[t]
+\centering
+\caption[Munge reorder configuration for 8 samples per clock]{Munge reorder configuration for 8 samples per clock cycle. The input bus layout (left) consists of concatenated $I$ samples followed by $Q$ samples. The munge block uses the specified Reorder Indices to construct the output data sequence (right), arranging the samples from oldest ($t=0$) at the MSB to newest ($t=7$) at the LSB.}
+\label{tab:munge_reorder}
+\renewcommand{\arraystretch}{1.2}
+\setlength{\tabcolsep}{12pt}
+\begin{tabular}{c c | c | c c}
+\toprule
+\multicolumn{2}{c|}{\textbf{Input bus layout}} & \textbf{Munge} & \multicolumn{2}{c}{\textbf{Output data Sequence}} \\
+\multicolumn{2}{c|}{(Concatenated I then Q)} & \textbf{Reorder index} & \multicolumn{2}{c}{(Interleaved I/Q)} \\
+\textbf{Ref} & \textbf{Input slice} & \textbf{(Selects input)} & \textbf{Mapped slice} & \textbf{Sample time} \\
+\midrule
+MSB & $I_7$ (Index 0) & \textbf{7} & $I_0$ & $t=0$ (Oldest) \\
+& $I_6$ (Index 1) & \textbf{15} & $Q_0$ & \\
+\cmidrule{3-5}
+& $I_5$ (Index 2) & \textbf{6} & $I_1$ & $t=1$ \\
+& $I_4$ (Index 3) & \textbf{14} & $Q_1$ & \\
+\cmidrule{3-5}
+& $I_3$ (Index 4) & \textbf{5} & $I_2$ & $t=2$ \\
+& $I_2$ (Index 5) & \textbf{13} & $Q_2$ & \\
+\cmidrule{3-5}
+& $I_1$ (Index 6) & \textbf{4} & $I_3$ & $t=3$ \\
+& $I_0$ (Index 7) & \textbf{12} & $Q_3$ & \\
+\cmidrule{1-5}
+& $Q_7$ (Index 8) & \textbf{3} & $I_4$ & $t=4$ \\
+& $Q_6$ (Index 9) & \textbf{11} & $Q_4$ & \\
+\cmidrule{3-5}
+& $Q_5$ (Index 10) & \textbf{2} & $I_5$ & $t=5$ \\
+& $Q_4$ (Index 11) & \textbf{10} & $Q_5$ & \\
+\cmidrule{3-5}
+& $Q_3$ (Index 12) & \textbf{1} & $I_6$ & $t=6$ \\
+& $Q_2$ (Index 13) & \textbf{9} & $Q_6$ & \\
+\cmidrule{3-5}
+& $Q_1$ (Index 14) & \textbf{0} & $I_7$ & $t=7$ (Newest) \\
+LSB & $Q_0$ (Index 15) & \textbf{8} & $Q_7$ & \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
 \section{LO generation}
 
-The \glspl{lo} are a key element in the \gls{fdm} architecture, as they enable the upconversion of the 300--500 MHz signals from the antennas into higher frequency bands ranging from 300 to $\sim 2366$ MHz. Since the RFSoC 4x2 incorporates high-speed \glspl{dac}, these were used to synthesize the \glspl{lo} digitally and output them directly in the analog domain. This choice avoids the need for external frequency synthesizers, while providing high flexibility and real-time configurability.
+The \glspl{lo} are a key element in the \gls{fdm} architecture, as they enable the upconversion of the \qtyrange{300}{500}{\mega\hertz} signals from the antennas into higher frequency bands ranging from 300 to $\sim 2366$ MHz. Since the RFSoC 4x2 incorporates high-speed \glspl{dac}, these were used to synthesize the \glspl{lo} digitally and output them directly in the analog domain. This choice avoids the need for external frequency synthesizers, while providing high flexibility and real-time configurability.
 
 The system requires four independent \glspl{lo} at \SIlist{1065.6;1332;1600.8;1864.8}{\mega\hertz}, in phase. The rationale behind these values will be discussed later in the channelization section (\S\ref{sec:channelization}), but they were chosen to satisfy the bandwidth and frequency placement requirements of the instrument.
 
 The \gls{dac} tiles were configured similarly to the \gls{adc} tiles, but operating in real-to-real mode without interpolation. Each tile outputs 16 parallel 16-bit samples per clock cycle, with a sampling rate of \SI{4915.2}{\mega\hertz}, therefore the AXI4-Stream clock frequency (\SI{307.2}{\mega\hertz}, FPGA clock frequency) is also set to \SI{307.2}{\mega\hertz} to match the ADC sample clock. The DAC output is thus a real-valued waveform with a Nyquist frequency of \SI{2457.6}{\mega\hertz}, which is sufficient to cover the highest required \gls{lo} frequency of \SI{1864.8}{\mega\hertz}. The configuration parameters of the DAC tiles are summarized in Table~\ref{tab:dac_config}.
 \begin{table}[t]
 \centering
+\caption{Configuration parameters of the RFSoC 4x2 RFDC DAC tiles (228 and 230).}
 \begin{tabular}{lc}
 \toprule
-Parameter & Value \\
+\textbf{Parameter} & \textbf{Value} \\
 \midrule
 Sampling rate $\nu_s$ & 4915.2 MSPS \\
 Reference clock & 307.2 MHz \\
@@ -166,14 +200,13 @@ Nyquist zone & Zone 1 \\
 Calibration mode & Mode 2 \\
 \bottomrule
 \end{tabular}
-\caption{Configuration parameters of the RFSoC 4x2 RFDC DAC tiles (228 and 230).}
 \label{tab:dac_config}
 \end{table}
 
 
 The generation of the \glspl{lo} is based on the digital synthesis of four sinusoidal tones per \gls{dac}. Each tone has programmable frequency and amplitude, and all are summed digitally to form a composite signal. At the analog stage, external bandpass filters are used to isolate the desired frequency component, ensuring that each mixer receives its corresponding \gls{lo}.
 
-The tones are synthesized using \glspl{lut} stored in \gls{bram}, which contain the sampled values of a sine function. These are addressed by phase accumulators operating at the system clock, where the phase increment determines the output frequency. Amplitude control is achieved by applying digital attenuations to the waveform samples before summation. Both frequency and attenuation parameters are mapped to software-controlled registers, enabling their adjustment in real time. Credits to Frederik Brecht from University of Toronto for the original tone generator design, later optimized and adapted by the author.
+The tones are synthesized using \glspl{lut} stored in \gls{bram}, which contain the sampled values of a sine function. These are addressed by phase accumulators operating at the system clock, where the phase increment determines the output frequency. Amplitude control is achieved by applying digital attenuations to the waveform samples before summation. Both frequency and attenuation parameters are mapped to software-controlled registers, enabling their adjustment in real-time. Credits to Frederik Brecht from University of Toronto for the original tone generator design, later optimized and adapted by the author.
 
 Figure~\ref{fig:lo_generation} illustrates the architecture of the \gls{lo} generation block. Both DAC tiles contain a sum of four tones. The outputs are connected to the appropriate pins on the RFSoC board (DAC A and DAC B), which are routed to SMA connectors for external filtering and distribution to the FDM boards.
 
@@ -276,7 +309,7 @@ $\displaystyle \Sigma $
 
 \end{tikzpicture}
 
-\caption[Architecture of the LO generation block]{Architecture of the \gls{lo} generation block. Four configurable registers set the frequencies of the \glspl{lo} ($\nu_{\text{LO1}}$, $\nu_{\text{LO2}}$, $\nu_{\text{LO3}}$, $\nu_{\text{LO4}}$). Each register feeds a \gls{bram} containing a sine \gls{lut}, which outputs the corresponding waveform. The outputs of the four \glspl{bram} are summed and sent to \gls{dac} tiles 228 and 230. Each \gls{dac} tile produces one independent output, each containing a sum of four tones. The outputs are connected to the appropriate pins on the RFSoC board, which are routed to SMA connectors for external filtering and distribution to the FDM boards.}
+\caption[Architecture of the LO generation block]{Architecture of the \gls{lo} generation block. Four configurable registers set the frequencies of the \glspl{lo} ($\nu_{\text{LO1}}$, $\nu_{\text{LO2}}$, $\nu_{\text{LO3}}$, $\nu_{\text{LO4}}$). Each register feeds a \gls{bram} containing a sine \gls{lut}, which outputs the corresponding waveform. The outputs of the \gls{bram} are summed and sent to \gls{dac} tiles 228 and 230. Each \gls{dac} tile produces one independent output, each containing a sum of four tones. The outputs are connected to the appropriate pins on the RFSoC board, which are routed to SMA connectors for external filtering and distribution to the FDM boards.}
 \label{fig:lo_generation}
 \end{figure}
 
@@ -285,45 +318,48 @@ $\displaystyle \Sigma $
 \section{Channelization}
 \label{sec:channelization}
 
-Channelization is performed by a 4-tap PFB (see \S\ref{sec:pfbs}) with convergent rounding and 18-bit coefficients. The output format of the PFB is set to 18 + 18 bits (real and imaginary parts), following CASPER design recommendations to balance precision and resource usage. 
+Channelization is performed by a 4-tap PFB (see \S\ref{sec:pfbs}) with a Hamming window (see Table \ref{tab:window_functions}), convergent rounding and 18-bit coefficients. The output format of the PFB is set to 18 + 18 bits (real and imaginary parts), following CASPER design recommendations to balance precision and resource usage. 
 
+The filtered samples are then passed to an \num{8192}-point radix-2 pipeline FFT, which operates directly on the complex input. The FFT is configured with automatic bit growth: at each stage of the 13-stage radix-2 pipeline, the word length of every sample increases by 1 bit to accommodate intermediate dynamic range expansion. Consequently, the final output has a format of $31 + 31$ bits, which is subsequently re-quantized according to the strategy described in \S\ref{sec:re-quantization}. 
 
-The filtered samples are then passed to an $8192$-point radix-2 pipeline FFT, which operates directly on the complex input.  The FFT is configured with automatic bit growth: at each stage of the 13-stage radix-2 pipeline, the word length increases by 1 bit to accommodate intermediate dynamic range expansion. Consequently, the final output has a format of $31 + 31$ bits, which is subsequently re-quantized according to the strategy described in \S\ref{sec:re-quantization}. As there are 13 stages the total number of channels is $2^{13} = 8192$, resulting in a channel width of \SI{300}{\kilo\hertz} over the \SI{2457.6}{\mega\hertz} bandwidth. The FFT is clocked at \SI{307.2}{\mega\hertz} with 8 samples per clock cycle, producing a new spectrum every \SI{3.33}{\micro\second}, and unlike real-input FFT architectures, no channels are discarded. 
-Key specifications of the F-engine design are summarized in Table~\ref{tab:f_engine_metrics}.
+The FFT length of $N=8192$ is determined by the number of pipeline stages: since $N=2^{13}$, a 13-stage radix-2 architecture is employed. The resulting channel width is computed from the effective bandwidth and the number of channels:
+\begin{equation}
+	\Delta\nu_\text{ch} = \frac{\Delta\nu_\text{FFT}}{N} = \frac{\SI{2457.6}{\mega\hertz}}{8192} = \SI{300}{\kilo\hertz},
+\end{equation}
+where $\Delta\nu_\text{FFT}=\SI{2457.6}{\mega\hertz}$ is the usable baseband bandwidth after decimation (see \S\ref{sec:digitization}). The FFT is clocked at \SI{307.2}{\mega\hertz} with 8 samples per clock cycle, producing a new spectrum every:
+\begin{equation}
+	t_s=\frac{N}{\nu_\text{clk} \times N_\text{parallel}}=\frac{8192}{\SI{307.2}{\mega\hertz}\times8}=3.\overline{3}\,\unit{\micro\second},
+\end{equation}
+where the overline denotes a repeating decimal. Unlike real-input FFT architectures, no channels are discarded as the complex I/Q input naturally produces a full-spectrum output (see \S\ref{sec:dft}). Key specifications of the F-engine design are summarized in Table~\ref{tab:f_engine_metrics}.
 
 \begin{table}[t]
 \centering
 \caption[F-engine specifications]{Key specifications of the F-engine design.}
-\begin{tabular}{l c}
-\hline
-Metric & Value \\
-\hline
-Frequency channels & $8192$ \\
-Effective bandwidth & \SI{2.4576}{\giga\hertz} \\
-Channel width & \SI{300}{\kilo\hertz} \\
-Frame time resolution & \SI{3.33}{\micro\second}  \\
-\hline
+\begin{tabular}{l l}
+\toprule
+\textbf{Metric} & \textbf{Value} \\
+\midrule
+FFT length & $N=8192$ \\
+Effective bandwidth & $\Delta\nu_\text{FFT}=\SI{2457.6}{\mega\hertz}$ \\
+Channel width & $\Delta\nu_\text{ch}=\SI{300}{\kilo\hertz}$ \\
+Frame time resolution & $t_s=3.\overline{3}\,\unit{\micro\second}$ \\
+\bottomrule
 \end{tabular}
 \label{tab:f_engine_metrics}
 \end{table}
 
-The \SI{300}{\kilo\hertz} channel width provides the spectral resolution required for the intended scientific applications and mitigates intra channel dispersion smearing, which is more acute in lower frequencies where the dispersion is greater. This dispersion time $t_{\text{DM}}$ across a channel of width $\Delta \nu_\text{ch}$ centered at frequency $\nu$ is given by \citep{LiamConnor2019}
-\begin{equation}
-t_{\text{DM}} = 8.3 \, \text{DM} \, \left( \frac{\Delta \nu_\text{ch}}{\SI{1}{\mega\hertz}} \right) \left( \frac{\nu}{\SI{1}{\giga\hertz}} \right)^{-3} \, \si{\micro\second}.
-\end{equation}
+The \SI{300}{\kilo\hertz} channel width provides the spectral resolution required for the intended scientific applications and mitigates intra-channel dispersion smearing (see \S\ref{sec:propagation_effects}). For a maximum expected \gls{dm} of $\sim\SI{800}{\parsec \per \centi \meter \cubed}$ at the lowest frequency of \SI{300}{\mega\hertz} and after upchannelization to $\sim16\,\text{k}$ channels ($\Delta \nu_\text{ch} \approx \SI{12.3}{\kilo\hertz}$), the intra-channel dispersion smearing using Eq.\ \ref{eq:intra_channel_smearing} is approximately \SI{3}{\milli\second}, which is acceptable for the target science cases.
 
-Therefore, for a maximum expected \gls{dm} of $\sim\SI{800}{\parsec \per \centi \meter \cubed}$ at the lowest frequency of \SI{300}{\mega\hertz} and after upchannelization of $\sim16$k channels ($\Delta \nu_\text{ch} = \SI{12.3}{\kilo\hertz}$), the intra-channel dispersion smearing is approximately \SI{3}{\milli\second}, which is acceptable for the target science cases.
+The $3.\overline{3}\,\unit{\micro\second}$ frame time resolution enables high-cadence, low-latency processing, facilitating real-time calibration and correlation of antenna signals for each of the eight FDM chains.
 
-In addition, the \SI{3.33}{\micro\second} frame time resolution enables high-cadence, low-latency processing, facilitating calibration and correlation of antenna signals for each of the eight FDM chains. 
-
-The full band and corresponding FFT bins for each chain (see Table~\ref{tab:fdm_lo_tones}) are listed in Table~\ref{tab:fdm_chains}, resulting in \num{672} channels per chain. The chain and \glspl{lo} frequencies were chosen so that each chain’s lower and upper FFT-bin indices are multiples of eight. This matches the FFT’s 8-samples-per-clock output vector and simplifies downstream extraction and packetization. Due to the FDM mixing scheme, chains 1--3 appear with reversed frequency sense and are therefore flipped in frequency.
+The full band and corresponding FFT bins for each FDM chain (see Table~\ref{tab:fdm_lo_tones}) are listed in Table~\ref{tab:fdm_chains}, resulting in \num{672} channels per chain. The chain and \glspl{lo} frequencies were chosen so that each chain’s lower and upper FFT-bin indices are multiples of eight. This matches the FFT’s 8-samples-per-clock output vector and simplifies downstream extraction and packetization. Due to the FDM mixing scheme, chains 1--3 appear with reversed frequency sense and are therefore flipped and conjugated in the frequency domain after the FFT stage.
 
 \begin{table}[t]
 \centering
-\caption[FDM chains and corresponding FFT bins]{FDM chains and corresponding FFT bins. Each of the 8 FDM chains covers a \SI{201.6}{\mega\hertz} band, with a $\sim\SI{66}{\mega\hertz}$ guard region between adjacent chains.}
+\caption[FDM chains and corresponding FFT bins]{FDM chains and corresponding FFT bins. Each chain covers a \SI{201.6}{\mega\hertz} band, corresponding to \num{672} FFT bins of \SI{300}{\kilo\hertz} width. Chains 1--3 are flipped/conjugated in frequency due to the mixing scheme (see \S\ref{sec:fdm_board}).}
 \begin{tabular}{cccc}
 \toprule
-Chain $\Delta\nu_i$ & Frequency range (MHz) & Bin range & Flipped \\
+\textbf{Chain $\Delta\nu_i$} & \textbf{Frequency range (\unit{\mega\hertz})} & \textbf{FFT bin range} & \textbf{Flipped/conjugated} \\
 \midrule
 0 & 300--501.6 & 1000--1672 & No \\
 1 & 564--765.6 & 1880--2552 & Yes \\
@@ -341,16 +377,16 @@ Chain $\Delta\nu_i$ & Frequency range (MHz) & Bin range & Flipped \\
 \section{Re-quantization and calibration}
 \label{sec:re-quantization}
 
-The FFT output produces complex samples with a precision of 31+31 bits per channel, which must be reduced before transmission to the X-engine. To achieve this, the system applies a re-quantization step that truncates the data stream to $4+4$ bits. Although this quantization inevitably leads to some information loss, in practice the effect is small for typical radio astronomy signals and is compensated by the advantages of reducing the data volume. The lower bit depth enables higher bandwidth coverage and efficient real-time processing, while keeping quantization-induced biases within negligible levels.
+The FFT output produces complex samples with a precision of $31+31$ bits per channel, which must be reduced before transmission to the X-engine. To achieve this, the system applies a re-quantization step that truncates the data stream to $4+4$ bits. Although this quantization inevitably leads to some information loss, in practice the effect is small for typical radio astronomy signals and is compensated by the advantages of reducing the data volume. The lower bit depth enables higher bandwidth coverage and efficient real-time processing, while keeping quantization-induced biases within negligible levels.
 
 Nevertheless, this introduces systematic effects in both amplitude and phase of the measured correlations, which in turn impact calibration accuracy and the fidelity of the visibilities. To minimize these effects, the system applies a digital gain and scaling stage prior to truncation. The calibration aims to adjust each frequency channel such that the signal level is close to 1-bit \gls{rms}. In this regime, the correlation between the signal and the quantization error becomes vanishingly small, the increase in output variance is only about 4\%, and the resulting bias in correlation measurements falls below $10^{-6}$ in magnitude and $10^{-11}$ degrees in phase (see \citealt{menaparra2018quantizationbiasdigitalcorrelators} for a detailed analysis of quantization effects in radio interferometry).
 
-The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the 31+31 bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a $48+48$ bit word\footnote{The additional bit comes from the signed extension of the gain value to 17 bits.}, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even following the UG901 guidelines \citep{Xilinx_UG901_2025} for hardware efficiency coding, yielding a compact $4+4$ bit representation per channel. A clipping flag is raised whenever a value with integer part equal to 0111 (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
+The calibration process operates in three steps, as illustrated in Figure~\ref{fig:quantizer_architecture}. First, the $31+31$ bit FFT output of each channel is multiplied by a 16-bit programmable gain factor, applied identically to the real and imaginary components. This stage allows fine adjustment of the signal amplitude per channel. The result is a $48+48$ bit word\footnote{The additional bit comes from the signed extension of the gain value to 17 bits.}, which is then shifted left by a configurable number of bits (equivalent to multiplying by powers of two). This left shift is applied uniformly across all frequency channels and serves to optimize the dynamic range before truncation. Finally, the system selects the 4 most significant bits of the real and imaginary components and applies convergent rounding-to-even following the UG901 guidelines \citep{Xilinx_UG901_2025} for hardware efficiency coding, yielding a compact $4+4$ bit representation per channel. A clipping flag is raised whenever a value with integer part equal to \texttt{0111} (decimal 7) and a non-zero fractional component reaches the rounding stage\footnote{The possible range of values for a 4 bit signed number is $[-8,7]$, hence the need for clipping.}, providing diagnostics for potential saturation.
 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=0.7\linewidth]{quantizer_diag.png}
-	\caption[Schematic of the quantization process]{Schematic of the quantization process. The 31+31 bit FFT output is first multiplied by a 16-bit programmable gain factor $g$, resulting in a $48+48$ bit word. This is then shifted left by a configurable number $k$ (up to $2^5=32$ bits positions) to optimize dynamic range. Finally, the most significant 4 bits of the real and imaginary components are selected, with convergent rounding-to-even applied to yield a compact $4+4$ bit representation per channel. A clipping flag is raised if saturation occurs during rounding.}
+	\caption[Schematic of the quantization process]{Schematic of the quantization process. The $31+31$ bit FFT output is first multiplied by a 16-bit programmable gain factor $g$, resulting in a $48+48$ bit word. This is then shifted left by a configurable number $k$ (up to $2^5=32$ bits positions) to optimize dynamic range. Finally, the most significant 4 bits of the real and imaginary components are selected, with convergent rounding-to-even applied to yield a compact $4+4$ bit representation per channel. A clipping flag is raised if saturation occurs during rounding.}
     \label{fig:quantizer_architecture}
 \end{figure}
 
@@ -361,106 +397,112 @@ The combination of the programmable per-channel gain and the global left shift d
 \label{sec:digital_gain_calibration}
 At each calibration iteration $m$, the system measures the average RMS magnitude of the channelized spectra across $N_{\mathrm{acc}}$ short integrations:
 \begin{equation}
-    P[k]^{(m)} = \sqrt{\frac{1}{N_{\mathrm{acc}}} \sum_{n=0}^{N_{\mathrm{acc}}-1} \norm{X[k, n]}^2},
+    \text{RMS}_k^{(m)} = \sqrt{\frac{1}{N_{\mathrm{acc}}} \sum_{n=0}^{N_{\mathrm{acc}}-1} \lVert X_{kn} \rVert^2},
 \end{equation}
-where $X[k, n]$ denotes the complex FFT output of frequency channel $k$ at the frame $n$. The integration length $N_{\mathrm{acc}}$ is chosen to have enough stability, \gls{snr} and calibration speed, typically set to $1000$ frames (approximately \SI{1}{\second} of data, given the $\sim\SI{10}{\milli\second}$ frame time resolution readout with \glspl{bram}).
+where $X_{kn}$ denotes the complex FFT output of frequency channel $k$ at frame $n$. The integration length $N_{\mathrm{acc}}$ is chosen to ensure sufficient SNR and stability, typically set to \num{300000} frames (\SI{1}{\second} of data).
 
-The algorithm compares each channel's measured RMS value $P[k]^{(m)}$ to the target RMS $P_\mathrm{t}$ (nominally $2$ quantization steps or 1-bit RMS). If the deviation exceeds a user-defined tolerance $\epsilon$, the digital gain coefficient $G[k]$ associated with that channel is incremented or decremented by a small step $\Delta G$ according to:
+From a control theory perspective, the calibration algorithm is implemented as a \emph{discrete-time integral (I) controller} operating on the gain magnitude \citep[see][Section~3.3]{franklin1998digital}. Unlike static proportional correction, an integral action is required to maintain a non-zero gain value when the error converges to zero. The deviation of the measured $\text{RMS}_k^{(m)}$ from the target $\text{RMS}_\mathrm{t}$ drives the accumulation of the control signal.
+
+To prevent steady-state limit cycles caused by the coarse integer quantization of the FPGA registers (actuator quantization), the system employs a \textit{software-based high-precision integrator}. The gain coefficients are maintained in software as floating-point variables $\tilde{g}_k$, updated via a multiplicative law:
 \begin{equation}
-    G[k]^{(m+1)} =
-    \begin{cases}
-        G[k]^{(m)} + \Delta G, & \text{if } P[k]^{(m)} < P_\mathrm{t} - \epsilon,\\
-        G[k]^{(m)} - \Delta G, & \text{if } P[k]^{(m)} > P_\mathrm{t} + \epsilon,\\
-        G[k]^{(m)}, & \text{otherwise.}
-    \end{cases}
+    \tilde{g}_k^{(m+1)} = \tilde{g}_k^{(m)} \cdot \left[ 1 + K \left( \frac{\text{RMS}_\mathrm{t}}{\text{RMS}_k^{(m)}} - 1 \right) \right].
 \end{equation}
-This rule ensures that channels with lower-than-desired RMS are amplified, while channels exceeding the target are attenuated. A global convergence condition is defined by the fraction of frequency channels satisfying:
+
+Here, $K$ represents the integral gain parameter (set to $0.5$). This value was tuned to provide an overdamped response, effectively acting as a low-pass filter that smooths out the stochastic variance inherent in the RMS estimation of RFI-like signals. The physical integer gain $g_k$ loaded into the FPGA is derived by quantizing the internal integrator state:
 \begin{equation}
-    \left| P[k]^{(m)} - P_\mathrm{t} \right| \le \epsilon.
-\end{equation}
-When more than $99\%$ of the active channels meet this criterion, the calibration is considered complete and the iterative process terminates early.
-
-In practice, the calibration operates only over active frequency bands defined by a binary mask that excludes out-of-chain channels (which are set to zero). This avoids biasing the gain statistics with noise-dominated regions where there is no antenna signal. The step size $\Delta G$ and the tolerance $\epsilon$ can be dynamically adjusted to switch between a coarse and a fine-tuning mode, typically halving $\epsilon$ and reducing $\Delta G$ during the latter to refine convergence around the optimal value.
-
-Once the iterative loop converges, the final per-channel gain vector $\mathbf{G} = [G[0], G[1], \dots, G[N-1]]^T$ is stored in a \texttt{.npy} file for subsequent use during system initialization.
-
-However, the raw per-channel gains obtained from the iterative calibration process can display unphysical fluctuations, often caused by measurement noise, RFI, or other systematic effects. To mitigate this, a smoothing step is applied to the gain vector $\mathbf{G}$ to enforce spectral continuity and suppress spurious variations. This is achieved by applying an iterative algorithm that combines polynomial fitting with Fourier-based filtering, as described in \citet{Hsyu2016}. The result is a set of per-channel gains that are smooth across frequency, effectively suppressing channel-to-channel noise while preserving genuine spectral features. It is important to clarify that this smoothing stage has not been implemented fully in the current firmware version, but is planned for future releases. Nevertheless, the existing calibration procedure already achieves satisfactory performance in practice.
-
-This digital gain calibration needs to be performed only once for each input and frequency channel under stable observing conditions. Updates may be required if instrumental responses drift significantly over time or if the RFI environment changes.
-
-\section{Data streaming and packetization}
-\label{sec:data_streaming}
-
-Following channelization, the spectral data must be efficiently transmitted to downstream processing systems. This section describes the architecture implemented to convert the narrow parallel output of the FFT into wide packets suitable for 100GbE transmission, while minimizing data loss and adapting to the bursty nature of the spectral output.
-
-\subsection{Data format and requirements}
-
-The data streaming implementation is designed to efficiently transmit only the relevant subset of the full \num{8192}-channel spectrum, thereby reducing the required data rate and optimizing downstream processing. Rather than sending all channels, the system selects 672 channels per antenna (corresponding to a complete FDM chain as defined in Table~\ref{tab:fdm_chains}) from each \SI{3.33}{\micro\second} spectrum frame (see Table \ref{tab:f_engine_metrics}). Channels outside the science bands, such as those in the 0--300~MHz region and the guard bands between FDM chains, are discarded. Therefore, for each ADC this results in \num{5376} transmitted channels per frame.
-
-Each FFT output delivers 8 parallel samples per clock cycle, with each sample represented as a complex number in a $4+4$ bit format after requantization (as described in \S\ref{sec:re-quantization}). This yields a per-cycle data width of:
-\begin{equation}
-\text{Word width} = 8~\text{samples} \times (4 + 4)~\text{bits/sample} = 64~\text{bits}
-\end{equation}
-At the system clock frequency of \SI{307.2}{\mega\hertz}, the peak input data rate is \SI{19.66}{\giga bit/s} per ADC. However, due to the bursty nature of the channelized data, where valid samples are produced in groups of 84 consecutive cycles per chain, separated by idle periods, the sustained average data rate is lower.
-
-The average data rate can be calculated as:
-\begin{equation}
-R = \frac{N_{\nu} \times N_a \times \text{Bits}_{\text{chan}}}{t_s}
-\end{equation}
-where $N_{\nu} = 672$ is the number of transmitted channels per antenna, $N_a = 32$ is the number of antennas, $\text{Bits}_{\text{chan}} = 8$ is the bit width per channel, and $t_s = \SI{3.33}{\micro\second}$ is the spectrum frame period. Therefore 
-\begin{equation}
-R_{\text{CHARTS-32}} = \frac{672 \times 32 \times 8~\text{bit}}{\SI{3.33}{\micro\second}} \approx \SI{51.61}{\giga\bit\per\second}
+    g_k^{(m+1)} = \text{clip}\left( \text{round}\left( \tilde{g}_k^{(m+1)} \right), 0, G_{\mathrm{max}} \right).
 \end{equation}
 
-To ensure contiguous transmission of FDM chains that span frame boundaries, a dedicated FFT reordering module is implemented in hardware. The FFT core outputs frequency bins sequentially over \num{1024} cycles per frame, with positive frequencies (bins \num{4096}--\num{8191}) followed by negative frequencies (bins \num{0}--\num{4095}). FDM's chain 3 span the boundary between these regions, resulting in discontinuous data if streamed directly.
-
-The reordering module employs a double-buffering scheme using two \glspl{bram} to guarantee zero data loss while performing the frequency-domain shift. While one buffer is written with incoming FFT data, the other is read out in reordered fashion. The readout sequence outputs negative frequencies first (cycle range \num{512}--\num{1023}), followed by positive frequencies (cycle range \num{0}--\num{511}), effectively performing an FFT shift that places the zero-frequency bin at the center of the output spectrum. This operation ensures all FDM chains are transmitted as contiguous blocks regardless of their position in the original FFT output.
-
-Figure~\ref{fig:fft_reordering} illustrates the architecture. A sync toggle signal controls the switching between write and read modes for each buffer, ensuring continuous operation without stalls or data loss.
+As described in \citet{franklin1998digital}, Chapter~10, separating the internal high-precision state from the quantized actuator allows the controller to accumulate fractional corrections over multiple cycles. This effectively eliminates the deadband effect where small errors would otherwise fail to trigger a bit-flip in the integer registers. Figure~\ref{fig:calibration_algorithm} illustrates the hybrid control loop architecture, combining software-based high-precision integration with hardware-applied quantized gains.
 
 \begin{figure}[t]
 	\centering
-	\begin{tikzpicture}
-	% Paths, nodes and wires:
-	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11, 10.5){} node[anchor=center, align=center, text width=1.718cm, inner sep=4pt] at (11, 10.5){\scriptsize sync\\toggle};
-	\draw (12, 8.25) -- (13, 8.25);
-	\draw[line width=1pt] (13, 9) -- (13, 5) -- (14.75, 6) -- (14.75, 8) -- cycle node[anchor=center] at (13.875, 7){$\text{READ} $};
-	\draw[line width=1pt] (9, 5) -- (9, 9) -- (7.25, 8) -- (7.25, 6) -- cycle node[anchor=center] at (8.125, 7){$\text{WRITE}$};
-	\node[shape=rectangle, minimum width=2.215cm, minimum height=0.715cm] at (5.125, 7){} node[anchor=center, align=center, text width=1.897cm, inner sep=5pt] at (5.125, 7){\scriptsize FFT output\\( $+\rightarrow-$ )};
-	\draw[-latex] (6.25, 7) -- (7.25, 7);
-	\node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 8.625){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 8.625){\tiny $+$ ( $0\rightarrow 511$ )};
-	\node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 7.875){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 7.875){\tiny $-$ ( $512\rightarrow 1023$ )};
-	\node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 5.375){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 5.375){\tiny $-$ ( $512\rightarrow 1023$ )};
-	\node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 6.125){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 6.125){\tiny $+$ ( $0\rightarrow 511$ )};
-	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11, 6.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (11, 6.75){\scriptsize BRAM B};
-	\node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11, 9.25){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (11, 9.25){\scriptsize BRAM A};
-	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (8.25, 10.5) -| (8.125, 8.5);
-	\draw[dash pattern={on 1.6pt off 1.6pt}] (8.25, 10.5) -- (10.5, 10.5);
-	\draw[dash pattern={on 1.6pt off 1.6pt}] (11.5, 10.5) -- (13.75, 10.5);
-	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (13.75, 10.5) -| (13.875, 8.5);
-	\draw (12, 5.75) -- (13, 5.75);
-	\draw (9, 8.25) -- (10, 8.25);
-	\draw (9, 5.75) -- (10, 5.75);
-	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (17, 7){} node[anchor=center, align=center, text width=2.147cm, inner sep=5pt] at (17, 7){\scriptsize FFT reordered\\( $-\rightarrow+$ )};
-	\draw[-latex] (14.75, 7) -- (15.75, 7);
-\end{tikzpicture}
-	\caption[FFT reordering architecture]{FFT reordering architecture using double-buffered BRAMs. Incoming FFT output is written into one BRAM (WRITE) while the other BRAM is read out in a reordered fashion (READ). The readout sequence outputs negative frequencies first (cycle range 512--1023), followed by positive frequencies (cycle range 0--511), ensuring contiguous transmission of FDM chains that span the frame boundary. A sync toggle signal controls the switching between the two BRAMs for reading and writing.}
-	\label{fig:fft_reordering}
+	\includegraphics[width=\textwidth]{gains_cal_fig/cal_algorithm.pdf}
+	\caption[Block diagram of the hybrid gain control loop.]{Block diagram of the hybrid gain control loop. The software domain maintains a floating-point state $\tilde{g}_k$ acting as a virtual integrator to accumulate fractional corrections, while the hardware domain applies the quantized integer gain $g_k$. The loop gain $K$ dampens the stochastic measurement noise.}
+	\label{fig:calibration_algorithm}
 \end{figure}
 
-After reordering, the timing of valid data transmission for each FDM chain within the 1024-cycle FFT output frame is summarized in Table~\ref{tab:streaming_bands}. Each chain's data is transmitted over 84 consecutive cycles, corresponding to its 672 frequency channels, with idle periods in between.
+In practice, the calibration operates only over active frequency bands defined by a binary mask, excluding out-of-chain channels to avoid noise bias. By using a proportional control law, the step size dynamically scales with the error magnitude, taking larger steps when far from the target and finer steps near convergence. This approach significantly reduces the number of iterations required to reach the desired calibration state compared to fixed-step methods.
+
+A global convergence condition is defined by the fraction of active frequency channels satisfying:
+\begin{equation}
+    \left| \text{RMS}_k^{(m)} - \text{RMS}_\mathrm{t} \right| \le \epsilon, 
+\end{equation}
+where $\epsilon$ is a small tolerance threshold (typically set to $0.1$ units RMS). When more than $99\%$ of the active channels meet this criterion, the calibration is considered complete. Once the iterative loop converges, the final per-channel gain vector:
+\begin{equation}
+\mathbf{g} = 
+\begin{bmatrix}
+g_0 \\
+g_1 \\
+\vdots \\
+g_{N-1}
+\end{bmatrix},
+\end{equation}
+is stored in a \texttt{.npy} file for subsequent use during system initialization.
+
+However, the raw per-channel gains obtained from the iterative calibration process can display unphysical fluctuations, often caused by measurement noise, RFI, or other systematic effects. To mitigate this, a smoothing step is applied to the gain vector $\mathbf{g}$ to enforce spectral continuity and suppress spurious variations. This is achieved by applying an iterative algorithm that combines polynomial fitting with Fourier-based filtering, as described in \citet{Hsyu2016}. The result is a set of per-channel gains that are smooth across frequency, effectively suppressing channel-to-channel noise while preserving genuine spectral features. It is important to clarify that this smoothing stage has not been implemented fully in the current firmware version, but is planned for future releases. Nevertheless, the existing calibration procedure already achieves satisfactory performance in practice.
+
+This digital gain calibration needs to be performed only once for each input and frequency channel under stable observing conditions. Updates may be required if instrumental responses drift significantly over time or if the RFI environment changes.
+
+\section{Data reorder}
+Following the FFT and re-quantization stages, the data streams from all 32 antennas must be synchronized, aggregated, and formatted for transmission. This process involves buffering to align the FDM chains, correcting spectral inversions, and performing a logical transposition (corner turn) to organize the data by frequency channel.
+
+\subsection{Data format and throughput}
+The data streaming implementation selects a specific subset of the full \num{8192}-channel spectrum to optimize the output data rate. Rather than transmitting the full bandwidth, the system selects \num{672} channels per antenna (corresponding to the FDM chains defined in Table~\ref{tab:fdm_chains}) from each $3.\overline{3}\,\unit{\micro\second}$ spectrum frame. Channels outside the science bands, such as the \qtyrange{0}{300}{\mega\hertz} region and guard bands between FDM chains, are discarded. With 4 ADCs per board and 32 antennas in total, this results in \num{21504} transmitted channels per frame. 
+
+At the hardware level, the system operates at a clock frequency of \SI{307.2}{\mega\hertz}, with each FFT core outputting 8 parallel samples per clock cycle. After the re-quantization stage described in \S\ref{sec:re-quantization}, each sample is represented as a complex number in $4+4$ bit format, resulting in 8 bits per sample. This configuration yields a localized data width of 64 bits per cycle per ADC ($8 \text{ samples} \times 8 \text{ bits/sample}$). With four ADCs operating simultaneously, the theoretical peak aggregate throughput reaches $4\times\SI{19.66}{\giga\bit\per\second}=\SI{78.64}{\giga\bit\per\second}$.
+
+In practice, the actual sustained data rate is lower because valid samples are produced only during bursts corresponding to the active FDM chains, rather than continuously across all \num{8192} FFT bins. The system transmits \num{21504} active channels (\num{672} channels per antenna $\times$ 32 antennas), each carrying 8 bits of data, every $3.\overline{3}\,\unit{\micro\second}$. This results in an average sustained data rate of approximately \SI{51.6}{\giga\bit\per\second} for the entire board (see Eq.\ \ref{eq:board_data_rate}).
+
+\subsection{FFT shift}
+The FFT core outputs frequency bins sequentially over 1024 cycles per frame, following the standard FFT convention where bins are numbered \qtyrange{0}{8191}{}. Due to the quadrature sampling employed, bin 0 represents DC (\SI{0}{\mega\hertz}) and bin 8191 represents \SI{2457.3}{\mega\hertz}. However, the internal FFT implementation outputs these bins in a wrapped order: first the upper half of the spectrum (bins \qtyrange{4096}{8191}{}, corresponding to \qtyrange{1228.8}{2457.3}{\mega\hertz}) followed by the lower half (bins \qtyrange{0}{4095}{}, corresponding to \qtyrange{0}{1228.5}{\mega\hertz}). This ordering creates a problem for contiguous transmission of FDM chains: certain chains span the boundary between these two segments, resulting in their data being split across non-adjacent portions of the output stream. Most notably, FDM chain 3, which covers \qtyrange{1099.2}{1300.8}{\mega\hertz}, has its upper portion (bins \qtyrange{4096}{4336}{}) appearing at the beginning of the upper frequency segment, while its lower portion (bins \qtyrange{3664}{4095}{}) appears at the end of the lower frequency segment. To ensure that all FDM chains can be transmitted as contiguous blocks without fragmentation, a dedicated FFT reordering module is implemented in hardware to rearrange the output spectrum into ascending frequency order (bins \qtyrange{0}{8191}{}).
+
+The reordering module employs a double-buffering scheme using two \glspl{bram} to guarantee zero data loss while performing the frequency-domain shift. While one buffer is written with incoming FFT data in the wrapped order (bins \qtyrange{4096}{8191}{} followed by bins \qtyrange{0}{4095}{}), the other is read out in ascending frequency order (bins \qtyrange{0}{8191}{}). This operation effectively performs an FFT shift that ensures all FDM chains are transmitted as contiguous blocks without fragmentation. A sync toggle signal controls the switching between write and read modes for each buffer, ensuring continuous operation without stalls or data loss. Figure~\ref{fig:fft_reordering} illustrates this architecture.
+
+\begin{figure}[t]
+    \centering
+    \begin{tikzpicture}
+    % Paths, nodes and wires:
+    \node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11, 10.5){} node[anchor=center, align=center, text width=1.718cm, inner sep=4pt] at (11, 10.5){\scriptsize sync\\toggle};
+    \draw (12, 8.25) -- (13, 8.25);
+    \draw[line width=1pt] (13, 9) -- (13, 5) -- (14.75, 6) -- (14.75, 8) -- cycle node[anchor=center] at (13.875, 7){$\text{READ} $};
+    \draw[line width=1pt] (9, 5) -- (9, 9) -- (7.25, 8) -- (7.25, 6) -- cycle node[anchor=center] at (8.125, 7){$\text{WRITE}$};
+    \node[shape=rectangle, minimum width=2.215cm, minimum height=0.715cm] at (5.125, 7){} node[anchor=center, align=center, text width=1.897cm, inner sep=5pt] at (5.125, 7){\scriptsize FFT output\\( $+\rightarrow-$ )};
+    \draw[-latex] (6.25, 7) -- (7.25, 7);
+    \node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 8.625){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 8.625){\tiny $+$ ( $0\rightarrow 511$ )};
+    \node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 7.875){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 7.875){\tiny $-$ ( $512\rightarrow 1023$ )};
+    \node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 5.375){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 5.375){\tiny $-$ ( $512\rightarrow 1023$ )};
+    \node[shape=rectangle, draw, line width=0.75pt, minimum width=2.474cm, minimum height=0.724cm] at (11, 6.125){} node[anchor=center, align=center, text width=2.165cm, inner sep=4.75pt] at (11, 6.125){\tiny $+$ ( $0\rightarrow 511$ )};
+    \node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11, 6.75){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (11, 6.75){\scriptsize BRAM B};
+    \node[shape=rectangle, minimum width=1.965cm, minimum height=0.715cm] at (11, 9.25){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (11, 9.25){\scriptsize BRAM A};
+    \draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (8.25, 10.5) -| (8.125, 8.5);
+    \draw[dash pattern={on 1.6pt off 1.6pt}] (8.25, 10.5) -- (10.5, 10.5);
+    \draw[dash pattern={on 1.6pt off 1.6pt}] (11.5, 10.5) -- (13.75, 10.5);
+    \draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (13.75, 10.5) -| (13.875, 8.5);
+    \draw (12, 5.75) -- (13, 5.75);
+    \draw (9, 8.25) -- (10, 8.25);
+    \draw (9, 5.75) -- (10, 5.75);
+    \node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (17, 7){} node[anchor=center, align=center, text width=2.147cm, inner sep=5pt] at (17, 7){\scriptsize FFT reordered\\( $-\rightarrow+$ )};
+    \draw[-latex] (14.75, 7) -- (15.75, 7);
+    \end{tikzpicture}
+    \caption[FFT reordering architecture]{FFT reordering architecture using double-buffered BRAMs. Incoming FFT output is written into one BRAM while the other is read out starting from the negative frequencies, ensuring contiguous transmission of FDM chains.}
+    \label{fig:fft_reordering}
+\end{figure}
+
+\subsection{Data aggregation for 32 antennas}
+The synchronization of the 32-antenna streams is achieved using dedicated memory buffers. As detailed in Table~\ref{tab:streaming_bands}, valid data for each FDM chain arrives during distinct cycle ranges within the 1024-cycle frame. A common write enable signal (\texttt{we}) controls the writing process, ensuring that all antenna buffers are populated simultaneously during their respective active windows.
 
 \begin{table}[t]
 \centering
 \caption[Cycle ranges for FDM chain streaming]
-{Cycle ranges (within the 1024-cycle FFT output frame) during which \texttt{we} is asserted for each FDM chain. Each chain occupies 84 consecutive cycles, corresponding to 672 frequency channels.}
+{Cycle ranges (within the 1024-cycle FFT output frame) during which valid data is captured for each FDM chain.}
 \begin{tabular}{cc}
 \toprule
-Chain $\Delta\nu_i$ & Cycle range \\
+\textbf{Chain $\Delta\nu_i$} & \textbf{Cycle range} \\
 \midrule
 0 & 125--209  \\
 1 & 235--319  \\
-2 & 346--430  \\
+2 & 346--430   \\
 3 & 458--542   \\
 4 & 569--653   \\
 5 & 680--764  \\
@@ -471,81 +513,90 @@ Chain $\Delta\nu_i$ & Cycle range \\
 \label{tab:streaming_bands}
 \end{table}
 
+A critical function of this stage is the correction of spectral inversion. The analog mixing scheme (see Table~\ref{tab:fdm_lo_tones}) results in specific FDM chains having a flipped and conjugated spectrum. To standardize the data:
+\begin{itemize}
+    \item \textbf{Direct chains (0, 4--7):} Preserve spectral orientation and are written into standard \gls{fifo} buffers.
+    \item \textbf{Inverted chains (1--3):} Are written into \gls{lifo} buffers. Reading from a LIFO effectively time-reverses the sample sequence, restoring the frequency bins to their natural ascending order. A conjugation operation is simultaneously applied to correct the phase inversion.
+\end{itemize}
 
-\subsection{Multi-antenna aggregation and packetization}Following the FFT reordering, the serialized frequency bins must be buffered and aggregated across all 32 antennas before transmission. This stage serves two critical purposes: synchronizing the parallel streams into a unified wide data bus and correcting the spectral inversion inherent to specific FDM analog chains.As detailed in Table~\ref{tab:streaming_bands}, the valid data for each chain arrives in distinct cycle ranges. To decouple the streaming clock from the packetization logic, a set of buffers is employed for each ADC stream. The write enable (\texttt{we}) signal is asserted according to the specific cycle range of the active chain. Crucially, the type of buffer selected depends on the analog mixing scheme:\begin{itemize}\item \textbf{Direct Chains (0, 4, 5, 6, 7):} These chains preserve the spectral orientation. Data is written to standard \gls{fifo} buffers.\item \textbf{Inverted Chains (1, 2, 3):} Due to the high-side LO mixing in the analog FDM frontend, the spectrum of these chains is flipped and conjugated. To recover the correct frequency order in the digital domain, these chains utilize Last-In-First-Out (LIFO) buffers. Reading from the LIFO effectively performs a time-reversal of the frequency bins, restoring the spectrum to its natural ascending order.\end{itemize}Once buffered, the system aggregates the outputs from all 32 antennas simultaneously. Since each antenna provides a 64-bit word (8 complex samples) per clock cycle, the packetizer interface operates on a massive parallel bus width of:\begin{equation}W_{\text{agg}} = 32 \times 64~\text{bits} = 2048~\text{bits}\end{equation}This 2048-bit wide word represents a ``snapshot'' of 8 frequency channels across the entire array.To accommodate the \gls{mtu} constraints of standard Ethernet frames and optimize the 100GbE throughput, the full 672-channel bandwidth is not transmitted in a single packet. Instead, the spectrum is segmented into four sequential sub-bands, each containing $N_{\text{sub}} = 168$ channels. Consequently, a complete spectral integration period is transmitted as a burst of 4 distinct Ethernet packets. Each packet carries a payload of 5376 bytes. This size is derived from the requirement to transmit 168 channels for 32 antennas, where each channel is an 8-bit complex value:\begin{equation}\text{Payload Size} = 168~\text{channels} \times 32~\text{antennas} \times 1~\text{byte} = 5376~\text{bytes}\end{equation}To identify the spectral region corresponding to each packet, a 2-bit rolling counter $k \in \{0, 1, 2, 3\}$ is prepended as a header. The mapping between the header counter and the absolute frequency channels $\nu$ is defined as follows:\begin{equation}\nu_{\text{start}}(k) = 168 \cdot k + 1\end{equation}where $k=0$ corresponds to the lowest frequency quarter ($\nu_{1}\dots\nu_{168}$) and $k=3$ to the highest ($\nu_{505}\dots\nu_{672}$).The internal structure of the packet payload is constructed by concatenating 21 reads of the 2048-bit aggregated bus. The hardware performs a logical transposition (corner turn) to organize the data primarily by channel and secondarily by antenna index. For a packet corresponding to sub-band $k$, the data stream is organized as sequence of blocks, where the $m$-th block (for $m=0 \dots 20$) contains data for channels starting at $C_m = \nu_{\text{start}}(k) + 8m$. The resulting byte stream layout ensures that for any given channel $\nu$, the samples for all 32 antennas are contiguous:
-\begin{table}[ht]
-\centering
-\caption{Packet structure (5376 Bytes) for each sub-band $k$ where $N_s = 168k + 1$.}
-\label{tab:packet_structure}
-\small
-\renewcommand{\arraystretch}{1.5}
-\begin{tabular}{|c|c|c|l|}
-\hline
-\textbf{Block index} & \textbf{Byte offfset} & \textbf{Channel range} & \textbf{Internal block data layout (concatenation)} \\
-($m$) & (Decimal) & ($\nu$) & (Sequence of 8 samples 32-antenna words) \\
-\hline
-\hline
-0 & $0 - 255$ & $N_{s} \dots N_{s}+7$ & 
-$[\nu_{N_{s}}^{(1)} \dots \nu_{N_{s}}^{(32)}] \parallel \dots \parallel [\nu_{N_{s}+7}^{(1)} \dots \nu_{N_{s}+7}^{(32)}]$ \\
-\hline
-1 & $256 - 511$ & $N_{s}+8 \dots N_{s}+15$ & 
-$[\nu_{N_{s}+8}^{(1)} \dots \nu_{N_{s}+8}^{(32)}] \parallel \dots \parallel [\nu_{N_{s}+15}^{(1)} \dots \nu_{N_{s}+15}^{(32)}]$ \\
-\hline
-2 & $512 - 767$ & $N_{s}+16 \dots N_{s}+23$ & 
-$[\nu_{N_{s}+16}^{(1)} \dots \nu_{N_{s}+16}^{(32)}] \parallel \dots \parallel [\nu_{N_{s}+23}^{(1)} \dots \nu_{N_{s}+23}^{(32)}]$ \\
-\hline
-\multicolumn{4}{|c|}{$\vdots$} \\
-\hline
-$m$ & $256m \dots$ & $C_m \dots C_m+7$ & 
-$[\nu_{C_m}^{(1)} \dots \nu_{C_m}^{(32)}] \parallel \dots \parallel [\nu_{C_m+7}^{(1)} \dots \nu_{C_m+7}^{(32)}]$ \\
-\hline
-\multicolumn{4}{|c|}{$\vdots$} \\
-\hline
-20 & $5120 - 5375$ & $N_{s}+160 \dots N_{s}+167$ & 
-$[\nu_{N_{s}+160}^{(1)} \dots \nu_{N_{s}+160}^{(32)}] \parallel \dots \parallel [\nu_{N_{s}+167}^{(1)} \dots \nu_{N_{s}+167}^{(32)}]$ \\
-\hline
-\end{tabular}
-\end{table}
-Here, the notation $\nu_{ch}^{(a)}$ denotes the complex sample for channel $ch$ from antenna $a$, and $\parallel$ represents concatenation. This structured payload is finally passed to the 100GbE core for transmission over the fiber optic link.
+Once all FDM chains have been written, the buffers are read out in parallel. Each buffer provides a 64-bit word (8 complex samples) per clock cycle. With 32 antennas, this yields a massive aggregate bus width of \num{2048} bits per cycle.
+
+\subsection{Data structure definitions}
+
+To formalize the organization of this aggregate data, we define the following notation:
+\begin{itemize}
+    \item $k \in \{0,\dots,671\}$: Absolute frequency channel index.
+    \item $(\nu_a)_k$: The complex data sample for antenna $a$ at frequency channel $k$, represented in 4+4 bit format.
+\end{itemize}
+
+We define the spatial vector $\antvec{k}$ as the simultaneous set of samples from all 32 antennas for a single frequency channel $k$:
+\begin{equation}
+    \antvec{k} = \begin{bmatrix}
+        (\nu_0)_k \\
+        (\nu_1)_k \\
+        \vdots \\
+        (\nu_{31})_k
+    \end{bmatrix}.
+\end{equation}
+This vector is 256 bits wide ($32 \times 8$ bits) and represents the fundamental unit of data for downstream correlation, as it contains all spatial information for a single frequency bin.
+
+\subsection{First stage corner turn}
+\label{sec:corner_turn}
+The raw output from the memory buffers is organized by antenna, but downstream processing requires data organized by frequency. Specifically, at any given read cycle $m$, the 32 buffers output a 2048-bit matrix $\mathbf{K}_m \in \mathbb{C}^{32 \times 8}$ where rows correspond to antennas and columns to the 8 parallel frequency channels:
+\begin{equation}
+	\mathbf{K}_m = \begin{bmatrix}
+		(\nu_0)_{8m} & (\nu_0)_{8m+1} & \cdots & (\nu_0)_{8m+7} \\
+		(\nu_1)_{8m} & (\nu_1)_{8m+1} & \cdots & (\nu_1)_{8m+7} \\
+		\vdots & \vdots & \ddots & \vdots \\
+		(\nu_{31})_{8m} & (\nu_{31})_{8m+1} & \cdots & (\nu_{31})_{8m+7}
+	\end{bmatrix}_{32 \times 8}.
+\end{equation}
+To group samples by frequency (i.e., to form spatial vectors), the hardware performs a logical transposition (corner turn). This operation swaps the dimensions of the data matrix:
+\begin{equation}
+	\mathbf{K}_m^\top = \begin{bmatrix}
+		(\nu_0)_{8m} & (\nu_1)_{8m} & \cdots & (\nu_{31})_{8m} \\
+		(\nu_0)_{8m+1} & (\nu_1)_{8m+1} & \cdots & (\nu_{31})_{8m+1} \\
+		\vdots & \vdots & \ddots & \vdots \\
+		(\nu_0)_{8m+7} & (\nu_1)_{8m+7} & \cdots & (\nu_{31})_{8m+7}
+	\end{bmatrix}_{8 \times 32}.
+	\label{eq:corner_turn}
+\end{equation}
+Each row of the transposed matrix $\mathbf{K}_m^\top$ now corresponds exactly to a spatial vector $\antvec{8m+j}^\top$ for $j=0,\dots,7$. This transposition ensures that the packet payload is serialized as a sequence of complete frequency channels.
+
+To implement this corner turn efficiently in hardware, we utilized the CASPER \texttt{munge} block, which permits arbitrary bit-level reordering of the data bus (similar to the reordering done in Table \ref{tab:munge_reorder}). For this specific application, the block is configured to treat the 2048-bit input bus as 256 distinct 8-bit slices (corresponding to the $32 \times 8$ complex samples). The division packing order required to perform the matrix transposition is defined by the permutation vector generated with the following MATLAB command:
+\begin{lstlisting}[style=Matlab-editor, basicstyle=\small\ttfamily, caption={MATLAB code to generate the permutation vector for the corner turn operation.}]
+	reshape(reshape(0:255, 8, [])', 1, [])
+\end{lstlisting}
 
 
-\subsection{Streaming architecture}
+This configuration effectively rewires the bus connections in the FPGA fabric, ensuring that the data flowing into the packetizer is correctly formatted as contiguous spatial vectors.
 
-The streaming system is implemented using three cascaded blocks that perform data-width conversion, deep buffering, and packet formation compatible with the 100\,GbE interface. The architecture is entirely driven by backpressure from the MAC and by a programmable inter-packet delay that ensures stable operation under all traffic conditions. The dataflow proceeds through:
+\section{Packetizer architecture}
+
+The streaming system is implemented using a high-throughput packetization block that performs data-width conversion, deep buffering, and protocol header insertion compatible with the 100\,GbE interface. The architecture is designed to handle the bursty nature of the aggregated spectral data, using a programmable inter-packet delay to ensure stable operation. The dataflow proceeds through:
 
 \begin{enumerate}
 
-    \item \textbf{Width expansion using a SIPO and FIFO buffering}.  
-    Incoming 64-bit FFT samples are accumulated into 512-bit words by a serial-to-parallel converter (SIPO). Every eight 64-bit inputs are grouped into one 512-bit output, which is internally stored in a FIFO of 2048 entries. The SIPO asserts \texttt{din\_ready} only when enough buffer space exists to complete a full 512-bit word, preventing partial-word writes and ensuring lossless operation. The large FIFO depth provides elasticity between the high-throughput FFT output and the bursty consumption pattern imposed by the downstream packetizer and the 100\,GbE interface.
+	\item \textbf{Width conversion and buffering}.  
+	The aggregated spectral data arrives as a massive 2048-bit wide word (containing 8 frequency channels for all 32 antennas). A \gls{piso} converter buffers these words into a deep internal FIFO (configured with 8192 entries) and serializes them into 512-bit words required by the 100\,GbE core. This large buffer depth provides the necessary elasticity to absorb the high-bandwidth bursts from the FFT reordering stage while the output is throttled by the Ethernet link rate.
 
-    \item \textbf{Credit-based flow control}.  
-    The packetizer maintains an internal credit counter that tracks how many valid 64-bit words are currently stored in the SIPO. Credits increment whenever data is accepted from the FFT (\texttt{din\_valid \& din\_ready}), and decrement in bursts of eight each time a 512-bit word is transmitted. Before a packet can begin, the system checks whether the available credits exceed the amount required to transmit the entire packet:
-    \[
-        \text{required credits} = \texttt{pkt\_len} \times 8,
-    \]
-    where \texttt{pkt\_len} includes the 512-bit header word and all payload words. This guarantees that the FIFO will never underflow mid-packet, even in the presence of temporary stalls at the MAC.
+	\item \textbf{Packetizer \gls{fsm}}.  
+	The core logic is governed by a three-state \gls{fsm} that orchestrates packet formation and timing:
 
-    \item \textbf{Packetizer finite-state machine}.  
-    Packets are generated by a three-state FSM:
+	\begin{itemize}
+		\item \textbf{WAIT (Inter-packet gap)}.  
+		The \gls{fsm} rests in this state between packets. It utilizes a counter to enforce a programmable delay defined by \texttt{sleep\_cycles}. This idle window is crucial to prevent buffer overflows in the downstream \gls{mac} hardware, effectively acting as a rate-limiting mechanism. Once the counter reaches the target delay, the \gls{fsm} transitions to HEADER.
 
-    \begin{itemize}
-        \item \textbf{WAIT\_FOR\_PACKET}.  
-        The packetizer remains idle until (i) the stored credits satisfy the packet-length requirement, and (ii) the MAC indicates readiness via \texttt{tx\_afull = 0}. Once both conditions are met, the FSM transitions to TRANSMIT.
+		\item \textbf{HEADER (Metadata injection)}.  
+		Before transmitting the spectral payload, the \gls{fsm} synthesizes a 512-bit header word. This header contains the current FPGA timestamp (seconds and microseconds), the sub-band ID (\texttt{band\_idx}, $\ell$), and a 64-bit sequence number (\texttt{seq\_num}, $n$) for packet loss tracking. This word is injected directly into the output stream, ensuring precise metadata association for every packet.
 
-        \item \textbf{TRANSMIT}.  
-        The packetizer reads one 512-bit word from the SIPO per cycle (when permitted by the MAC) and asserts \texttt{tx\_valid}. The first word transmitted corresponds to the packet header, while subsequent words correspond to the payload. If the MAC asserts backpressure (\texttt{tx\_afull = 1}), transmission is automatically paused without losing synchronization. When the final word is sent, the FSM asserts \texttt{tx\_eof}.
-
-        \item \textbf{FLUSH}.  
-        After completing a packet, the FSM enforces a programmable idle period of \texttt{idle\_cycles} before returning to WAIT\_FOR\_PACKET. No SIPO reads occur during this interval. This idle window is crucial to prevent buffer overflows and timing hazards in the 100\,GbE block, especially under sustained high-throughput conditions.
-    \end{itemize}
+		\item \textbf{READ (Payload transmission)}.  
+		The \gls{fsm} reads 512-bit words from the PISO buffer and asserts \texttt{tx\_valid}. Transmission continues until the number of words sent equals the configured \texttt{pkt\_len}. Upon completion, the \gls{fsm} asserts the end-of-frame (\texttt{tx\_eof}) signal, increments the sub-band and sequence counters, and returns to the WAIT state.
+	\end{itemize}
 
 \end{enumerate}
 
-A major enhancement in this design is the explicit handling of MAC backpressure through the \texttt{tx\_afull} signal, combined with the addition of the \texttt{idle\_cycles} parameter. Practical experience reported by developers working with CASPER Ethernet cores shows that 100\,GbE links frequently require a nonzero inter-packet gap to avoid internal buffer overflows, even though the analytical determination of the required delay is nontrivial. For this reason, the packetizer includes a dedicated FLUSH state and a tunable \texttt{idle\_cycles} interval that allows the system to meet the timing expectations of the MAC reliably.
-
-The specific choice of \texttt{idle\_cycles} depends on the FPGA clocking configuration, traffic patterns, and MAC implementation details. A quantitative evaluation of its optimal value is presented in \S\ref{sec:100gbe_test}.
-
-Figure~\ref{fig:streaming_architecture} illustrates the overall streaming architecture, showing the SIPO, FIFO, credit counter, and packetizer FSM. Key signals and data paths are annotated for clarity.
+A critical design choice in this architecture is the reliance on the \texttt{sleep\_cycles} parameter. Practical experience with CASPER 100\,GbE cores suggests that maintaining a consistent, tunable inter-packet gap is often more effective at preventing internal MAC buffer overflows than reactive flow control, which can introduce latency jitter. By tuning \texttt{sleep\_cycles}, the system creates a ``FLUSH'' equivalent period that allows the 100\,GbE core to process the previous frame fully before new data arrives. Figure~\ref{fig:streaming_architecture} illustrates the streaming architecture, showing the PISO buffer, the internal header generation logic, and the FSM state transitions.
 \begin{figure}[t]
 \centering
 \begin{tikzpicture}
@@ -554,11 +605,11 @@ Figure~\ref{fig:streaming_architecture} illustrates the overall streaming archit
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (1.75, 4.5){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (1.75, 4.5){\scriptsize FFT output};
 	\draw[line width=1.5pt, -latex] (2.5, 4.5) |- (4, 4.5);
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (3.25, 4.25){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (3.25, 4.25){\scriptsize 64b};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=1.965cm] at (8.75, 4.5){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (8.75, 4.5){\footnotesize SIPO \\8x64b $\rightarrow$ 512b};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=1.965cm] at (8.75, 4.5){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (8.75, 4.5){\footnotesize PISO \\32x64b $\rightarrow$ 512b};
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (3.25, 4.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (3.25, 4.75){\scriptsize \texttt{din}};
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (6.75, 4.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (6.75, 4.75){\scriptsize \texttt{sk\_dout}};
 	\draw[line width=1.5pt, -latex] (6, 4.5) |- (7.5, 4.5);
-	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=1.965cm] at (12.75, 4.5){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (12.75, 4.5){\footnotesize Packetizer FSM \\(85 words/pkt)};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=2.465cm, minimum height=1.965cm] at (12.75, 4.5){} node[anchor=center, align=center, text width=2.077cm, inner sep=6pt] at (12.75, 4.5){\footnotesize Packetizer \gls{fsm}};
 	\draw[line width=1.5pt, -latex] (10, 4.5) |- (11.5, 4.5);
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (10.75, 4.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (10.75, 4.75){\scriptsize \texttt{tge\_data}};
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (6.75, 4.25){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (6.75, 4.25){\scriptsize 64b};
@@ -575,7 +626,7 @@ Figure~\ref{fig:streaming_architecture} illustrates the overall streaming archit
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (6.75, 3.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (6.75, 3.75){\tiny \texttt{sk\_ready}};
 	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (6, 5) |- (7.5, 5);
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (6.75, 5.25){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (6.75, 5.25){\tiny \texttt{sk\_valid}};
-	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (10.75, 3.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (10.75, 3.75){\tiny \texttt{sipo\_ready}};
+	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (10.75, 3.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (10.75, 3.75){\tiny \texttt{piso\_ready}};
 	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (11.5, 4) |- (10, 4);
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (10.75, 5.25){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (10.75, 5.25){\tiny \texttt{tge\_valid}};
 	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (10, 5) |- (11.5, 5);
@@ -583,7 +634,7 @@ Figure~\ref{fig:streaming_architecture} illustrates the overall streaming archit
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (14.625, 5.25){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (14.625, 5.25){\tiny \texttt{tx\_valid}};
 	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (14, 4) |- (15.5, 4);
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (14.625, 3.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (14.625, 3.75){\tiny \texttt{tx\_eof}};
-	\node[shape=rectangle, draw, line width=1pt, minimum width=1.965cm, minimum height=1.84cm] at (8.75, 1.063){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (8.75, 1.063){\footnotesize FIFO\\(512 depth)};
+	\node[shape=rectangle, draw, line width=1pt, minimum width=1.965cm, minimum height=1.84cm] at (8.75, 1.063){} node[anchor=center, align=center, text width=1.577cm, inner sep=6pt] at (8.75, 1.063){\footnotesize FIFO\\(8192 depth)};
 	\draw[line width=1.5pt, latex-latex] (8.75, 3.5) -- (8.75, 2);
 	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.465cm] at (9.375, 2.75){} node[anchor=center, align=center, text width=1.327cm, inner sep=6pt] at (9.5, 2.75){\scriptsize elastic buffering};
 	\draw[line width=1.5pt, -latex] (3.5, 2.5) |- (4, 2.5);
@@ -591,13 +642,113 @@ Figure~\ref{fig:streaming_architecture} illustrates the overall streaming archit
 	\draw[dash pattern={on 1.6pt off 1.6pt}, -latex] (3.5, 2) |- (4, 2);
 	\node[shape=rectangle, minimum width=3.59cm, minimum height=0.465cm] at (5.688, 2){} node[anchor=west, align=left, text width=3.202cm, inner sep=6pt] at (3.875, 2){\scriptsize Control (ready/valid)};
 \end{tikzpicture}
-\caption[Data streaming architecture]{Data streaming architecture showing the three-stage pipeline: skid buffer for flow control decoupling, SIPO converter for width conversion and elastic buffering with internal FIFO, and packetizer for Ethernet frame generation. Solid arrows represent data paths, while dashed arrows show ready/valid handshake signals that propagate backpressure through the pipeline.}
+\caption[Data streaming architecture]{Data streaming architecture showing the three-stage pipeline: skid buffer for flow control decoupling, PISO converter for width conversion and elastic buffering with internal FIFO, and packetizer for Ethernet frame generation. Solid arrows represent data paths, while dashed arrows show ready/valid handshake signals that propagate backpressure through the pipeline.}
 \label{fig:streaming_architecture}
 \end{figure}
 
+\subsection{Packet segmentation and layout}
+
+To adhere to \gls{mtu} constraints of Ethernet packets (typically limited to $\sim\SI{9}{\kilo\byte}$) and facilitate downstream processing across four independent nodes (see Figure~\ref{fig:charts_signal_chain}), the full \num{21504}-channel spectrum is segmented into four sub-bands ($\ell=0,\dots,3$) of \num{5376} channels. Each packet thus carries exactly one quarter of the total bandwidth, allowing each processing node to handle one sub-band independently. Every sub-band is transmitted as a separate UDP packet with a payload of 85 512-bit words (\texttt{pkt\_len}=85). Table~\ref{tab:subbands} details this frequency mapping.
+
+\begin{table}[t]
+	\centering
+	\caption{Sub-band definitions and frequency mapping.}
+	\label{tab:subbands}
+	\renewcommand{\arraystretch}{1.2}
+	\begin{tabular}{@{}c c c@{}} 
+		\toprule
+		\textbf{Sub-band ID $\ell$} & \textbf{Frequency channels} & \textbf{Frequency range (\unit{\mega\hertz})} \\
+		\midrule
+		0 & $0   - 167$ & $300.0 - 350.1$ \\
+		1 & $168 - 335$ & $350.4 - 400.5$ \\
+		2 & $336 - 503$ & $400.8 - 450.9$ \\
+		3 & $504 - 671$ & $451.2 - 501.3$ \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+A packet consists of 21 blocks ($m=0,\dots,20$), where block $m$ contains 8 consecutive spatial vectors $\antvec{k}$ from the transposed matrix $\mathbf{K}_m^\top$ (Eq.\ \ref{eq:corner_turn}), serialized row by row. Table~\ref{tab:packet_structure} shows the byte-level layout.
+
+\begin{table}[t]
+    \centering
+    \caption[Data layout for sub-band $\ell$]{Payload layout for sub-band $\ell$, starting at channel offset $k_0(\ell)=168\ell$. The payload consists of 21 blocks, where each block contains 8 concatenated spatial vectors.}
+    \label{tab:packet_structure}
+    \small
+    \renewcommand{\arraystretch}{1.3}
+    \setlength{\tabcolsep}{6pt}
+    \begin{tabular}{ccc}
+    \toprule
+    \textbf{Block $m$} & \textbf{Byte range} & \textbf{Data content} \\
+    \midrule
+    0 & $0 - 255$ & 
+    $\antvec{k_0(\ell)}  \Vert \cdots \Vert \antvec{k_0(\ell)+7}$ \\
+    1 & $256 - 511$ & 
+    $\antvec{k_0(\ell)+8} \Vert \cdots \Vert \antvec{k_0(\ell)+15}$ \\
+    \midrule
+    \vdots & \vdots & \vdots \\
+    \midrule
+    $m$ & $256m \dots$ & 
+    $\antvec{k_0(\ell)+8m} \Vert \cdots \Vert \antvec{k_0(\ell)+8m+7}$ \\
+    \midrule
+    \vdots & \vdots & \vdots \\
+    \midrule
+    20 & $5120 - 5375$ & 
+    $\antvec{k_0(\ell)+160} \Vert \cdots \Vert \antvec{k_0(\ell)+167}$ \\
+    \bottomrule
+    \end{tabular}
+    \vspace{0.3cm}
+    
+    \footnotesize{Note: $\Vert$ denotes concatenation. Each $\antvec{k}$ occupies 32 bytes.}
+\end{table}
+
+The complete packet structure is summarized in Table~\ref{tab:ethernet_packet_structure}, which shows the byte-level layout of each Ethernet frame transmitted by the F-engine, including all protocol/metadata headers and payload data. Considering the total packet size of 5482 bytes (42 bytes for Ethernet/IP/UDP headers, 64 bytes for metadata header, and 5376 bytes for payload), the system can sustain a data rate of approximately $\sim\SI{52.63}{\giga\bit\per\second}$ when transmitting all four sub-bands in sequence with appropriate inter-packet delays.
+
+\begin{table}[t]
+\centering
+\caption{Ethernet packet structure for F-engine data transmission.}
+\label{tab:ethernet_packet_structure}
+\begin{tabular}{lccl}
+\toprule
+Field & Byte offset & Size (bytes) & Description \\
+\midrule
+\multicolumn{4}{l}{\textbf{Ethernet/IP/UDP header (42 bytes)}} \\
+\quad Ethernet header & 0 & 14 & Destination/source MAC, EtherType \\
+\quad IP header & 14 & 20 & IP version, addresses, protocol \\
+\quad UDP header & 34 & 8 & Source/destination ports, length \\
+\midrule
+\multicolumn{4}{l}{\textbf{Metadata header (64 bytes)}} \\
+\quad Timestamp (seconds) & 42 & 32 & FPGA timestamp (seconds) \\
+\quad Timestamp (microseconds) & 74 & 32 & FPGA timestamp (microseconds) \\
+\quad Sub-band ID & 98 & 2 & Band index $\ell$ (0--3) \\
+\quad Sequence number & 100 & 8 & Packet sequence number $n$ \\
+\midrule
+\multicolumn{4}{l}{\textbf{Payload (5376 bytes)}} \\
+\quad Spectral data & 106 & 5376 & 168 channels $\times$ 32 antennas $\times$ 1 byte \\
+& & & Organized as blocks (see Table~\ref{tab:packet_structure}) \\
+\midrule
+\textbf{Total packet size} & & \textbf{5482} & \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 
+\section{Timing and synchronization}
+\label{sec:timing_sync}
 
+As detailed in Table~\ref{tab:ethernet_packet_structure}, the metadata header of every transmitted packet includes two dedicated fields for this purpose: a 64-bit \textit{timestamp} (split into seconds and microseconds) and a 64-bit \textit{sequence number}. The F-engine employs these fields to reconstruct the precise UTC time of every frame.
 
+The system's synchronization strategy is designed in two phases: an initial software-based implementation for laboratory validation, and a high-precision hardware-based mode for on-sky deployment, which leverages an external \gls{gps}-disciplined clock and will be detailed in \S~\ref{sec:gps_sync}.
 
+\subsection{Current implementation: software-triggered synchronization}
+
+In the current validation phase, the system operates without an external time reference, such as a \gls{gps} disciplined clock. Therefore, synchronization is established through a software trigger initiated by the control computer.
+
+During initialization, a Python control script captures the current UNIX epoch time, $T_0$, using the system clock. This value is written to the FPGA's control registers mapped to the header timestamp fields. Crucially, the write operation triggers a synchronous reset of the internal frame counter or sequence number ($n$). From this instant onwards, the \texttt{timestamp\_sec} and \texttt{timestamp\_usec} fields in the packet header remain static, containing $T_0$, while the \texttt{seq\_num} field increments for every processed spectrum frame.
+
+Since each spectrum is formed by 4 packets, the sequence number $n$ must be divided by 4 and rounded to the nearest integer to determine the corresponding spectrum frame index. The exact time $t_{\text{packet}}$ of any received packet is reconstructed offline using the known frame duration $t_{s}=3.\overline{3}\,\si{\micro\second}$:
+\begin{equation}
+	t_{\text{packet}} =  T_0 + \left\lfloor \frac{n}{4} \right\rfloor \cdot 3.\overline{3}\,\si{\micro\second}
+\end{equation}
+
+While this method is sufficient for verifying coarse timestamping and short-term stability, its absolute timing accuracy is limited by the non-deterministic latency of the software-to-hardware write transaction (typically in the millisecond range), which introduces a constant but unknown offset from true UTC.
 

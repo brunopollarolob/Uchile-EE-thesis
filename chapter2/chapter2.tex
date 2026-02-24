@@ -1,6 +1,6 @@
 
-\chapter{Theoretical Framework}
-This chapter provides the theoretical foundation required to understand the work presented in this thesis. It is organized into several sections, each covering a key topic relevant to the design and implementation of the F-engine for CHARTS. The chapter begins with an introduction to radio astronomy fundamentals, followed by a description of time domain astronomy and transient astronomical phenomena such as \glspl{frb} and pulsars, including their main propagation effects. Next, it reviews essential concepts in digital signal processing, including sampling, quantization, filtering, polyphase filter banks, and frequency analysis using the discrete Fourier transform. The chapter then discusses spectrometers and correlators, outlining their main types, performance metrics, and typical architectures. Finally, it presents an overview of the computational hardware used, with a focus on field programmable gate arrays and their integration with other processing units, such as GPUs, via high-speed optical interconnects. Also included is a description of the Xilinx AMD RFSoC 4x2 platform, which serves as the basis for the F-engine developed in this work.
+\chapter{Theoretical framework}
+This chapter provides the theoretical foundation required to understand the work presented in this thesis. It is organized into several sections, each covering a key topic relevant to the design and implementation of the F-engine for CHARTS. The chapter begins with an introduction to radio astronomy fundamentals, followed by a description of time domain astronomy and transient astronomical phenomena such as \glspl{frb} and pulsars, including their main propagation effects. Next, it reviews essential concepts in digital signal processing, including sampling, quantization, filtering, polyphase filter banks, and frequency analysis using the discrete Fourier transform. The chapter then discusses spectrometers and correlators, outlining their main types and typical architectures. Finally, it presents an overview of the computational hardware used, with a focus on field programmable gate arrays and their integration with other processing units, such as graphical processing units, via high-speed optical interconnects. Also included is a description of the Xilinx AMD RFSoC 4x2 platform, which serves as the basis for the F-engine developed in this work.
 
 \section{Radio astronomy fundamentals}
 \label{sec:radio_fundamentals}
@@ -30,16 +30,15 @@ These properties enable the construction of large, distributed interferometric a
 \subsection{Relevant quantities in radio astronomy}
 In radio astronomy, several fundamental quantities are required to describe and interpret the emission from astrophysical sources. These quantities connect the intrinsic radiation properties of the source with the signal detected by a radio telescope, which is affected by distance, frequency range and the telescope's properties such as aperture size and efficiency.
 
-
 The first quantity to be defined is the specific intensity ($I_\nu$), which represents the received emission. It is defined as the power received per unit area, frequency, and solid angle:
 \begin{equation}
 	I_\nu \;=\; \frac{\mathrm{d}P}{ (\cos\theta \, \mathrm{d}\sigma) \, \mathrm{d}\Omega \, \mathrm{d}\nu}.
 \end{equation}
-where $\theta$ is the angle between the direction of the radiation and the observer's \gls{los}, $\mathrm{d}\sigma$ is the area element on the telescope surface, $\mathrm{d}\Omega$ is the solid angle element of the source, and $\mathrm{d}\nu$ is the frequency element. It is important to note that the specific intensity is an intrinsic property of the source, while the received power depends on the distance and the effective aperture, observing bandwidth and the integration time.
+where $\theta$ is the angle between the direction of the radiation and the observer's \gls{los}, $\mathrm{d}\sigma$ is the area element on the telescope surface, $\mathrm{d}\Omega$ is the solid angle element of the source, and $\mathrm{d}\nu$ is the frequency element. It is important to note that the specific intensity is an intrinsic property of the source, while the received power depends on the distance, effective aperture, observing bandwidth and integration time.
 
 
-Building on the concept of specific intensity, it is essential to understand how thermal emission from astrophysical sources is described. At the beginning of the 20th century, Planck introduced the idea that electromagnetic radiation is emitted in discrete energy packets\footnote{Although Planck is historically credited with introducing the concept of energy quantization in \emph{quanta}, when he first formulated his radiation law, he regarded the discretization of energy as a mathematical trick rather than a fundamental physical principle. In fact, Planck himself did not initially believe that energy was inherently quantized; he considered it a pragmatic approach to fit experimental data, a ``desperate measure" in his own words (see \citealt{Planck1949-PLASAA-3} autobiography), to make his theory consistent with observations. Luckily, his conviction that the laws of thermodynamics should hold at all costs led him to stick to the idea of quantized energy levels.
-}, or \emph{quanta}, laying the foundation for quantum theory and revolutionizing the understanding of blackbody radiation. The spectral brightness, which shares the same units as specific intensity, quantifies the power emitted per unit area, solid angle, and frequency by a blackbody at temperature $T$. This relationship is mathematically expressed by Planck's law \citep[see][Chapter~7]{StatisticalMechanics}
+Building on the concept of specific intensity, it is essential to understand how thermal emission from astrophysical sources is described. At the beginning of the 20th century, Planck introduced the idea that electromagnetic radiation is emitted in discrete energy packets, or \emph{quanta}\footnote{Although Planck is historically credited with introducing the concept of energy quantization in \emph{quanta}, when he first formulated his radiation law, he regarded the discretization of energy as a mathematical trick rather than a fundamental physical principle. In fact, Planck himself did not initially believe that energy was inherently quantized; he considered it a pragmatic approach to fit experimental data, a ``desperate measure" in his own words (see \citealt{Planck1949-PLASAA-3} autobiography), to make his theory consistent with observations. Luckily, his conviction that the laws of thermodynamics should hold at all costs led him to stick to the idea of quantized energy levels.
+}, laying the foundation for quantum theory and revolutionizing the understanding of blackbody radiation. The spectral brightness, which shares the same units as specific intensity, quantifies the power emitted per unit area, solid angle, and frequency by a blackbody at temperature $T$. This relationship is mathematically expressed by Planck's law \citep[see][Chapter~7]{StatisticalMechanics}:
 \begin{equation}
 	B_\nu(\nu, T) = \frac{2h\nu^3}{c^2} \frac{1}{e^{h\nu/kT}-1} ,
 	\label{eq:planck}
@@ -54,11 +53,12 @@ for a blackbody at 5500~K (approximately the temperature of the Sun's surface). 
 	\label{fig:spectral_brightness}
 \end{figure}
 
-If the radiation is in a \gls{lte}, the intensity behaves exactly as a blackbody (Eq. \ref{eq:planck}), $(I_\nu)_{\text{LTE}} \rightarrow B_\nu(T)$.
-From this relationship and Planck's law given in Eq. \ref{eq:planck}, the brightness temperature can be obtained, which is defined as the temperature a blackbody should have to emit a specific intensity equal to that of the source at a given frequency
+If the radiation is in a \gls{lte}, the intensity behaves exactly as a blackbody (Eq.\ \ref{eq:planck}), $(I_\nu)_{\text{LTE}} \rightarrow B_\nu(T)$.
+From this relationship and Planck's law given in Eq.\ \ref{eq:planck}, the brightness temperature can be obtained, which is defined as the temperature a blackbody should have to emit a specific intensity equal to that of the source at a given frequency:
 \begin{equation}
 	T_B = \frac{h\nu}{k \ln\left(1 + \frac{2h\nu^3}{c^2I_\nu}\right)}.
 \end{equation}
+
 In the radio regime, where $h\nu \ll kT$, the specific intensity can be approximated to (expanding the exponential as $e^{h\nu/kT_B} \approx 1 + \frac{h\nu}{kT_B}$):
 \begin{equation}
 	I_\nu = \frac{2h\nu^3}{c^2} \frac{1}{e^{h\nu/kT_B}-1} \approx \frac{2h\nu^3}{c^2} \frac{kT_B}{h\nu} = \frac{2kT_B\nu^2}{c^2}.
@@ -84,18 +84,19 @@ For point sources, where the angular size is much smaller than the telescope bea
 The concept of antenna temperature ($T_a$) provides a convenient way to characterize the strength of a received signal in radio astronomy. It is defined as the temperature that would generate the same noise power in a matched resistor as that collected by the antenna. Quantitatively, the antenna temperature can be expressed in terms of the received power and the bandwidth, following the Johnson–Nyquist relation (see \citealt{Nyquits_noise} for derivation):
 \begin{equation}
     T_a = \frac{P}{k \, \Delta \nu},
+	\label{eq:thermal_noise_power}
 \end{equation}
 where $P$ is the received power, $\Delta \nu$ is the bandwidth, and $k$ is Boltzmann’s constant. 
 
 To measure this noise power, radio astronomers use a radiometer, a device specifically designed to detect and quantify extremely weak electromagnetic signals. The sensitivity of such instruments is characterized through the system temperature ($T_\text{sys}$) which incorporates all noise (including the source signal) contributions in the signal chain:  
 \begin{equation}
-    T_\text{sys} = T_a + T_r,
-\end{equation},
-where $T_r$ is the effective noise temperature of the receiver and associated electronics.  
+    T_\text{sys} = T_a + T_{\text{rx}},
+\end{equation}
+where $T_{\text{rx}}$ is the effective noise temperature of the receiver and associated electronics.  
 
-In practice, $T_r$ can be decomposed into the contributions of multiple analog components. For a cascade of $m$ components, each with its own noise figure $F$ and gain $G$ (see Figure \ref{fig:friis}), the effective receiver noise is given by the Friis formula \citep{Friis1944}:  
+In practice, $T_{\text{rx}}$ can be decomposed into the contributions of multiple analog components. For a cascade of $m$ components, each with its own noise figure $F$ and gain $G$ (see Figure \ref{fig:friis}), the effective receiver noise is given by the Friis formula \citep{Friis1944}:  
 \begin{equation}
-    T_r = T_1 + \frac{T_2}{G_1} + \frac{T_3}{G_1 G_2} + \dots + \frac{T_{m}}{G_1 G_2 \cdots G_{m-1}}.
+    T_{\text{rx}} = T_1 + \frac{T_2}{G_1} + \frac{T_3}{G_1 G_2} + \dots + \frac{T_{m}}{G_1 G_2 \cdots G_{m-1}}.
 	\label{eq:friis}
 \end{equation}
 
@@ -116,35 +117,74 @@ In practice, $T_r$ can be decomposed into the contributions of multiple analog c
 		\draw (9, 4.5) -- (9.75, 4.5);
 		\draw (11.25, 4.5) to[amp, l={$T_1,G_1$}] (12.75, 4.5);
 	\end{tikzpicture}
-	\caption[Block diagram of a cascade of amplifiers]{Block diagram of a cascade of $m$ amplifier stages, each characterized by its noise temperature $T_i$ and gain $G_i$. The overall system noise temperature can be calculated using the Friis formula, which accounts for the contributions of each stage, weighted by the gains of preceding stages, as shown in Eq. \ref{eq:friis}.}
+	\caption[Block diagram of a cascade of amplifiers]{Block diagram of a cascade of $m$ amplifier stages, each characterized by its noise temperature $T_i$ and gain $G_i$. The overall system noise temperature can be calculated using the Friis formula, which accounts for the contributions of each stage, weighted by the gains of preceding stages, as shown in Eq.\ \ref{eq:friis}.}
 	\label{fig:friis}
 \end{figure}
 
 Finally, the full system temperature can be expressed as the sum of all relevant contributions:  
 \begin{equation}
-    T_\text{sys} = T_r + \underbrace{T_\text{src} + T_\text{cmb} + T_\text{sky} + T_\text{spill}+ \dots}_{T_a} \ ,
+    T_\text{sys} = T_{\text{rx}} + \underbrace{T_\text{src} + T_\text{cmb} + T_\text{sky} + T_\text{spill}+ \dots}_{T_a} \ ,
 \end{equation}
 where:
 \begin{itemize}
 	\item $T_\text{src}$: contribution of the astronomical source of interest (generally very weak).
 	\item $T_\text{cmb} \approx 2.73 \, \text{K}$: cosmic microwave background, constant in all directions.
 	\item $T_\text{sky}$: atmospheric emission, strongly dependent on observing frequency and opacity.
-	\item $T_\text{spill}$: spillover noise from radiation entering the feed due to imperfect illumination or side lobes.
-	\item $T_r$: noise temperature of the receiver electronics.
+	\item $T_\text{spill}$: spillover noise from radiation entering the feed in parabolical reflectors due to imperfect illumination or side lobes.
 \end{itemize} 
 
-To estimate the sensitivity of a radiometer, we use the radiometer equation \citep[see][Section~3.6.2]{essential_radio_astronomy}, which relates the statistical uncertainty of the noise measurement, $\sigma_T$, to the system parameters:  
+To estimate the sensitivity of a radiometer, we use the radiometer equation \citep[see][Section~3.6.2]{essential_radio_astronomy}, which relates the statistical uncertainty of the noise measurement ($\sigma_T$) to the system parameters:  
 \begin{equation}
     \sigma_T = k_c \, \frac{T_\text{sys}}{\sqrt{\Delta \nu \, t_\text{int}}},
 	\label{eq:radiometer}
 \end{equation}
-where $t_\text{int}$ is the integration time, $\Delta \nu$ is the bandwidth, and $k_c$ is a proportionality constant that depends on the type of detector. Eq. \ref{eq:radiometer} is fundamental because it shows that sensitivity improves with larger bandwidth and longer integration.  
+where $t_\text{int}$ is the integration time, and $k_c$ is a proportionality constant that depends on the type of detector. Eq.\ \ref{eq:radiometer} is fundamental because it shows that sensitivity improves with larger bandwidth and longer integration.  
 
 The \gls{snr} can then be written as:  
 \begin{equation}
     \text{SNR} = \frac{T_a}{\sigma_T} = \frac{T_a}{T_\text{sys}} \sqrt{t_\text{int} \, \Delta \nu}.
 \end{equation}
 In radio astronomy, the astronomical signal is usually several orders of magnitude weaker than the noise. Therefore, long integration times, large bandwidths, and low-noise receivers are essential to improve detectability.
+
+\subsection{Sensitivity and SEFD}
+While the radiometer equation (Eq.\ \ref{eq:radiometer}) defines the sensitivity in terms of temperature fluctuations ($\sigma_T$), radio astronomers usually need to express this limit in terms of specific flux density ($S_\nu$), as defined in Eq.\ \ref{eq:flux_density}. To bridge the gap between the physical energy intercepted from the sky and the equivalent temperature detected by the electronics, we must introduce the effective collecting area of the telescope, $A_e$.
+
+Assuming an unpolarized source (where the energy is equally split between two orthogonal polarizations) and a single-polarization feed, the power collected by the antenna is given by:
+\begin{equation}
+    P = \frac{1}{2} S_\nu A_e \Delta \nu.
+    \label{eq:power_collected}
+\end{equation}
+By equating this collected power with the thermal noise power defined by the Johnson-Nyquist relation ($P = k T_a \Delta \nu$, from Eq.\ \ref{eq:thermal_noise_power}), we can derive the fundamental relationship between flux density and antenna temperature:
+\begin{equation}
+    k T_a \Delta \nu = \frac{1}{2} S_\nu A_e \Delta \nu \implies T_a = \left( \frac{A_e}{2k} \right) S_\nu.
+    \label{eq:Ta_flux_relation}
+\end{equation}
+The term in parentheses is often referred to as the sensitivity, denoted here as $\Gamma$ (measured in $\text{K Jy}^{-1}$). It represents the efficiency of the telescope in converting incident flux density into antenna temperature:
+\begin{equation}
+    \Gamma = \frac{T_a}{S_\nu} = \frac{A_e}{2k}.
+\end{equation}
+
+Using this relation, we can define the \gls{sefd}, a critical figure of merit for radio telescopes. The \gls{sefd} is defined as the flux density of a source that would produce an antenna temperature equal to the system temperature ($T_\text{sys}$):
+\begin{equation}
+    \text{SEFD} = \frac{T_\text{sys}}{\Gamma} = \frac{2 k T_\text{sys}}{A_e}.
+\end{equation}
+A lower \gls{sefd} indicates a more sensitive system. By substituting $\sigma_T$ from the radiometer equation (Eq.\ \ref{eq:radiometer}) into the gain relationship, we can express the minimum detectable flux density ($\Delta S_{\text{min}}$) as:
+\begin{equation}
+    \Delta S_{\text{min}} = \frac{\sigma_T}{\Gamma} = \frac{k_c \, T_\text{sys}}{\Gamma \sqrt{\Delta \nu \, t_\text{int}}}.
+\end{equation}
+Expressing this in terms of \gls{sefd}:
+\begin{equation}
+    \Delta S_{\text{min}} = \frac{k_c \, \text{SEFD}}{\sqrt{\Delta \nu \, t_\text{int}}}.
+    \label{eq:sensitivity_sefd}
+\end{equation}
+
+For aperture-type antennas (like parabolic reflectors), $A_e$ is typically related to the physical area $A_p$ through an aperture efficiency factor $\eta_{\text{ap}}$. However, for dipole-based arrays such as CHARTS, the effective area is more conveniently expressed in terms of the antenna gain $G(\theta, \phi)$ (see \citealt{stutzman2012antenna}, Section 2.5 for definition) relative to an isotropic radiator:
+\begin{equation}
+    A_e(\theta, \phi) = \frac{\lambda^2}{4\pi} G(\theta, \phi) \eta_{\text{rad}},
+\end{equation}
+where $\lambda$ is the observing wavelength and $\eta_{\text{rad}}$ is the radiation efficiency. In these systems, $\eta_{\text{rad}}$ accounts for ohmic losses in the dipole elements and the ground plane, as well as impedance mismatch losses. 
+
+In the context of an interferometric array with $N$ identical antennas, the total effective area increases by a factor of $N$ ($A_{e, \text{total}} = N A_e$), effectively reducing the \gls{sefd} by $N$ and improving the sensitivity of the combined array.
 
 \subsection{Radio telescopes receivers}
 The design of radio telescope receivers has undergone significant advancements since the 1940s, beginning with the introduction of the Dicke switch to mitigate gain fluctuations \citep{dicke1946}. By the 1960s, systematic studies, such as those by \citet{tiuri1964}, established a foundational framework for analog receiver architectures, emphasizing system noise temperature ($T_{\text{sys}}$) as a critical metric for sensitivity. 
@@ -154,56 +194,62 @@ Modern receivers predominantly employ heterodyne architectures, which integrate 
 \begin{figure}[t]
 	\centering
 	\includegraphics[width=\textwidth]{tikz figures/build/rf_front_end.pdf}
-	\caption[Heterodyne receiver]{Heterodyne radio telescope receiver. The sky signal is amplified by a \gls{lna}, mixed with a local oscillator to an intermediate frequency, and digitized by an \gls{adc}. A digital down-converter with an \gls{nco} and lowpass filter translates the signal to baseband before decimation and further digital processing. Adapted from \href{https://tikz.net/radiofrequency-frontend/}{TiKz.net}, Rubem Pacelli.}
+	\caption[Heterodyne receiver]{Heterodyne radio telescope receiver. The sky signal is amplified by a \gls{lna}, mixed with a local oscillator to an intermediate frequency, and digitized by an \gls{adc} (with sampling and quantization). A digital down-converter with an \gls{nco} and digital \gls{lpf} translates the signal to baseband before decimation and further digital processing. Adapted from \href{https://tikz.net/radiofrequency-frontend/}{TiKz.net}, Rubem Pacelli.}
 	\label{fig:heterodyne_receiver}
 \end{figure}
 
-Despite the widespread use of heterodyne technology, there is a growing trend towards direct sampling receivers, enabled by the availability of high-speed, high-dynamic-range \glspl{adc}. In this approach, the sky signal (after amplification and appropriate filtering) is digitized directly at the \gls{rf} or at a high intermediate frequency without prior analogue down-conversion. This simplifies the analogue front-end, reduces sources of instrumental noise (less components in Eq. \ref{eq:friis}), and allows flexible digital signal processing.
+Despite the widespread use of heterodyne technology, there is a growing trend towards direct sampling receivers, enabled by the availability of high-speed, high-dynamic-range \glspl{adc}. In this approach, the sky signal (after amplification and appropriate filtering) is digitized directly at the \gls{rf} or at a high intermediate frequency without prior analogue down-conversion. This simplifies the analogue front-end, reduces sources of instrumental noise (less components in Eq.\ \ref{eq:friis}) and allows flexible digital signal processing.
 
 \section{Time-domain astronomy and radio transients}
 \label{sec:transient_astronomy}
 
 Astronomy has traditionally focused on mapping the spatial and spectral properties of celestial sources, revealing the large-scale structure and composition of the Universe. Yet, a complementary perspective arises when one observes how these signals evolve in time. This approach, known as time-domain astronomy, explores the dynamic sky by studying variations in brightness, polarization, or frequency over timescales that range from fractions of a millisecond to years. Such temporal variability offers a unique window into energetic and transient astrophysical processes that cannot be accessed through static observations alone.
 
-The study of time variability has historically led to major breakthroughs in astrophysics. The discovery of pulsars by Jocelyn Bell in 1967 revealed the existence of neutron stars \citep{Hewish1968}, providing one of the first confirmations of stellar evolution beyond supernova explosions. Likewise, the detection of X-ray variability in Cygnus~X-1 offered early evidence for the presence of black holes \citep{CygnusX1_1972}. These discoveries demonstrated that time-series analysis is a powerful diagnostic of compact objects, extreme magnetic fields, and relativistic plasma environments.
+The study of time variability has historically led to major breakthroughs in astrophysics. The discovery of pulsars by \citeauthor{Hewish1968}\ in \citeyear{Hewish1968} revealed the existence of neutron stars, providing one of the first confirmations of stellar evolution beyond supernova explosions. Likewise, the detection of X-ray variability in Cygnus~X-1 offered early evidence for the presence of black holes \citep{CygnusX1_1972}. These discoveries demonstrated that time-series analysis is a powerful diagnostic of compact objects, extreme magnetic fields, and relativistic plasma environments.
 
 Within this domain, a particularly rich class of phenomena is formed by transient sources that appear, brighten, and fade on observable timescales. Transients may last from milliseconds, as in \glspl{frb}, to months, as in supernovae and tidal disruption events. While some exhibit periodic or quasi-periodic behavior, others are one-off events whose mechanisms remain only partially understood. Their fleeting nature poses significant observational challenges, requiring continuous monitoring and rapid data processing to capture their signatures before they vanish.
 
 For this thesis in particular we will focus on two types of radio emitting objects: \glspl{frb} and pulsars. Both classes emit bright, coherent radio pulses, but they may differ in their origins, timescales, and observational characteristics. First, we will review the main propagation effects that shape their observed signals.
 
 \subsection{Propagation effects}
-
+\label{sec:propagation_effects}
 Radio waves traveling through ionized media interact with free electrons and magnetic fields, giving rise to several propagation effects (see \citealt{Lorimer2004}, Chapter 4):
 
 \begin{itemize}
 	\item \textbf{Dispersion:} Caused by the frequency-dependent group velocity of radio waves in plasma, resulting in lower-frequency components arriving later than higher frequencies. The delay between two frequencies $\nu_1$ and $\nu_2$ is proportional to the \gls{dm}, which has units of \si{\parsec \per \centi \meter \cubed} and is defined as the integrated column density of free electrons along the \gls{los}:
-		\begin{equation}
-			\mathrm{DM} = \int_0^L n_e(l) \, \mathrm{d}l \ ,
-		\end{equation}
-		where $n_e(l)$ is the electron density along the \gls{los} and $L$ is the path length. The explicit time delay is given by
-		\begin{equation}
-			\Delta t = k_{\text{DM}} \, \mathrm{DM} \left( \nu_\text{ref}^{-2} - \nu^{-2} \right) ,
-		\end{equation}
-		with $k_{\text{DM}} = 1/(2.41\times10^{-4}) \ \si{\second \mega \hertz \squared \centi \meter \cubed \per \parsec }$ and $\nu_\text{ref} $ some reference frequency. Pulsars and FRBs both exhibit measurable dispersion sweeps, which are corrected through the process of dedispersion.
+			\begin{equation}
+				\mathrm{DM} = \int_0^L n_e(l) \, \mathrm{d}l \ ,
+			\end{equation}
+			where $n_e(l)$ is the electron density along the \gls{los} and $L$ is the path length. The explicit time delay is given by:
+			\begin{equation}
+				\Delta t = k_{\text{DM}} \, \mathrm{DM} \left( \nu_\text{ref}^{-2} - \nu^{-2} \right) ,
+			\end{equation}
+			with $k_{\text{DM}} = 1/(2.41\times10^{-4}) \ \si{\second \mega \hertz \squared \centi \meter \cubed \per \parsec }$ and $\nu_\text{ref} $ some reference frequency. Pulsars and FRBs both exhibit measurable dispersion sweeps, which are corrected through the process of dedispersion.
+			
+			When channelizing the signal into discrete frequency bins, dispersion causes intra-channel dispersion smearing, which is more acute at lower frequencies where dispersion is greater. This dispersion time $t_{\text{DM}}$ across a channel of width $\Delta \nu_\text{ch}$ centered at frequency $\nu$ is given by \citep{LiamConnor2019}:
+			\begin{equation}
+			t_{\text{DM}} = 8.3 \, \text{DM} \, \left( \frac{\Delta \nu_\text{ch}}{\SI{1}{\mega\hertz}} \right) \left( \frac{\nu}{\SI{1}{\giga\hertz}} \right)^{-3} \, \si{\micro\second}.
+			\label{eq:intra_channel_smearing}
+			\end{equation}
 
-		\item \textbf{Faraday rotation:} As linearly polarized radio waves propagate through a magnetized plasma, their plane of polarization undergoes Faraday rotation. The polarization angle $\chi$ varies with observing frequency as
-		\begin{equation}
-		\chi(\nu) = \chi_0 + \mathrm{RM}\frac{c^2}{\nu^2},
-		\label{eq:faraday_rotation}
-		\end{equation}
-		where $\chi_0$ is the intrinsic polarization angle and \gls{rm} is the rotation measure, defined as
-		\begin{equation}
-		\mathrm{RM} = \frac{e^3}{2\pi m_e^2 c^4} \int_0^L n_e(l) B_\parallel(l) \, \mathrm{d}l .
-		\end{equation}
-		Here, $e$ is the elementary charge, $m_e$ is the electron mass, $B_\parallel(l)$ and is the magnetic field component parallel to the \gls{los}.
+			\item \textbf{Faraday rotation:} As linearly polarized radio waves propagate through a magnetized plasma, their plane of polarization undergoes Faraday rotation. The polarization angle $\chi$ varies with observing frequency as:
+			\begin{equation}
+			\chi(\nu) = \chi_0 + \mathrm{RM}\frac{c^2}{\nu^2},
+			\label{eq:faraday_rotation}
+			\end{equation}
+			where $\chi_0$ is the intrinsic polarization angle and \gls{rm} is the rotation measure, defined as:
+			\begin{equation}
+			\mathrm{RM} = \frac{e^3}{2\pi m_e^2 c^4} \int_0^L n_e(l) B_\parallel(l) \, \mathrm{d}l .
+			\end{equation}
+			Here, $e$ is the elementary charge, $m_e$ is the electron mass, $B_\parallel(l)$ and is the magnetic field component parallel to the \gls{los}.
 
-		Faraday rotation arises because the left- and right-handed circular polarization components experience different refractive indices in a magnetized plasma, producing a phase delay that accumulates along the propagation path and leads to the characteristic $\nu^{-2}$ dependence of $\chi$ \citep{RM}. Measurements of RM therefore provide a sensitive probe of magnetized plasma in the intervening \gls{ism} and \gls{igm}.
+			Faraday rotation arises because the left- and right-handed circular polarization components experience different refractive indices in a magnetized plasma, producing a phase delay that accumulates along the propagation path and leads to the characteristic $\nu^{-2}$ dependence of $\chi$ \citep{RM}. Measurements of RM therefore provide a sensitive probe of magnetized plasma in the intervening \gls{ism} and \gls{igm}.
 
-		Interestingly, recent observations of FRB~20221022A revealed an S-shaped swing in the polarization position angle, closely resembling features commonly observed in pulsars. Although the nature of these sources will be discussed in later sections (\S\ref{sec:pulsars} and \S\ref{sec:frbs}), this similarity has been interpreted as suggestive evidence that at least some of them may share related emission environments or mechanisms \citep{2025Natur.637...43M}.
+			Interestingly, recent observations of FRB~20221022A revealed an S-shaped swing in the polarization position angle, closely resembling features commonly observed in pulsars. Although the nature of these sources will be discussed in later sections (\S\ref{sec:pulsars} and \S\ref{sec:frbs}), this similarity has been interpreted as suggestive evidence that at least some of them may share related emission environments or mechanisms \citep{2025Natur.637...43M}.
 
-		\item \textbf{Scattering:} Density inhomogeneities in the ISM cause multipath propagation, producing an exponential scattering tail in the pulse profile. This effect is stronger at lower frequencies, with $\tau_{\text{sc}} \propto \nu^{-\alpha}$ and $\alpha \sim 4$ for Kolmogorov turbulence \citep{Rickett_1977}. The scattering timescale can be estimated empirically from the DM and observing frequency.
+			\item \textbf{Scattering:} Density inhomogeneities in the ISM cause multipath propagation, producing an exponential scattering tail in the pulse profile. This effect is stronger at lower frequencies, with $\tau_{\text{sc}} \propto \nu^{-\alpha}$ and $\alpha \sim 4$ for Kolmogorov turbulence \citep{Rickett_1977}. The scattering timescale can be estimated empirically from the DM and observing frequency.
 
-		\item \textbf{Scintillation:} Variations in electron density lead to constructive and destructive interference, causing intensity fluctuations over time and frequency. These effects provide insights into the small-scale structure of the ISM and, importantly, can be used as an astrophysical lens to constrain the emission-region size of radio transients \citep{Scintillation_FRB_Nimmo_2025}.
+			\item \textbf{Scintillation:} Variations in electron density lead to constructive and destructive interference, causing intensity fluctuations over time and frequency. These effects provide insights into the small-scale structure of the ISM and, importantly, can be used as an astrophysical lens to constrain the emission-region size of radio transients \citep{Scintillation_FRB_Nimmo_2025}.
 \end{itemize}
 Figure \ref{fig:sim_galactic_magnetar} illustrates how these effects shape the observed signal. The panels show a simulated pulse from the Galactic magnetar SGR~1935+2154 \citep{Galactic_magnetar, Bochenek_2020}, a two-component pulse whose discovery was groundbreaking due to its resemblance to FRBs, strengthening the hypothesis that FRBs may originate from magnetars. The simulation, generated with \texttt{fitburst} \citep{fonseca2024modelingmorphologyfastradio}, assumes a DM of \SI{332.7}{\parsec \per \centi \meter^3} and a scattering timescale of \SI{0.759}{\milli \second} at \SI{600}{\mega \hertz}. Dispersion delays the pulse over several seconds across the band (left), while dedispersion recovers the intrinsic profile, still broadened by scattering (right).
 
@@ -218,18 +264,24 @@ Figure \ref{fig:sim_galactic_magnetar} illustrates how these effects shape the o
 \label{sec:pulsars}
 Pulsars form a well-defined subclass of radio-emitting objects, distinct from the broader category of transients. They are rapidly rotating, highly magnetized neutron stars that emit beams of coherent radio waves from their magnetic poles. As the star spins, these beams sweep across the sky like a cosmic lighthouse, and if the Earth lies within their path, observers detect a sequence of periodic pulses. This periodicity, ranging from milliseconds to seconds, is one of the hallmarks that separates pulsars from one-off or irregular transients.
 
+\begin{figure}[t]
+	\centering
+	\includegraphics{pulsar.pdf}
+	\caption[Pulsar emission geometry]{Simplified pulsar emission geometry. A rapidly rotating neutron star with a misaligned magnetic axis emits beamed radio waves from its magnetic poles (shown as radio beams). As the pulsar spins around its rotation axis (spin axis), the beam sweeps across space like a lighthouse. When Earth lies within the beam's path, periodic radio pulses are detected. The magnetic field lines (shown in black) are anchored to the neutron star and co-rotate with it.}
+	\label{fig:pulsar_geometry}
+\end{figure}
+
 Since their discovery in 1967, pulsars have become fundamental astrophysical laboratories. Their remarkable rotational stability makes them precise cosmic clocks, enabling tests of general relativity, the study of dense matter equations-of-state, and the characterization of the \gls{ism}. Moreover, pulsar timing arrays \citep{PulsarTimingArray} exploit their long-term stability to search for nanohertz gravitational waves \citep{Bernardo_2025}.
 
-The emission mechanism of pulsars is thought to involve coherent processes in the magnetosphere, where charged particles accelerated along curved magnetic field lines produce radio waves \citep{mitra2024decodingnaturecoherentradio}. Despite decades of study, the detailed physics of pulsar emission remains an active area of research \citep{Melrose_2016}, particularly regarding the origin of phenomena such as mode changing, nulling, and giant pulses.
+The emission mechanism of pulsars is thought to involve coherent processes in the magnetosphere, where charged particles accelerated along curved magnetic field lines produce radio waves \citep{mitra2024decodingnaturecoherentradio}. Despite decades of study, the detailed physics of pulsar emission remains an active area of research \citep{Melrose_2016}, particularly regarding the origin of phenomena such as mode changing, nulling, giant pulses, and glitches, sudden spin-up events attributed to internal dynamics of the neutron star crust and superfluid interior \citep{Antonopoulou2022,zubieta2024timingirregularitiesglitchespulsar}.
 
-Because of their pulsed signals, pulsars are especially sensitive to propagation effects. Dispersion caused by free electrons in the \gls{ism} delays lower frequencies with respect to higher ones, multipath scattering broadens the pulses, and Faraday rotation rotates the plane of polarization as the waves traverse magnetized plasma \citep{PropagationISM}. These signatures allow astronomers to not only probe the intrinsic pulsar emission but also extract valuable information about the intervening medium. In addition, their well-defined profiles and repeatability make pulsars reliable calibration sources for radio telescopes.
-
+While their well-defined profiles and repeatability make some pulsars, such as the Crab pulsar \citep{B_hler_2014} embedded within the steady-source Tau~A, useful for calibration purposes, pulsars are generally not preferred as calibration sources due to their intrinsic variability. In radio astronomy, steady-source continuum emitters are typically favored for calibration.
 
 
 \subsection{Fast radio bursts}
 \label{sec:frbs}
 
-\glspl{frb} are bright, millisecond-duration bursts of coherent radio emission of extragalactic origin, first reported in \citeyear{Lorimer_2007} by \citeauthor{Lorimer_2007}. Their high \gls{dm} values, exceeding the expected Galactic contribution, demonstrate that they originate at cosmological distances.
+\glspl{frb} are bright, millisecond-duration bursts of coherent radio emission of extragalactic origin, first reported in \citeyear{Lorimer_2007} by \citeauthor{Lorimer_2007} Their high \gls{dm} values, exceeding the expected Galactic contribution, demonstrate that they originate at cosmological distances.
 
 
 The observational landscape has rapidly expanded: while the majority of FRBs are detected as one-off events, a subset exhibit repeating behavior, notably FRB~121102 \citep{Spitler_2016} which has been seen to have some periodicity \citep{Braga_2025}, suggesting multiple formation pathways. Proposed progenitor models range from compact objects such as magnetars and neutron star mergers to more exotic mechanisms (see \citealt{Zhang2023physics} and \citealt{EmissionMechanisms2022} for reviews on emission mechanisms). Figure~\ref{fig:frb_sky_distribution} presents the sky distribution of known FRBs in equatorial coordinates. While the distribution appears biased toward positive declinations due to the geographical concentration of existing surveys in the northern hemisphere, studies such as \citet{Josephy2021} demonstrate that FRBs are statistically isotropic when analyzed in Galactic coordinates, showing no dependence on Galactic latitude. According to the \href{https://blinkverse.zero2x.org/overview}{Blinkverse} database \citep{Blinkverse2023}, only 25\% of one-off FRBs and 7\% of repeating sources have been detected below \SI{0}{\degree} declination, confirming this observational bias rather than an intrinsic spatial preference.
@@ -237,18 +289,18 @@ The observational landscape has rapidly expanded: while the majority of FRBs are
 \begin{figure}[t]
 	\centering
 	\includegraphics{frb_sky_distribution.pdf}
-	\caption[Sky distribution of known FRBs]{Sky distribution of known FRBs in equatorial coordinates (RA/Dec), highlighting the isotropic distribution and the locations of repeating sources. Data from the \href{https://blinkverse.zero2x.org/overview}{Blinkverse} database \citep{Blinkverse2023}.}
+	\caption[Sky distribution of known FRBs]{Sky distribution of known FRBs in equatorial coordinates (RA/Dec), showing the locations of one-offs and repeating sources. Data from the \href{https://blinkverse.zero2x.org/overview}{Blinkverse} database \citep{Blinkverse2023}.}
 	\label{fig:frb_sky_distribution}
 \end{figure}
 
 Detecting FRBs instrumentally demands backends with high time and frequency resolution, capable of performing real-time dedispersion. Large-scale surveys conducted by facilities such as \gls{chime} with its FRB backend \citep{CHIME/FRB_2018}, the Australian Square Kilometre Array Pathfinder (ASKAP; \citealt{ASKAPsystem2021}), and the Five-Hundred-Meter Aperture Spherical Telescope (FAST; \citealt{fast2011}) have collectively identified thousands of FRBs. These detections have facilitated population studies and host galaxy associations, as demonstrated in the first CHIME/FRB catalog \citep{CHIMEcatalog2021} and the commensal real-time ASKAP fast transient (CRAFT) incoherent-sum survey \citep{Shannon_2025}. Additionally, open-access datasets, such as FAST-FREX \citep{FAST-FREX}, provide dynamic spectra open to the community.
 
-Cosmologically, FRBs are promising probes of the ionized baryon content of the Universe. The observed DM can be decomposed as
+Cosmologically, FRBs are promising probes of the ionized baryon content of the Universe. The observed DM can be decomposed as:
 \begin{equation}
 	\mathrm{DM}_{\text{total}}(z) = \mathrm{DM}_{\text{MW}} + \mathrm{DM}_{\text{halo}} + \mathrm{DM}_{\text{IGM}}(z) + \sum_i \mathrm{DM}_{\text{galaxy}_i} + \mathrm{DM}_{\text{env}} .
 	\label{eq:dm_total}
 \end{equation}
-Each term captures a distinct electron column along the line of sight, with contributions from the Milky Way disk and halo, the \gls{igm}, intervening galaxies, and the immediate environment of the source \citep{Macquart_2020}. The \gls{igm} component, in particular, encodes the distribution of baryons and the history of reionization and large-scale magnetization up to a redshift $z$. Consequently, localizing FRBs to their host galaxies and securing redshift measurements is essential for cosmological applications, as it enables separation of the individual contributions and calibration of the DM-redshift relation, Eq. \ref{eq:dm_total}. Despite rapid progress, only a few dozen FRBs have been precisely localized to date, including some one-off events via \gls{vlbi} \citep{Cassanelli_2024, 2025ApJS..280....6C}.
+Each term captures a distinct electron column along the line of sight, with contributions from the Milky Way disk and halo, the \gls{igm}, intervening galaxies, and the immediate environment of the source \citep{Macquart_2020}. The \gls{igm} component, in particular, encodes the distribution of baryons and the history of reionization and large-scale magnetization up to a redshift $z$. Consequently, localizing FRBs to their host galaxies and securing redshift measurements is essential for cosmological applications, as it enables separation of the individual contributions and calibration of the DM-redshift relation, Eq.\ \ref{eq:dm_total}. Despite rapid progress, only a few dozen FRBs have been precisely localized to date, including some one-off events via \gls{vlbi} \citep{Cassanelli_2024, 2025ApJS..280....6C}.
 
 
 Nevertheless, fundamental questions remain open: the nature of progenitors, the emission mechanisms, and the influence of local environments. Next-generation facilities such as the Square Kilometre Array (SKA; \citealt{Weltman_2020}), the Deep Synoptic Array 2000 (DSA-2000; \citealt{hallinan2019dsa2000radiosurvey}) and the Canadian Hydrogen Observatory and Radio-Transient Detector (CHORD; \citealt{CHORD}) are expected to dramatically expand the FRB sample and deliver sub-arcsecond localizations, consolidating their role as astrophysical and cosmological probes.
@@ -266,7 +318,7 @@ Sampling is one of two processes that take place when an analog signal is conver
 	\begin{tikzpicture}[scale=1.5]
 		\node[rectangle, fill=black, text=white, minimum width=1.5cm, minimum height=0.8cm] at (3,2) {ADC};
 		\draw[->, thick, red] (0,2) -- (2.2,2) node[midway, above] {\color{red}$x(t)$};
-		\draw[->, thick, blue] (3.8,2) -- (6,2) node[midway, above] {\color{blue}$x[n]$};
+		\draw[->, thick, blue] (3.8,2) -- (6,2) node[midway, above] {\color{blue}$x_n$};
 		\begin{scope}[xshift=0cm]
 			\draw[->] (-2,0) -- (2.5,0) node[right] {$t$};
 			\draw[->] (0,-1.5) -- (0,1.5) node[above] {$x(t)$};
@@ -280,7 +332,7 @@ Sampling is one of two processes that take place when an analog signal is conver
 
 		\begin{scope}[xshift=6cm]
 			\draw[->] (-2,0) -- (2.5,0) node[right] {$n$};
-			\draw[->] (0,-1.5) -- (0,1.5) node[above] {$x[n]$};
+			\draw[->] (0,-1.5) -- (0,1.5) node[above] {$x_n$};
 			
 			\foreach \x in {-2,-1.9,...,2} {
 				\draw[dashed, blue] (\x,0) -- (\x,{sin(2*180*\x)});
@@ -291,36 +343,36 @@ Sampling is one of two processes that take place when an analog signal is conver
 			\node[below] at (0,-2) {(b) Discrete signal};
 		\end{scope}
 	\end{tikzpicture}
-	\caption[ADC conversion process]{\gls{adc} conversion process. The left side shows the analog signal $x(t)$, which is sampled at discrete time intervals to produce the digital signal $x[n]$ on the right side. Here the squared brackets, $[\cdot]$, indicate discrete time indexing. The dashed vertical lines indicate the sampling instants.}
+	\caption[ADC conversion process]{\gls{adc} conversion process. The left side shows the analog signal $x(t)$, which is sampled at discrete time intervals to produce the digital signal $x_n$ on the right side. Here the squared brackets, the subindex $n$, indicate discrete time indexing. The dashed vertical lines indicate the sampling instants.}
 	\label{fig:adc_process}
 \end{figure}
-In the digital domain, as illustrated on the right side of Figure \ref{fig:adc_process}, the signal is represented at discrete time intervals, each separated by a sampling period $t_s$. The notation $x[n]$ indicates discrete time indexing, where $n$ is an integer representing the sample number. Throughout this thesis, squared brackets $[\cdot]$ denote discrete time variables. The sampling rate $\nu_s$ and sampling period are inversely related:
+In the digital domain, as illustrated on the right side of Figure \ref{fig:adc_process}, the signal is represented at discrete time intervals, each separated by a sampling period $t_s$. The notation $x_n$ indicates discrete time indexing, where $n$ is an integer representing the sample number. The sampling rate $\nu_s$ and sampling period are inversely related:
 \begin{equation}
 	\nu_s = \frac{1}{t_s},
 	\label{eq:sampling_frequency}
 \end{equation}
 where $\nu_s$ is expressed in Hz or samples per second (SPS). Therefore the sampling signal can be expressed as:
 \begin{equation}
-	x[n] \triangleq x(n t_s) .
+	x_n \triangleq x(n t_s) .
 \end{equation}
 
 The selection of an appropriate sampling rate is determined by the frequency content of the signal under analysis. An insufficient sampling rate results in the loss of critical information and an inaccurate digital representation, mainly due to aliasing, an effect that will be discussed in more detail in \S \ref{sec:nyquist_shannon}. On the other hand, an excessively high rate increases computational demands without yielding significant benefits. Achieving an optimal balance is essential in digital signal processing applications, such as spectrometry, to ensure accurate spectral analysis without introducing aliasing or unnecessary noise. The following section addresses the Nyquist-Shannon sampling theorem, which formalizes the criteria for proper sampling.
 
 \subsection{Nyquist-Shannon sampling theorem}
 \label{sec:nyquist_shannon}
-The Nyquist–Shannon sampling theorem, originally proposed by \citet{Nyquist1928} and formalized by \citet{Shannon1949}, establishes the minimum sampling rate required to avoid aliasing. For a bandlimited signal with maximum frequency $\nu_{\text{max}}$, the sampling frequency must satisfy
+The Nyquist–Shannon sampling theorem, originally proposed by \citet{Nyquist1928} and formalized by \citet{Shannon1949}, establishes the minimum sampling rate required to avoid aliasing. For a bandlimited signal with maximum frequency $\nu_{\text{max}}$, the sampling frequency must satisfy:
 \begin{equation}
 \nu_s > 2\nu_{\text{max}} .
 \label{eq:nyquist_condition}
 \end{equation}
 
-The theorem applies equally to baseband signals (centered near 0~Hz) and bandpass signals (occupying a frequency range $[\nu_L, \nu_H]$ away from DC). For bandpass signals with bandwidth $\Delta\nu = \nu_H - \nu_L$, the condition becomes
+The theorem applies equally to baseband signals (centered near 0~Hz) and bandpass signals (occupying a frequency range $[\nu_L, \nu_H]$ away from DC). For bandpass signals with bandwidth $\Delta\nu = \nu_H - \nu_L$, the condition becomes:
 \begin{equation}
 \nu_s > 2\Delta\nu ,
 \end{equation}
 enabling bandpass sampling, where aliasing is deliberately used to translate the signal into a lower frequency range.
 
-The frequency spectrum is partitioned into Nyquist zones of width $\nu_s/2$ (Figure~\ref{fig:nyquist_zones}). A signal component in zone $m$ is mapped to the first zone according to
+The frequency spectrum is partitioned into Nyquist zones of width $\nu_s/2$ (Figure~\ref{fig:nyquist_zones}). A signal component in zone $m$ is mapped to the first zone according to:
 \begin{equation}
 \nu_{\text{alias}} =
 \begin{cases}
@@ -376,19 +428,19 @@ Understanding this mapping between zones is therefore essential when designing s
 \label{sec:quadrature_sampling}
 Quadrature sampling is a technique used to digitize a band-limited signal by shifting its spectrum so that it is centered at 0 Hz. Unlike conventional (real-valued) Nyquist sampling, quadrature sampling produces a complex-valued signal. In this representation, the sampling rate equals the signal bandwidth ($\nu_s = \Delta\nu$), meaning each complex sample contains the information of two real samples. This approach allows the representation of both positive and negative frequency components \citep{Price2016spectrometers}. 
 
-In the context of quadrature sampling, negative frequencies arise naturally from the complex representation of signals. A real-valued signal has a symmetric spectrum (this is best explained after introducing the notion of \gls{ft}, see \S\ref{sec:dft}) meaning negative frequencies are redundant. However, when representing a signal as a complex baseband signal (such as Eq.~\ref{eq:complex_signal}), the spectrum is no longer symmetric. Positive and negative frequencies now correspond to distinct components: positive frequencies represent signals rotating counterclockwise in the complex plane, while negative frequencies represent clockwise rotation. This distinction is crucial for quadrature sampling, as it allows the full bandwidth to be captured without aliasing, effectively doubling the information capacity compared to real sampling at the same rate.
+In the context of quadrature sampling, negative frequencies arise naturally from the complex representation of signals. A real-valued signal has a symmetric spectrum (this is best explained after introducing the notion of \gls{ft}, see \S\ref{sec:dft}) meaning negative frequencies are redundant. However, when representing a signal as a complex baseband signal (such as Eq.\ \ref{eq:complex_signal}), the spectrum is no longer symmetric. Positive and negative frequencies now correspond to distinct components: positive frequencies represent signals rotating counterclockwise in the complex plane, while negative frequencies represent clockwise rotation. This distinction is crucial for quadrature sampling, as it allows the full bandwidth to be captured without aliasing, effectively doubling the information capacity compared to real sampling at the same rate.
 
-To convert a real, Nyquist-sampled signal $x[n]$ centered at 0 Hz into a quadrature-sampled signal, it can be multiplied by a complex exponential $e^{\mathrm{j}2\pi \nu_0 n}$, resulting in
+To convert a real, Nyquist-sampled signal $x_n$ centered at 0 Hz into a quadrature-sampled signal, it can be multiplied by a complex exponential $e^{\mathrm{j}2\pi \nu_0 n}$, resulting in:
 \begin{equation}
 	\label{eq:quadrature_sampling}
-	x'[n] = x[n] e^{\mathrm{j}2\pi \nu_0 n}
+	x^\prime_n = x_n e^{\mathrm{j}2\pi \nu_0 n} \, ,
 \end{equation}
-where $\nu_0$ is the center frequency of the signal. This multiplication shifts the spectrum of $x[n]$ to be centered at $\nu_0$, allowing it to be sampled at a rate equal to its bandwidth. The resulting complex signal can be represented as:
+where $\nu_0$ is the center frequency of the signal. This multiplication shifts the spectrum of $x_n$ to be centered at $\nu_0$, allowing it to be sampled at a rate equal to its bandwidth. The resulting complex signal can be represented as:
 \begin{equation}
-	x'[n] = x_I[n] + \mathrm{j} x_Q[n]
+	x^\prime_n = (x_I)_n + \mathrm{j} (x_Q)_n
 	\label{eq:complex_signal}
 \end{equation}
-where $x_I[n]$ and $x_Q[n]$ represent the in-phase and quadrature components, respectively. In practice, this is implemented using a \gls{nco}, where a cosine wave is used for the in-phase component and a sine wave (90° phase-shifted) for the quadrature component, as illustrated in Figure \ref{fig:quadrature_sampling}.
+where $(x_I)_n$ and $(x_Q)_n$ represent the in-phase and quadrature components, respectively. In practice, this is implemented using a \gls{nco}, where a cosine wave is used for the in-phase component and a sine wave (90° phase-shifted) for the quadrature component, as illustrated in Figure \ref{fig:quadrature_sampling}.
 \begin{figure}[t]
 	\centering
 	\begin{tikzpicture}
@@ -404,9 +456,9 @@ where $x_I[n]$ and $x_Q[n]$ represent the in-phase and quadrature components, re
 	\node[shape=rectangle, minimum width=1.923cm, minimum height=0.631cm] at (5.221, 3){} node[anchor=center, align=center, text width=1.535cm, inner sep=6pt] at (5.221, 3){$\sin(2\pi\nu_0 n)$};
 	\node[shape=rectangle, draw, line width=1pt, minimum width=1.131cm, minimum height=0.631cm] at (8.583, 1.5){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (8.583, 1.5){LPF};
 	\node[shape=rectangle, draw, line width=1pt, minimum width=1.131cm, minimum height=0.631cm] at (8.583, 6){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (8.583, 6){LPF};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (10.583, 6){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (10.583, 6){$x_I[n]$};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (10.583, 1.5){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (10.583, 1.5){$x_Q[n]$};
-	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (3.083, 3.667){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (3.083, 3.667){$x[n]$};
+	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (10.583, 6){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (10.583, 6){$(x_I)_n$};
+	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (10.583, 1.5){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (10.583, 1.5){$(x_Q)_n$};
+	\node[shape=rectangle, minimum width=1.131cm, minimum height=0.631cm] at (3.083, 3.667){} node[anchor=center, align=center, text width=0.743cm, inner sep=6pt] at (3.083, 3.667){$x_n$};
 	\draw[-latex] (4, 4) -- (4, 1.5) -- (6.5, 1.5);
 	\draw[-latex] (7.5, 1.5) -- (8, 1.5);
 	\draw[-latex] (7.5, 6) -- (8, 6);
@@ -416,27 +468,27 @@ where $x_I[n]$ and $x_Q[n]$ represent the in-phase and quadrature components, re
 	\draw[-latex] (4, 6) -- (6.5, 6);
 	\draw (3.583, 3.667) -- (4, 3.667);
 \end{tikzpicture}
-	\caption[Quadrature sampling block diagram]{Quadrature sampling block diagram, where a real-valued signal $x[n]$ is mixed with a cosine and sine wave at frequency $\nu_0$ to produce the in-phase ($x_I[n]$) and quadrature ($x_Q[n]$) components. The 90° phase shifter ensures the sine wave is in quadrature with the cosine wave. Digital lowpass filters (LPF) remove high-frequency components resulting from the mixing process.}
+	\caption[Quadrature sampling block diagram]{Quadrature sampling block diagram, where a real-valued signal $x_n$ is mixed with a cosine and sine wave at frequency $\nu_0$ to produce the in-phase $(x_I)_n$ and quadrature $(x_Q)_n$ components. The 90° phase shifter ensures the sine wave is in quadrature with the cosine wave. Digital \gls{lpf} remove high-frequency components resulting from the mixing process.}
 	\label{fig:quadrature_sampling}
 \end{figure}
 
 \subsection{Quantization}
 \label{sec:quantization}
-Quantization is the process by which the continuous amplitudes of an analogue signal are mapped to a finite set of discrete levels (the second block in the ADC present in Figure \ref{fig:heterodyne_receiver}). For an $N$-bit converter, the number of quantization levels is $L = 2^N$, and the quantized signal can be expressed as
+Quantization is the process by which the continuous amplitudes of an analogue signal are mapped to a finite set of discrete levels (the second block in the ADC present in Figure \ref{fig:heterodyne_receiver}). For an $M$-bit converter, the number of quantization levels is $L = 2^M$, and the quantized signal can be expressed as:
 \begin{equation}
-	\hat{x}[n] = \text{round}\!\left(\frac{x[n]}{\Delta}\right)\Delta \ ,
+	\hat{x}_n = \text{round}\!\left(\frac{x_n}{\Delta}\right)\Delta \ ,
 \end{equation}
-where $\hat{x}[n]$ is the quantized output, $\text{round}(\cdot)$ denotes rounding to the nearest integer and
-$\Delta = 2A / 2^N$ is the step size for an input range $[-A, A]$. This rounding introduces quantization noise, which can be modeled as a uniform random variable in $[-\Delta/2, \Delta/2]$, with average power
+where $\hat{x}_n$ is the quantized output, $\text{round}(\cdot)$ denotes rounding to the nearest integer and
+$\Delta = 2A / 2^M$ is the step size for an input range $[-A, A]$. This rounding introduces quantization noise, which can be modeled as a uniform random variable in $[-\Delta/2, \Delta/2]$, with average power:
 \begin{equation}
-	P_q = \frac{\Delta^2}{12} = \frac{A^2}{3 \cdot 2^{2N}}.
+	P_q = \frac{\Delta^2}{12} = \frac{A^2}{3 \cdot 2^{2M}}.
 \end{equation}
 
-Increasing $N$ reduces $P_q$, but at the cost of higher data rates and storage requirements. Importantly, quantization is nonlinear: it distorts waveforms, alters frequency content, and biases statistical measures such as correlations. In radio interferometry, this leads to systematic errors and bias in both amplitude and phase, ultimately affecting source brightness and position estimates \citep{menaparra2018quantizationbiasdigitalcorrelators}.  
+Increasing $M$ reduces $P_q$, but at the cost of higher data rates and storage requirements. Importantly, quantization is nonlinear: it distorts waveforms, alters frequency content, and biases statistical measures such as correlations. In radio interferometry, this leads to systematic errors and bias in both amplitude and phase, ultimately affecting source brightness and position estimates \citep{menaparra2018quantizationbiasdigitalcorrelators}.  
 
-These issues are critical in radio astronomy, where weak celestial signals coexist with strong \gls{rfi}. To avoid clipping when the input exceeds the ADC range, high dynamic range is required. The theoretical dynamic range of an $N$-bit ADC is
+These issues are critical in radio astronomy, where weak celestial signals coexist with strong \gls{rfi}. To avoid clipping when the input exceeds the ADC range, high dynamic range is required. The theoretical dynamic range of an $M$-bit ADC is:
 \begin{equation}
-	\text{DR}_{\text{ideal}} = 6.02N + 1.76 \ \text{dB}.
+	\text{DR}_{\text{ideal}} = 6.02M + 1.76 \ \text{dB}.
 \end{equation}
 
 Real devices, however, are limited by nonidealities such as jitter and thermal noise. Their performance is better described by the \gls{enob}, obtained from the measured \gls{sinad}:
@@ -446,21 +498,20 @@ Real devices, however, are limited by nonidealities such as jitter and thermal n
 
 The \gls{sinad} is defined as the ratio of the total signal power (fundamental plus harmonics and noise) to the noise and distortion power alone \citep{ADCStandards}:
 \begin{equation}
-	\text{SINAD} = 10 \log_{10} \left( \frac{P_{\text{signal}}}{P_{\text{noise+distortion}}} \right) \quad [\text{dB}].
+	\text{SINAD} = 10 \log_{10} \left( \frac{P_{\text{signal}}}{P_{\text{noise+distortion}}} \right) \quad \text{dB}.
 \end{equation}
 
 Another key metric is the \gls{sfdr}, which compares the fundamental tone to the largest spurious component. It is computed as \citep{ADCStandards}:
 \begin{equation}
-	\text{SFDR} = 10 \log_{10} \left( \frac{P_{\text{fundamental}}}{P_{\text{spur, max}}} \right) \quad [\text{dBc}],
+	\text{SFDR} = 10 \log_{10} \left( \frac{P_{\text{fundamental}}}{P_{\text{spur, max}}} \right) \quad \text{dBc},
 \end{equation}
 where $P_{\text{spur, max}}$ is the power of the largest spurious tone excluding the fundamental. This is particularly relevant for mitigating intermodulation products caused by strong interferers.
 
-Finally, ADC outputs are often expressed in dBFS (decibels relative to full scale), where 0~dBFS corresponds to the maximum representable amplitude. In this scale, the quantization noise floor of an ideal $N$-bit converter is at approximately $-6.02N - 1.76$~dBFS.
 
 
-\subsection{Discrete Fourier transform}
+\subsection{Fourier transform}
 \label{sec:dft}
-A large portion of signal processing is devoted to the problems of detection and estimation. Detection refers to deciding whether a particular signal set is present in the observation, while estimation concerns determining the parameters that describe it. In practice, observed signals are often corrupted by noise or interference, making these tasks non-trivial. A common strategy is to represent the signal in terms of a basis set that spans the signal space \citep{helstrom1968statistical}. For periodic signals, frequently encountered in engineering problems and radio astronomy, the natural basis consists of sines and cosines, leading directly to Fourier analysis \citep{Bracewell2000}.
+A large portion of signal processing is devoted to the problems of detection and estimation. Detection refers to deciding whether a particular signal set is present in the observation, while estimation concerns determining the parameters that describe it. In practice, observed signals are often corrupted by noise or interference, making these tasks non-trivial. A common strategy is to represent the signal in terms of a basis set that spans the signal space \citep{helstrom1968statistical}. For periodic signals, frequently encountered in engineering problems and radio astronomy, the natural basis consists of sines and cosines, leading directly to Fourier analysis.
 
 \begin{figure}[t]
 	\centering
@@ -471,28 +522,39 @@ A large portion of signal processing is devoted to the problems of detection and
 
 Figure~\ref{fig:fourier_decomposition} illustrates this principle. A periodic time-domain signal (left) is expressed as a linear combination of sinusoidal functions at harmonically related frequencies. Each component contributes with a specific amplitude $b_n$, shown in the frequency domain (right) as discrete spectral lines located at multiples of the fundamental frequency $1/T$. This visualization emphasizes the duality between the time and frequency domains: while the time-domain signal may appear complex, its harmonic content can be concisely described by a small set of Fourier coefficients. This spectral representation is the foundation of many detection and estimation techniques in signal processing, as it isolates the periodic components embedded in noisy or corrupted observations.
 
-The continuous \gls{ft} provides the foundation for frequency-domain analysis of signals. For a continuous-time signal $x(t)$, it is defined as \citep[see][Chapter 2]{Bracewell2000}
+The continuous \gls{ft} provides the foundation for frequency-domain analysis of signals. For a continuous-time signal $x(t)$, it is defined as \citep[see][Chapter 2]{Bracewell2000}:
 \begin{equation}
 	\mathcal{F}\{x(t)\} = X(\nu) = \int_{-\infty}^{\infty} x(t) e^{-\mathrm{j}2\pi\nu t} \, \mathrm{d}t ,
 \end{equation}
-where $X(\nu)$ represents the frequency-domain representation of the signal. This transformation decomposes a time-domain signal into its constituent frequency components, providing a complete spectral description.
+where $X(\nu)$ represents the frequency-domain representation of the signal. This transformation decomposes a time-domain signal into its constituent frequency components, providing a complete spectral description. 
 
-For discrete signals sampled at regular intervals, the \gls{dft} extends this concept to the digital domain. Working with $N$ uniformly spaced samples, the DFT produces $N$ equally spaced samples of the corresponding periodic spectrum, offering an elegant framework for spectral decomposition in an $N$-dimensional orthogonal vector space \citep{Cooley1969finite}. Its mathematical formulation is given by
+The convolution of two functions $x(t)$ and $y(t)$ is defined as:
 \begin{equation}
-	\mathcal{F}_N\{x[n]\} = X[k] = \sum_{n=0}^{N-1} x[n] e^{-\mathrm{j} 2 \pi k n / N}, \quad k = 0, 1, \ldots, N-1,
+	\left[x(t) * y(t)\right](\tau) = \int_{-\infty}^{\infty} x(t) y(\tau - t) \, \mathrm{d}t ,
+\end{equation}
+where $*$ denotes the convolution operation. An important property of the \gls{ft} is that it maps convolution in the time domain to multiplication in the frequency domain, and inversely, multiplication in the time domain corresponds to convolution in the frequency domain. This relationship can be expressed mathematically as:
+\begin{equation}
+	\mathcal{F}\{x(t) * y(t)\} = X(\nu) Y(\nu)  \quad \land \quad \mathcal{F}\{x(t) y(t)\} = X(\nu) * Y(\nu) ,
+	\label{eq:convolution_theorem}
+\end{equation}
+where $X(\nu)$ and $Y(\nu)$ are the Fourier transforms of $x(t)$ and $y(t)$, respectively.
+
+For discrete signals sampled at regular intervals, the \gls{dft} extends this concept to the digital domain. Working with $N$ uniformly spaced samples, the DFT produces $N$ equally spaced samples of the corresponding periodic spectrum, offering an elegant framework for spectral decomposition in an $N$-dimensional orthogonal vector space \citep{Cooley1969finite}. Its mathematical formulation is given by:
+\begin{equation}
+	X_k = \sum_{n=0}^{N-1} x_n e^{-\mathrm{j} 2 \pi k n / N}, \quad k = 0, 1, \ldots, N-1,
 	\label{eq:dft}
 \end{equation}
-where $X[k]$ are the DFT coefficients, $x[n]$ are the input samples and $e^{-\mathrm{j} 2 \pi k n / N}$ are the basis functions. 
-For real-valued input signals, the DFT output exhibits conjugate symmetry, meaning $X[N-k] = X^*[k]$, where $^*$ denotes complex conjugation. This property allows only half of the spectrum to be retained, as the second half is simply the mirror image of the first. However, for complex input signals such as those obtained through quadrature sampling (see \S\ref{sec:quadrature_sampling}), this symmetry no longer holds, and all $N$ frequency bins must be computed to fully capture the spectral content.
+where $X_k$ are the DFT coefficients, $x_n$ are the input samples and $e^{-\mathrm{j} 2 \pi k n / N}$ are the basis functions. 
+For real-valued input signals, the DFT output exhibits conjugate symmetry, meaning $X_{N-k} = X^*_k$, where the $^*$ denotes complex conjugation. This property allows only half of the spectrum to be retained, as the second half is simply the mirror image of the first. However, for complex input signals such as those obtained through quadrature sampling (see \S\ref{sec:quadrature_sampling}), this symmetry no longer holds, and all $N$ frequency bins must be computed to fully capture the spectral content. 
 
 It is important to note that the DFT operates on finite sequences, whereas its ideal counterpart, the \gls{dtft}, is defined for infinite sequences. The \gls{dtft} is expressed as:
 \begin{equation}
-X(\nu) = \sum_{n=-\infty}^{\infty} x[n] e^{-\mathrm{j} 2\pi\nu n}, \quad -1/2 \leq \nu < 1/2,
+\mathcal{F}\{x_n\} = X(\nu) = \sum_{n=-\infty}^{\infty} x_n e^{-\mathrm{j} 2\pi\nu n}, \quad -1/2 \leq \nu < 1/2,
 \label{eq:dtft}
 \end{equation}
 where $X(\nu)$ is a continuous function of the frequency variable $\nu$. The DFT can be interpreted as a sampled version of the \gls{dtft}, evaluated at discrete frequency points $\nu_k = k / N$.
 
-While the DFT provides a rigorous framework for spectral analysis, its direct computation has $\mathcal{O}(N^2)$ complexity, making it computationally expensive for large datasets. The fast Fourier transform algorithm (detailed in \S\ref{sec:fft}) reduces this to $\mathcal{O}(N \log N)$, enabling real-time processing in radio astronomy applications. 
+While the DFT provides a rigorous framework for spectral analysis, its direct computation has $\mathcal{O}(N^2)$ complexity, making it computationally expensive for large datasets. The fast Fourier transform algorithm (detailed in \S\ref{sec:fft}) reduces this to $\mathcal{O}(N \log_2 N)$, enabling real-time processing in radio astronomy applications. 
 
 \subsection{The fast Fourier transform}
 \label{sec:fft}
@@ -500,10 +562,10 @@ The DFT can be computed efficiently by a family of algorithms collectively known
 
 A canonical radix-2 decimation-in-time (DIT) step splits the $N$-point DFT into two $N/2$-point DFTs of the even and odd samples, which are then combined through butterfly operations:
 \begin{align}
-X[k] &= X_e[k] + w_N^k\, X_o[k],\\
-X[k+\tfrac{N}{2}] &= X_e[k] - w_N^k\, X_o[k], \qquad k=0,\dots,\tfrac{N}{2}-1,
+X_k &= X_{e,k} + w_N^k\, X_{o,k},\\
+X_{k+N/2} &= X_{e,k} - w_N^k\, X_{o,k}, \qquad k=0,\dots,\tfrac{N}{2}-1,
 \end{align}
-where $w_N \triangleq e^{-\mathrm{j}2\pi/N}$, and $X_e[k]$ and $X_o[k]$ denote the $N/2$-point DFTs of even and odd inputs, respectively. Figure \ref{fig:fft_algorithm} illustrates this process. The decimation-in-frequency (DIF) form applies a dual factorization on the outputs; both lead to $\log_2 N$ stages of length-2 butterflies and twiddle multiplications.
+where $w_N \triangleq e^{-\mathrm{j}2\pi/N}$, and $X_{e,k}$ and $X_{o,k}$ denote the $N/2$-point DFTs of even and odd inputs, respectively. Figure \ref{fig:fft_algorithm} illustrates this process. The decimation-in-frequency (DIF) form applies a dual factorization on the outputs; both lead to $\log_2 N$ stages of length-2 butterflies and twiddle multiplications.
 
 \begin{figure}[t]
 	\centering
@@ -512,18 +574,18 @@ where $w_N \triangleq e^{-\mathrm{j}2\pi/N}$, and $X_e[k]$ and $X_o[k]$ denote t
 	\foreach \i [count=\xe from 0, count=\xo from 4, 
 			evaluate={\ni=int(2*\i)}, evaluate={\nii=int(\ni+1)} ] in {0,1,2,3}{%
 		\draw[-] (0,-\xe*0.75cm) coordinate (xe-\xe) -- 
-				node [above]{$X_e[\xe]$} ++(0:2cm) coordinate[c] (xe-\xe-1);
-		\draw[-] (xe-\xe-1)--++(0:2cm) coordinate[c, label=right:{$X[\xe]$},               
+				node [above]{$X_{e,\xe}$} ++(0:2cm) coordinate[c] (xe-\xe-1);
+		\draw[-] (xe-\xe-1)--++(0:2cm) coordinate[c, label=right:{$X_\xe$},               
 				label={[font=\scriptsize]below:{$w_8^\xe$}}] (xe-\xe-2);
 		\draw[-] (-2cm,-\xe*0.75cm) coordinate (xe-\xe-0)--
-				++(0:-1cm)node[left]{$x[\ni]$}; 
+				++(0:-1cm)node[left]{$x_\ni$}; 
 		\begin{scope}[yshift=-4cm]
-		\draw[-] (0,-\xe*0.75cm) coordinate (xo-\xe)--node [above]{$X_o[\xe]$} 
+		\draw[-] (0,-\xe*0.75cm) coordinate (xo-\xe)--node [above]{$X_{o,\xe}$} 
 				++(0:2cm) coordinate[c] (xo-\xe-1);
-		\draw[-] (xo-\xe-1)--++(0:2cm) coordinate[c, label=right:{$X[\xo]$}, 
+		\draw[-] (xo-\xe-1)--++(0:2cm) coordinate[c, label=right:{$X_\xo$}, 
 				label={[font=\scriptsize]below:{$w_8^\xo$}}] (xo-\xe-2);
 		\draw[-] (-2cm,-\xe*0.75cm) coordinate (xo-\xe-0)--
-				++(0:-1cm)node[left]{$x[\nii]$}; 
+				++(0:-1cm)node[left]{$x_\nii$}; 
 		\end{scope}
 	}
 	\node[fit=(xe-0-0) (xe-3), draw, inner ysep=5mm, inner xsep=0pt, align=center]
@@ -589,51 +651,56 @@ The fundamental origin of this leakage is rooted in the Fourier properties of fi
     \label{fig:rectangular_fourier}
 \end{figure}
 
-Equivalent behavior is observed in the discrete domain by considering the definition of the DFT for a finite-length signal given in Eq.~\ref{eq:dft}. Here, the summation runs from $n=0$ to $N-1$, indicating that only a finite segment of the signal is analyzed. Mathematically, this finite summation is equivalent to taking the infinite-length \gls{dtft} (Eq. \ref{eq:dtft}) of the product of the signal $x[n]$ and a rectangular (or tophat) window function $\Pi_N[n]$, as shown below:
-\begin{align}
-    X[k] &=  \text{DTFT} \left( x[n] \cdot \Pi_N[n] \right) \\
-    &= \sum_{n=-\infty}^{\infty} x[n] \Pi_N[n] e^{-\mathrm{j} 2\pi n k / N} \\
-    &= \sum_{n=0}^{N-1} x[n] e^{-\mathrm{j} 2\pi n k / N} \ , 
-\end{align}
-where the rectangular window is defined as
+Equivalent behavior is observed in the discrete domain by considering the definition of the DFT for a finite-length signal given in Eq.\ \ref{eq:dft}. By this definition, the DFT analyzes a signal only over a limited interval $n=0$ to $N-1$. Mathematically, this is equivalent to multiplying the infinite-length signal $x_n$ by a rectangular (or tophat) window function $\Pi_{N,n}$:
 \begin{equation}
-    \Pi_N[n] =
+    \Pi_{N,n} =
     \begin{cases}
         1 & 0 \leq n \leq N-1 \\
         0 & \text{otherwise}
     \end{cases}.
 \end{equation}
-In the frequency domain, the rectangular window is Fourier paired with the sinc function (or, more precisely, the Dirichlet kernel in the discrete domain). Consequently, the finite duration of the measurement effectively convolves the ideal spectrum of the signal with this sinc-like function. The undesirable peaks of this function are referred to as sidelobes, which cause spectral leakage.
+This implicit truncation has profound consequences in the frequency domain. By applying the convolution theorem (see Eq.\ \ref{eq:convolution_theorem}) to the definition of the DFT (Eq.\ \ref{eq:dft}), we observe that the measured spectrum $X_k$ is actually a sampled version of the convolution between the signal's ideal spectrum (the \gls{dtft}, Eq.\ \ref{eq:dtft}) and the window's response:
+\begin{align}
+    X_k &= \sum_{n=0}^{N-1} x_n e^{-\mathrm{j} 2\pi n k / N} \\
+        &= \sum_{n=-\infty}^{\infty} x_n \Pi_{N,n} e^{-\mathrm{j} 2\pi n \nu} \bigg|_{\nu = k/N} \\
+        &= \left. \mathcal{F} \left\{ x_n \cdot \Pi_{N,n} \right\} \right|_{\nu = k/N} \\
+        &= \left. \left( X(\nu) * W(\nu) \right) \right|_{\nu = k/N}  
+\end{align}
+where $X(\nu)$ and $W(\nu)$ are the \gls{dtft} of the underliying infinite input signal and the rectangular window, respectively. Since the \gls{ft} of a rectangular pulse is a sinc function (or strictly, a Dirichlet kernel in the discrete domain), the ideal spectral components are convolved with this function. The Dirichlet kernel is characterized by slowly decaying peaks known as sidelobes. High-amplitude sidelobes allow energy from strong spectral components to ``leak'' into adjacent frequency bins, obscuring weaker signals and distorting the spectrum. This phenomenon is known as spectral leakage.
 
-Windowing functions improve the DFT response by mitigating sidelobe levels at the expense of increasing the main lobe width. This is achieved by multiplying the signal $x[n]$ by a weighting function $w[n]$ before computing the transform:
-\begin{equation}
-    X_w[k] = \sum_{n=0}^{N-1} w[n] x[n] e^{-\mathrm{j} 2\pi n k / N}.
-\end{equation}
-According to the convolution theorem for the DFT \citep[see][Chapter~8]{OppenheimSchafer2010}, multiplication in the time domain corresponds to circular convolution in the frequency domain:
-\begin{equation}	
-    X_w[k] = \frac{1}{N} (W \circledast X)[k],
-\end{equation}
-where $W[k]$ is the DFT of the window function, and $\circledast$ denotes circular convolution, defined as:
-\begin{equation}
-    (W \circledast X)[k] = \sum_{m=0}^{N-1} W[m] X[(k - m) \pmod N].
-\end{equation}
+To mitigate leakage, alternative windowing functions are applied. Unlike the rectangular window, which has abrupt discontinuities at the boundaries, these functions taper the signal edges smoothly to zero. This smoothing significantly reduces the amplitude of the sidelobes in $W(\nu)$, thereby improving the dynamic range of the spectrometer. However, this improvement comes at a cost: suppressing sidelobes broadens the main lobe of the window's response, which reduces the effective spectral resolution.
 
-Among the most widely used windows in digital spectrometry are the Hamming and Hann windows, which offer a good compromise between sidelobe suppression and spectral resolution. Table \ref{tab:window_functions} lists some of the most common window functions along with their mathematical expressions. 
+In practice, windowing is implemented by multiplying the signal $x_n$ by a weighting sequence $w_n$ prior to the transform:
+\begin{equation}
+    X_{w,k} = \sum_{n=0}^{N-1} w_n x_n e^{-\mathrm{j} 2\pi n k / N}.
+\end{equation}
+Following the convolution theorem for the DFT \citep[see][Chapter~8]{OppenheimSchafer2010}, this time-domain multiplication corresponds to a circular convolution in the frequency domain:
+\begin{equation}    
+    X_{w,k} = \frac{1}{N} (W \circledast X)_k,
+\end{equation}
+where $W_k$ is the DFT of the window function, and $\circledast$ denotes circular convolution:
+\begin{equation}
+    (W \circledast X)_k = \sum_{m=0}^{N-1} W_m X_{(k - m) \bmod N}.
+\end{equation}
+The modulo operation $(k - m) \bmod N$ reflects the periodic nature of the DFT, ensuring that the convolution wraps around the sequence boundaries.
+
+Several window functions have been designed to optimize the trade-off between sidelobe suppression and spectral resolution. Among the most widely used in digital spectrometry are the Von Hann (Hanning) and Hamming windows. Table \ref{tab:window_functions} lists common window functions along with their mathematical expressions.
+
 \begin{table}[t]
-	\centering
-	\caption{Common window functions used in \gls{dsp}.}
-	\begin{tabular}{ll}
-		\toprule
-		\textbf{Window} & \textbf{Expression} \\
-		\midrule
-		Rectangular & $w[n] = 1$ \\
-		Hanning & $w[n] = 0.5 - 0.5 \cos\left(\frac{2\pi n}{N-1}\right)$ \\
-		Hamming & $w[n] = 0.54 - 0.46 \cos\left(\frac{2\pi n}{N-1}\right)$ \\
-		Blackman & $w[n] = 0.42 - 0.5 \cos\left(\frac{2\pi n}{N-1}\right) + 0.08 \cos\left(\frac{4\pi n}{N-1}\right)$ \\
-		Gaussian & $w[n] = e^{-\frac{1}{2} \left(\frac{n - (N-1)/2}{\sigma (N-1)/2}\right)^2}$ \\
-	\end{tabular}
-	
-	\label{tab:window_functions}
+    \centering
+    \caption{Common window functions used in \gls{dsp}.}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Window} & \textbf{Expression ($0 \le n \le N-1$)} \\
+        \midrule
+        Rectangular & $w_n = 1$ \\
+        Hanning & $w_n = 0.5 - 0.5 \cos\left(\frac{2\pi n}{N-1}\right)$ \\
+        Hamming & $w_n = 0.54 - 0.46 \cos\left(\frac{2\pi n}{N-1}\right)$ \\
+        Blackman & $w_n = 0.42 - 0.5 \cos\left(\frac{2\pi n}{N-1}\right) + 0.08 \cos\left(\frac{4\pi n}{N-1}\right)$ \\
+        Gaussian & $w_n = \exp\left[{-\frac{1}{2} \left(\frac{n - (N-1)/2}{\sigma (N-1)/2}\right)^2}\right]$ \\
+        \bottomrule
+    \end{tabular}
+    \label{tab:window_functions}
 \end{table}
 
 
@@ -648,13 +715,13 @@ Among the most widely used windows in digital spectrometry are the Hamming and H
 \label{sec:pfbs}
 As shown in \S\ref{sec:window_functions}, applying a window function before the DFT is a common method to reduce spectral leakage. However, this approach alone is insufficient in real-time digital spectrometers, where both efficiency and spectral purity are critical. The \gls{pfb} technique provides an elegant solution by combining windowing and decimation with the DFT in a computationally efficient way \citep{Harris1978}.
 
-In a PFB, instead of feeding the DFT directly with $N$ samples, a longer block of length $M = N \times P$ is considered, where $P$ is the number of taps. This block is multiplied by a window function $w[n]$, often derived from a sinc function further tapered by a smoother function (e.g., Hanning or Hamming, see Table \ref{tab:window_functions}) to improve sidelobe suppression. The weighted block is then decomposed into $N$ polyphase sub-filters of length $P$, which are summed to form a filtered sequence. Finally, this sequence is processed by an $N$-point DFT, yielding spectral estimates with strongly reduced leakage.
+In a PFB, instead of feeding the DFT directly with $N$ samples, a longer block of length $Q = N \times P$ is considered, where $P$ is the number of taps. This block is multiplied by a window function $w_n$, often derived from a sinc function further tapered by a smoother function (e.g., Hanning or Hamming, see Table \ref{tab:window_functions}) to improve sidelobe suppression. The weighted block is then decomposed into $N$ polyphase sub-filters of length $P$, which are summed to form a filtered sequence. Finally, this sequence is processed by an $N$-point DFT, yielding spectral estimates with strongly reduced leakage.
 
 The weighting/windowing can be thought of as a filtering process in which the elements of the window function are the filter coefficients. Mathematically, this process is given by
 \begin{equation}
-    h[n + pN], \quad p = 0,1,\ldots,P-1,
+    h_{n + pN}, \quad p = 0,1,\ldots,P-1,
 \end{equation}
-where each sub-filter coefficient, $h[n + pN]$, corresponds to a phase-shifted, decimated version of the prototype filter. Collectively, the $N$ sub-filters followed by the DFT stage constitute the PFB. This structure is sometimes referred to \textit{windowed pre-sum FFT}, highlighting its equivalence to overlapping windowed FFT methods but with improved implementation efficiency. Figure \ref{fig:pfb_diagram} illustrates the architecture of a PFB with $N$ channels and $P=3$ taps.
+where each sub-filter coefficient, $h_{n + pN}$, corresponds to a phase-shifted, decimated version of the prototype filter. Collectively, the $N$ sub-filters followed by the DFT stage constitute the PFB. This structure is sometimes referred to \textit{windowed pre-sum FFT}, highlighting its equivalence to overlapping windowed FFT methods but with improved implementation efficiency. Figure \ref{fig:pfb_diagram} illustrates the architecture of a PFB with $N$ channels and $P=3$ taps.
 
 \begin{figure}[t]
 	\centering
@@ -662,7 +729,7 @@ where each sub-filter coefficient, $h[n + pN]$, corresponds to a phase-shifted, 
 	% Paths, nodes and wires:
 	\node[shape=rectangle, draw, line width=1pt, dash pattern={on 1pt off 4pt}, minimum width=9.215cm, minimum height=4.965cm] at (8.875, 4){};
 	\draw (2.844, 5) to[cute closing switch] (3.75, 5);
-	\node[shape=rectangle, minimum width=0.715cm, minimum height=0.715cm] at (2.125, 5){} node[anchor=north west, align=left, text width=0.327cm, inner sep=6pt] at (1.75, 5.375){$x[n]$};
+	\node[shape=rectangle, minimum width=0.715cm, minimum height=0.715cm] at (2.125, 5){} node[anchor=north west, align=left, text width=0.327cm, inner sep=6pt] at (1.75, 5.375){$x_n$};
 	\draw (2.5, 5) -- (2.844, 5);
 	\node[shape=rectangle, draw, line width=1pt, minimum width=0.965cm, minimum height=0.715cm] at (8, 5.5){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (7.5, 5.875){$z^{-1}$};
 	\node[mixer] at (6.5, 3.99){};
@@ -674,21 +741,21 @@ where each sub-filter coefficient, $h[n + pN]$, corresponds to a phase-shifted, 
 	\draw[-latex] (8.5, 5.5) -- (10.5, 5.5);
 	\draw[-latex] (9.5, 5.5) -- (9.5, 4.5);
 	\draw[-latex] (6.5, 5.5) -- (6.5, 4.5);
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (4.75, 4){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (4.25, 4.375){$h[2N]$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (4.75, 4){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (4.5, 4.375){$h_{2N}$};
 	\draw[-latex] (5.5, 4) -- (6, 4);
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (8, 4){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (7.5, 4.375){$h[N]$};
-	\node[shape=rectangle, minimum width=1.215cm, minimum height=0.715cm] at (6.875, 5.875){} node[anchor=north west, align=left, text width=0.827cm, inner sep=6pt] at (6.25, 6.25){$x[2N]$};
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (9.5, 5.875){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (9, 6.25){$x[N]$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (8, 4){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (7.7, 4.375){$h_{N}$};
+	\node[shape=rectangle, minimum width=1.215cm, minimum height=0.715cm] at (6.875, 5.875){} node[anchor=north west, align=left, text width=0.827cm, inner sep=6pt] at (6.25, 6.25){$x_{2N}$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (9.5, 5.875){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (9, 6.25){$x_{N}$};
 	\draw[-latex] (8.5, 4) |- (9, 4);
 	\draw[-latex] (11.5, 4) -- (12, 4);
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (11.25, 4){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (10.75, 4.375){$h[0]$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (11.25, 4){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (10.75, 4.375){$h_0$};
 	\draw[-latex] (11.5, 5.5) -- (12.5, 5.5) -- (12.5, 4.5);
 	\node[adder] at (12.5, 2.51){};
 	\draw[-latex] (12.5, 3.52) -- (12.5, 3);
 	\draw[-latex] (9.5, 3.52) -- (9.5, 2.5) -- (12, 2.5);
 	\draw[-latex] (6.5, 3.5) -- (6.5, 1.75) -- (12.5, 1.75) -- (12.5, 2);
 	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (5.5, 1.875){} node[anchor=north west, align=left, text width=2.077cm, inner sep=6pt] at (4.25, 2.25){Sub-filter 0};
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (12.5, 5.875){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (12, 6.25){$x[0]$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (12.5, 5.875){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (12, 6.25){$x_0$};
 	\node[ocirc] at (3.75, 4){};
 	\node[shape=rectangle, draw, line width=1pt, dash pattern={on 1pt off 4pt}, minimum width=9.608cm, minimum height=4.965cm] at (8.679, -1.5){};
 	\node[shape=rectangle, draw, line width=1pt, minimum width=0.965cm, minimum height=0.715cm] at (8, 0.02){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (7.5, 0.395){$z^{-1}$};
@@ -700,20 +767,20 @@ where each sub-filter coefficient, $h[n + pN]$, corresponds to a phase-shifted, 
 	\draw[-latex] (8.5, 0.02) -- (10.5, 0.02);
 	\draw[-latex] (9.5, 0.02) -- (9.5, -0.98);
 	\draw[-latex] (6.5, 0.02) -- (6.5, -0.98);
-	\node[shape=rectangle, minimum width=1.845cm, minimum height=0.715cm] at (4.69, -1.5){} node[anchor=north west, align=left, text width=1.457cm, inner sep=6pt] at (3.75, -1.125){$h[2N+1]$};
-	\node[shape=rectangle, minimum width=1.84cm, minimum height=0.715cm] at (7.813, -1.5){} node[anchor=north west, align=left, text width=1.452cm, inner sep=6pt] at (6.875, -1.125){$h[N+1]$};
-	\node[shape=rectangle, minimum width=2.09cm, minimum height=0.715cm] at (6.25, 0.375){} node[anchor=north west, align=left, text width=1.702cm, inner sep=6pt] at (5.187, 0.75){$x[2N+1]$};
-	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.715cm] at (9.625, 0.375){} node[anchor=north west, align=left, text width=1.327cm, inner sep=6pt] at (8.75, 0.75){$x[N+1]$};
+	\node[shape=rectangle, minimum width=1.845cm, minimum height=0.715cm] at (4.69, -1.5){} node[anchor=north west, align=left, text width=1.457cm, inner sep=6pt] at (4.2, -1.125){$h_{2N+1}$};
+	\node[shape=rectangle, minimum width=1.84cm, minimum height=0.715cm] at (7.813, -1.5){} node[anchor=north west, align=left, text width=1.452cm, inner sep=6pt] at (7.3, -1.125){$h_{N+1}$};
+	\node[shape=rectangle, minimum width=2.09cm, minimum height=0.715cm] at (6.25, 0.375){} node[anchor=north west, align=left, text width=1.702cm, inner sep=6pt] at (5.187, 0.75){$x_{2N+1}$};
+	\node[shape=rectangle, minimum width=1.715cm, minimum height=0.715cm] at (9.625, 0.375){} node[anchor=north west, align=left, text width=1.327cm, inner sep=6pt] at (8.75, 0.75){$x_{N+1}$};
 	\draw[-latex] (8.5, -1.5) |- (9, -1.48);
 	\draw[-latex] (11.5, -1.48) -- (12, -1.48);
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (11.25, -1.48){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (10.75, -1.105){$h[1]$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (11.25, -1.48){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (10.75, -1.105){$h_1$};
 	\draw[-latex] (11.5, 0.02) -- (12.5, 0.02) -- (12.5, -0.98);
 	\node[adder] at (12.5, -2.97){};
 	\draw[-latex] (12.5, -1.96) -- (12.5, -2.48);
 	\draw[-latex] (9.5, -1.96) -- (9.5, -2.98) -- (12, -2.98);
 	\draw[-latex] (6.5, -1.98) -- (6.5, -3.73) -- (12.5, -3.73) -- (12.5, -3.48);
 	\node[shape=rectangle, minimum width=2.465cm, minimum height=0.715cm] at (5.5, -3.605){} node[anchor=north west, align=left, text width=2.077cm, inner sep=6pt] at (4.25, -3.23){Sub-filter 1};
-	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (12.5, 0.395){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (12, 0.77){$x[1]$};
+	\node[shape=rectangle, minimum width=0.965cm, minimum height=0.715cm] at (12.5, 0.395){} node[anchor=north west, align=left, text width=0.577cm, inner sep=6pt] at (12, 0.77){$x_1$};
 	\draw[-latex] (5.5, -1.5) |- (6.01, -1.49);
 	\draw (3.75, 5) -- (4, 5) -| (4, 0.02);
 	\node[shape=rectangle, draw, line width=1pt, minimum width=2.393cm, minimum height=4.215cm] at (16.929, 4.286){} node[anchor=center, align=center, text width=2.005cm, inner sep=6pt] at (16.929, 4.286){\Large FFT $N$ -point};
@@ -721,14 +788,14 @@ where each sub-filter coefficient, $h[n + pN]$, corresponds to a phase-shifted, 
 	\draw[-latex] (13, -3) -- (14, -3) -- (14, 4.714) -- (15.714, 4.714);
 	\draw[-latex] (3.75, 4) -| (3.75, -5.25) -- (14.25, -5.25) -- (14.143, 3.429) -- (15.714, 3.429);
 	\node[shape=rectangle, minimum width=2.965cm, minimum height=0.715cm] at (5.75, -4.875){} node[anchor=north west, align=left, text width=2.577cm, inner sep=6pt] at (4.25, -4.5){Sub-filter $N-1$};
-	\node[shape=rectangle, minimum width=1.215cm, minimum height=0.715cm] at (15, 5.875){} node[anchor=north west, align=left, text width=0.827cm, inner sep=6pt] at (14.375, 6.25){$y[0]$};
-	\node[shape=rectangle, minimum width=1.215cm, minimum height=0.715cm] at (15, 5.125){} node[anchor=north west, align=left, text width=0.827cm, inner sep=6pt] at (14.375, 5.5){$y[1]$};
-	\node[shape=rectangle, minimum width=1.59cm, minimum height=0.715cm] at (14.938, 3.125){} node[anchor=north west, align=left, text width=1.202cm, inner sep=6pt] at (14.125, 3.5){$y[N-1]$};
-	\node[shape=rectangle, minimum width=0.465cm, minimum height=0.965cm] at (3.75, 4.5){} node[anchor=north, align=center, text width=0.077cm, inner sep=6pt] at (3.75, 5){\tiny .\\.\\.};
-	\node[shape=rectangle, minimum width=0.465cm, minimum height=0.965cm] at (9, -4.75){} node[anchor=north, align=center, text width=0.077cm, inner sep=6pt] at (9, -4.25){\tiny .\\.\\.};
-	\node[shape=rectangle, minimum width=0.465cm, minimum height=0.965cm] at (14.938, 4){} node[anchor=north, align=center, text width=0.077cm, inner sep=6pt] at (14.938, 4.5){\tiny .\\.\\.};
+	\node[shape=rectangle, minimum width=1.215cm, minimum height=0.715cm] at (15, 5.875){} node[anchor=north west, align=left, text width=0.827cm, inner sep=6pt] at (14.375, 6.25){$y_0$};
+	\node[shape=rectangle, minimum width=1.215cm, minimum height=0.715cm] at (15, 5.125){} node[anchor=north west, align=left, text width=0.827cm, inner sep=6pt] at (14.375, 5.5){$y_1$};
+	\node[shape=rectangle, minimum width=1.59cm, minimum height=0.715cm] at (14.938, 3.125){} node[anchor=north west, align=left, text width=1.202cm, inner sep=6pt] at (14.125, 3.5){$y_{N-1}$};
+	\node[shape=rectangle, minimum width=0.465cm, minimum height=0.965cm] at (3.75, 4.5){} node[anchor=north, align=center, text width=0.077cm, inner sep=6pt] at (3.75, 5){\small\vdots};
+	\node[shape=rectangle, minimum width=0.465cm, minimum height=0.965cm] at (9, -4.75){} node[anchor=north, align=center, text width=0.077cm, inner sep=6pt] at (9, -4.25){\small \vdots};
+	\node[shape=rectangle, minimum width=0.465cm, minimum height=0.965cm] at (14.938, 4){} node[anchor=north, align=center, text width=0.077cm, inner sep=6pt] at (14.938, 4.5){\small \vdots};
 \end{tikzpicture}
-	\caption[Polyphase filter bank schematic]{Schematic of a PFB with three taps ($P=3$) and an $N$-point FFT. The input signal $x[n]$ is demultiplexed and processed through $N$ parallel sub-filters, where $z^{-1}$ represents a unit delay (one sample period), $h[k]$ denotes the prototype filter coefficients distributed across the polyphase branches, and the mixer symbols represent coefficient multiplication. The outputs of these sub-filters are summed (indicated by the adder nodes) and then transformed by the FFT to produce the final spectral outputs $y[0], y[1], \ldots, y[N-1]$. Adapted from \url{https://casper.berkeley.edu/wiki/The_Polyphase_Filter_Bank_Technique}.}
+	\caption[Polyphase filter bank schematic]{Schematic of a PFB with three taps ($P=3$) and an $N$-point FFT. The input signal $x_n$ is demultiplexed and processed through $N$ parallel sub-filters, where $z^{-1}$ represents a unit delay (one sample period), $h_n$ denotes the prototype filter coefficients distributed across the polyphase branches, and the mixer symbols represent coefficient multiplication. The outputs of these sub-filters are summed (indicated by the adder nodes) and then transformed by the FFT to produce the final spectral outputs $y_0, y_1, \ldots, y_{N-1}$. Adapted from \url{https://casper.berkeley.edu/wiki/The_Polyphase_Filter_Bank_Technique}.}
 	\label{fig:pfb_diagram}
 \end{figure}
 
@@ -741,9 +808,17 @@ Given all of this, the PFB enhances the FFT, improving spectral channel frequenc
 	\label{fig:hamming_window_response}
 \end{figure}
 
-A spectrometer is an instrument designed to measure the spectral composition of signals, such as radio emissions from astronomical sources. It quantifies the \gls{psd}, typically expressed in units of \si{\watt \per \hertz}, which corresponds to the specific flux integrated over the instrument's effective aperture (Eq. \ref{eq:flux_density}). Spectral analysis provides critical insight into the physical properties of radio sources and the characteristics of the intervening medium through which the signals propagate \citep{Price2016spectrometers}.
+\section{Spectrometers and correlators}
 
-A correlator is a specialized instrument that extends this concept to interferometric arrays by computing the cross-correlation between signals from different antennas. Further details on correlation are provided in \S\ref{sec:cross_correlation}.
+In radio astronomy, the measurement of spectral power distributions is fundamental to characterizing both the intrinsic properties of celestial sources and the effects of the intervening medium. This task is performed by spectrometers and correlators, which transform time-domain signals into frequency-domain representations that reveal the physical processes governing radio emission \citep{Price2016spectrometers}.
+
+A spectrometer is an instrument designed to measure the spectral composition of signals received from astronomical sources. Its primary output is the \gls{psd}, typically expressed in units of \si{\watt \per \hertz}, which quantifies the power per unit frequency interval. For a radio telescope with effective collecting area $A_e$, the measured PSD is proportional to the specific flux density $S_\nu$ (see Eq.\ \ref{eq:flux_density}) integrated over the antenna aperture:
+\begin{equation}
+	\text{PSD} \propto \int_{A_e} S_\nu \, \mathrm{d}\sigma,
+\end{equation}
+where $\mathrm{d}\sigma$ is an infinitesimal area element. This spectral measurement provides critical insight into emission mechanisms, source temperatures, propagation effects, and the physical conditions of the emitting plasma.
+
+A correlator, on the other hand, is a specialized instrument that extends this concept to interferometric arrays by computing the cross-correlation between signals from different antennas. Further details on correlation are provided in \S\ref{sec:cross_correlation}.
 
 The theoretical underpinnings of both spectrometers and correlators are explored in \S\ref{sec:wiener-khinchin} and \S\ref{sec:cross_correlation}, where the Wiener-Khinchin theorem and the cross-correlation formalism are discussed.
 
@@ -759,17 +834,17 @@ where $\nu$ represents frequency and $\tau$ denotes the time lag. The autocorrel
 	R_{xx}(\tau) =  \langle x(t) x^*(t - \tau)\rangle = \lim_{T \to \infty} \frac{1}{2T} \int_{0}^{T} x(t) x^*(t - \tau) \, \mathrm{d}t
 	\label{eq:continous_autocorrelation}
 \end{equation}
-where $^*$ denotes the complex conjugate and $\langle \cdot \rangle$ denotes the expectation value, which is the average over time for a stationary signal. For discrete signals, which are far more common in practice due to the increasing use of digital systems such as the spectrometer developed in this thesis, the theorem can be expressed as
+where $\langle \cdot \rangle$ denotes the expectation value, which is the average over time for a stationary signal. For discrete signals, the theorem can be expressed as
 \begin{equation}
-	S_{xx}(\nu) = \sum_{m=-\infty}^{\infty} \left\langle x[n] x^*[n - m] \right\rangle e^{-\mathrm{j}2\pi m \nu}
+	S_{xx}(\nu) = \sum_{m=-\infty}^{\infty} \left\langle x_n x^*_{n - m} \right\rangle e^{-\mathrm{j}2\pi m \nu}
 	\label{eq:discrete-wiener-khinchin}
 \end{equation}
-where $m$ is the time lag index and $\nu$ is the normalized frequency in the interval $[-1/2,1/2]$. Spectrometers that calculate the PSD using Eq. \ref{eq:discrete-wiener-khinchin} are known as autocorrelation spectrometers (from now on XF ACS). These spectrometers compute the autocorrelation function of the input signal first and then apply a DTFT to obtain the PSD. Using this definition in Eq. \ref{eq:discrete-wiener-khinchin} and the convolution theorem, the PSD can also be expressed as
+where $m$ is the time lag index and $\nu$ is the normalized frequency in the interval $[-1/2,1/2]$. Spectrometers that calculate the PSD using Eq.\ \ref{eq:discrete-wiener-khinchin} are known as autocorrelation spectrometers (from now on XF ACS). These spectrometers compute the autocorrelation function of the input signal first and then apply a DTFT to obtain the PSD. Using this definition in Eq.\ \ref{eq:discrete-wiener-khinchin} and the convolution theorem, the PSD can also be expressed as
 \begin{equation}
 	S_{xx}(\nu) = \left\langle \norm{X(\nu)}^2 \right\rangle
 	\label{eq:discrete_psd}
 \end{equation}
-where $X(\nu)$ is the DTFT output at frequency $\nu$. This result shows that the PSD can be obtained directly by averaging the squared magnitude of the DFT output. This is significant because it enables the computation of the PSD from the DFT\footnote{It is important to clarify that the integration time must be sufficiently long to ensure that DFT and DTFT are approximately equal.} of the signal, eliminating the need to explicitly calculate the autocorrelation function which can be computationally expensive, especially for large arrays. This type of spectrometer is known as \gls{ft} filterbanks (hereafter FX FTF spectrometers). Figure \ref{fig:psd_methods} illustrates the two methods for calculating the PSD of a signal, highlighting the differences between ACS and FTF spectrometers.
+where $X(\nu)$ is the DTFT output at frequency $\nu$. This result shows that the PSD can be obtained directly by averaging the squared magnitude of the DFT output. This is significant because it enables the computation of the PSD from the DFT\footnote{It is important to clarify that the integration time must be sufficiently long to ensure that DFT and DTFT are approximately equal.} of the signal, eliminating the need to explicitly calculate the autocorrelation function which can be computationally expensive, especially for large arrays. This type of spectrometer is known as \gls{ft} filter banks (hereafter FX FTF spectrometers). Figure \ref{fig:psd_methods} illustrates the two methods for calculating the PSD of a signal, highlighting the differences between ACS and FTF spectrometers.
 \begin{figure}[t]
 	\centering
 	\begin{tikzpicture}[block/.style={rectangle, draw, minimum width=2cm, minimum height=1.2cm, align=center},
@@ -886,9 +961,10 @@ This spatial separation introduces a geometric time delay, $\tau_g$, given by $\
 
 The cross-correlation operation is often denoted by the pentagram symbol ($\star$) and is mathematically defined as:
 \begin{equation}
-    R_{xy}(\tau)=\left[x(t) \star y(t)\right](\tau) = \lim_{T \to \infty} \frac{1}{2T} \int_{-T}^{T} x(t) y^*(t - \tau) \, \mathrm{d}t
+    R_{xy}(\tau)=\left[x(t) \star y(t)\right](\tau) = \lim_{T \to \infty} \frac{1}{2T} \int_{-T}^{T} x(t) y^*(t - \tau) \, \mathrm{d}t \ ,
+	\label{eq:cross_correlation_definition}
 \end{equation}
-Physically, this function peaks when the lag parameter $\tau$ equals the geometric delay $\tau_g$. The integral can also be expressed as a convolution, which is useful for system analysis:
+where $T$ is the integration time, and $y^*(t - \tau)$ is the complex conjugate of the signal $y(t)$ delayed by $\tau$. Physically, this function peaks when the lag parameter $\tau$ equals the geometric delay $\tau_g$. The integral can also be expressed as a convolution, which is useful for system analysis:
 \begin{align}
     \left[x(t) \star y(t)\right](\tau) 
     &= \int_{-\infty}^{\infty} x(t)\, y^*(t - \tau) \, \mathrm{d}t \\
@@ -901,7 +977,7 @@ where $y^*(-t)$ denotes the time-reversed and conjugated version of $y(t)$. Appl
     x(t) \star y(t) \xrightarrow{\mathcal{F}} X(\nu) Y^*(\nu)
     \label{eq:cross_correlation_fourier}
 \end{equation}
-where $X(\nu)$ and $Y(\nu)$ are the \glspl{ft} of $x(t)$ and $y(t)$, respectively. The right-hand side of Eq. \ref{eq:cross_correlation_fourier}, defined as $S_{xy}(\nu) := X(\nu) Y^*(\nu)$, is known as the \gls{cps} or visibility. This result demonstrates that the cross-power spectrum is simply the \gls{ft} of the cross-correlation function. In the special case of a single antenna where $X = Y$, this reduces to the Wiener-Khinchin theorem discussed previously. This relationship forms the theoretical foundation for cross-correlation spectrometry, allowing interferometers to measure spatial coherence in the frequency domain.
+where $X(\nu)$ and $Y(\nu)$ are the \glspl{ft} of $x(t)$ and $y(t)$, respectively. The right-hand side of Eq.\ \ref{eq:cross_correlation_fourier}, defined as $S_{xy}(\nu) := X(\nu) Y^*(\nu)$, is known as the \gls{cps} or visibility. This result demonstrates that the \gls{cps} is simply the \gls{ft} of the cross-correlation function. In the special case of a single antenna where $X = Y$, this reduces to the Wiener-Khinchin theorem discussed previously. This relationship forms the theoretical foundation for cross-correlation spectrometry, allowing interferometers to measure spatial coherence in the frequency domain.
 
 \subsection{Correlator architectures}
 \label{sec:spectrometer_architectures}
@@ -929,11 +1005,11 @@ Figure \ref{fig:corr_methods} illustrates the two correlator architectures, anal
 		% Bottom row: Rxy, Sxy
 		\node[block, below=2cm of xtyt] (Rxy) {%
 			$R_{xy}(\tau) = $\\
-			$\frac{1}{2T}\int_0^T x(t)y^*(t-\tau)\,dt$
+			$\frac{1}{2T}\int_0^T x(t) y^*(t-\tau)\,dt$
 		};
 		\node[block, below=2cm of XnuYnu] (Sxy) {%
 			$S_{xy}(\nu) =$\\
-			$X(\nu)Y^*(\nu)$
+			$X(\nu) Y^*(\nu)$
 		};
 
 		% Horizontal arrows (top)
@@ -986,34 +1062,34 @@ To reduce bandwidth and storage requirements, the spectra are re-quantized to a 
 
 \subsection{X-engine}
 After the F-engine has channelized and packetized the data, the X-engine receives these packets, typically over high-speed network links. In modern radio telescopes, the X-engine is responsible for performing the complex cross-multiplication and accumulation of visibilities across all antenna pairs, forming the basis for imaging and calibration.
-For an array with $N_a$ antennas, the number of unique baselines is $N_\text{bsl} = N_a(N_a-1)/2$, leading to a computational cost per spectral frame that scales as
+For an array with $N_\text{a}$ antennas, the number of total multiplications is $N_\nu N_\text{a}(N_\text{a}+1)/2$ (including autocorrelations), leading to a computational cost per spectral frame that scales as:
 \begin{equation}
-	\mathcal{O} \left(N_\nu,N_a^2\right),
+	\mathcal{O} \left(N_\nu N_\text{a}^2\right),
 \end{equation}
 where $N_\nu$ is the number of frequency channels. Temporal integration only changes the multiplicative constant (the number of accumulations), not the asymptotic scaling (or computational complexity).
 
-In addition to correlation, X-engines can perform beamforming by coherently summing antenna voltages with appropriate delays or phase rotations. A straightforward delay-and-sum implementation for $N_b$ beams has a computational complexity of
+In addition to correlation, X-engines can perform beamforming by coherently summing antenna voltages with appropriate delays or phase rotations. A straightforward delay-and-sum implementation for $N_\text{b}$ beams has a computational complexity of:
 \begin{equation}
-\mathcal{O}\left(N_\nu,N_b,N_a\right),
+\mathcal{O}\left(N_\nu N_\text{b} N_\text{a}\right),
 \end{equation}
-which becomes prohibitive for large arrays. However, for regularly sampled arrays, FFT beamforming can be applied to synthesize approximately $N_a$ orthogonal beams with a reduced cost of
+which becomes prohibitive for large arrays. However, for regularly sampled arrays, FFT beamforming can be applied to synthesize approximately $N_\text{a}$ orthogonal beams with a reduced cost of:
 \begin{equation}
-\mathcal{O}\left(N_\nu,N_a\log_2 N_a\right),
+\mathcal{O}\left(N_\nu N_\text{a}\log_2 N_\text{a}\right),
 \end{equation}
-substantially improving efficiency when $ N_b \sim N_a$ \citep{Masui_2019}.
-This approach, however, constrains the array geometry and fixes the array to be stuck in a defined grid concentration but is widely used in large-$N_a$, wide-field interferometers where real-time beamforming is required \citep{Price_2024}.
+substantially improving efficiency when $ N_\text{b} \sim N_\text{a}$ \citep{Masui_2019}.
+This approach, however, constrains the array geometry to a regular grid configuration, limiting its flexibility compared to direct beamforming, but is widely used in large-$N_\text{a}$, wide-field interferometers where real-time performance is critical \citep{Price_2024}.
 
 \section{Computational hardware}
 \label{sec:computational_hardware}
 The digital signal processing required by modern radio telescopes relies primarily on four platforms: \glspl{cpu}, \glspl{gpu}, \glspl{fpga}, and \glspl{asic}. Each offers different trade-offs in terms of flexibility, efficiency, and development cost.  
 
 \begin{itemize}
-	\item \Glspl{asic} are custom-designed circuits optimized for a specific task. They powered major facilities such as the JVLA and ALMA correlators \citep{Perley_2009,ALMA_correlator}. Although their fabrication is costly and inflexible, they provide unmatched power efficiency, making them attractive for large-scale projects such as the SKA \citep{D_Addario_2016}.  
+	\item \Glspl{asic} are custom-designed circuits optimized for a specific task. They powered major facilities such as the VLA and ALMA correlators \citep{Perley_2009,ALMA_correlator}. Although their fabrication is costly and inflexible, they provide unmatched power efficiency, making them attractive for large-scale projects \citep{D_Addario_2016}.  
 
-	\item \Glspl{gpu}, originally developed for graphics rendering, have become widely used in high-performance computing. Their highly parallel architecture makes them ideal for large matrix operations and real-time data processing, often serving as backends for cross-correlation and imaging pipelines. In recent years their price has decreased significantly, especially due to the gaming and artificial intelligence industries, making them an attractive option for radio astronomy applications. 
-	An example of a pipeline specifically dedicated to \glspl{gpu} is the X-engine of CHIME \citep{recnik2015efficientrealtimedatapipeline, Denman_2015}. 
+	\item \Glspl{gpu}, originally developed for graphics rendering, have become widely used in high-performance computing. Their highly parallel architecture makes them ideal for large matrix operations and real-time data processing, often serving as backends for cross-correlation and imaging pipelines. In recent years their price has decreased significantly, especially due to the gaming and artificial intelligence industries, making them an attractive option for radio astronomy applications. Recent GPU architectures include tensor cores, specialized units originally designed for artificial intelligence workloads, which can accelerate correlation operations by a factor of five to ten compared to traditional GPU cores \citep{TensorCoreCorrelator}. This technology enables significant reductions in both computational cost and energy consumption, making GPUs increasingly competitive for large-scale signal processing. 
+	An example of a pipeline specifically dedicated to \glspl{gpu} is the X-engine of CHIME \citep{Denman_2020}. 
 
-	\item \Glspl{fpga} occupy a middle ground between flexibility and efficiency. They interface directly with \glspl{adc} and high-speed links, handling tasks such as channelization and packetization before passing data downstream. Their role in radio astronomy has been facilitated by open-source initiatives like the collaboration for astronomy signal processing and electronic research (CASPER; \citealt{hickish2016decadedevelopingradioastronomyinstrumentation}), and they remain the dominant choice for first-stage DSP. A dedicated discussion is provided in \S~\ref{sec:fpgas}. 
+	\item \Glspl{fpga} occupy a middle ground between flexibility and efficiency. They interface directly with \glspl{adc} and high-speed links, handling tasks such as channelization and packetization before passing data downstream. Their role in radio astronomy has been facilitated by open-source initiatives like the Collaboration for Astronomy Signal Processing and Electronic Research (CASPER; \citealt{hickish2016decadedevelopingradioastronomyinstrumentation}), and they remain the dominant choice for first-stage DSP. A dedicated discussion is provided in \S~\ref{sec:fpgas}. 
 	\item \glspl{cpu} retain a central role as general-purpose processors. While less efficient for massively parallel tasks, they provide the control logic, coordination, and post-processing capabilities required in heterogeneous architectures that combine multiple platforms. 
 \end{itemize} 
 
@@ -1022,7 +1098,7 @@ In practice, modern correlators employ hybrid solutions: \glspl{fpga} or \glspl{
 
 \subsection{Field programmable gate arrays}
 \label{sec:fpgas}
-\Glspl{fpga} are reconfigurable integrated circuits that offer a flexible hardware platform capable of being programmed in the field, with performance approaching that of \glspl{asic}, yet without the fabrication lead time and high cost of custom silicon \citep{kuon2008fpga}.
+\Glspl{fpga} are reconfigurable integrated circuits that offer a flexible hardware platform capable of being programmed in the field, with performance approaching that of \glspl{asic}, yet without the fabrication lead time and high cost of custom silicon \citep{kuon2008fpga}. They are programmed using \glspl{hdl} such as VHDL or Verilog, which allow designers to specify the logic and interconnections at a low level. For those new to FPGA development and HDL design, \citet{nandland2019fpga} provides a practical introduction to the fundamentals.
 
 At their core, \Glspl{fpga} consist of a structured array of fundamental resources:
 \begin{itemize}
@@ -1069,7 +1145,7 @@ FPGA architecture grants a compelling trade-off: designers can implement custom 
 
 \subsection{Ethernet interconnects}
 
-Ethernet has become the standard interconnect technology in modern radio astronomy backends, providing a scalable and cost-effective solution for transporting high data rates between FPGAs, GPUs, and storage systems \citep{Price_2020}. Commercial high-speed variants such as 10GbE (SFP+), 40GbE (QSFP+), and 100GbE (QSFP28; \citealt{IEEE8023bm2015}) are routinely employed, enabling real-time redistribution of digitized signals in FX correlators and spectrometers.  
+Ethernet has become the standard interconnect technology in modern radio astronomy backends, providing a scalable and cost-effective solution for transporting high data rates between FPGAs, GPUs, and storage systems \citep{Price_2020}. Commercial high-speed variants such as 10\,GbE (SFP+), 40\,GbE (QSFP+), and 100\,GbE (QSFP28; \citealt{IEEE8023bm2015}) are routinely employed, enabling real-time redistribution of digitized signals in FX correlators and spectrometers.  
 
 A key design choice in these systems is the adoption of the \gls{udp} as the transport layer. UDP is lightweight and connectionless, avoiding the latency penalties of the transmission control protocol (TCP). Since astronomical signal processing prioritizes sustained throughput over guaranteed delivery, low levels of packet loss are acceptable. Typical packet headers include sequence numbers, antenna identifiers, and frequency channel indices, allowing receiving nodes to reassemble the data stream even when packets arrive out of order or are occasionally dropped.  
 
@@ -1098,8 +1174,7 @@ The board supports up to 5 GSPS sampling for 14-bit ADCs and up to 9.85 GSPS for
 
 Beyond data converters, the RFSoC 4x2 integrates a powerful FPGA fabric with 930k logic cells and 4200 DSP slices, alongside a processing system featuring a quad-core ARM Cortex-A53, a dual-core Cortex-R5F, and an ARM Mali-400 GPU. Two independent \SI{4}{GB} DDR4 memories operate at \qty{2400}{\mega\hertz}, one attached to the processing system and one to the programmable logic, ensuring high-throughput data handling. Internal UltraRAM and \gls{bram} further enhance buffering and streaming capabilities.
 
-The board also provides multiple high-speed interfaces for data offload and system integration, including a 100GbE QSFP28 port, USB~3.0, and a Mini DisplayPort. External clock and \gls{pps} SMA ports enable precise synchronization and multi-board operation. Power regulation and monitoring are handled by dedicated circuits, ensuring reliable operation with protection against overvoltage, overcurrent, and overheating.
-
+The board also provides multiple high-speed interfaces for data offload and system integration, including a 100\,GbE QSFP28 port, USB~3.0, and a Mini DisplayPort. External clock and \gls{pps} SMA ports enable precise synchronization and multi-board operation. 
 
 
 
